@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Crowd Controller©</string>
+    <string name="app_name">Crowd Controller ©</string>
 
     <!-- Strings related to login -->
     <string name="prompt_username">Username</string>
@@ -22,8 +22,8 @@
     <string name="action_reset_password">Forgot Password</string>
 
     <string name="txt_register">Not signed up?</string>
-    <string name="title_activity_main">MainActivity</string>
-    <string name="title_activity_friend">FriendActivity</string>
+    <string name="title_activity_main">Main Activity</string>
+    <string name="title_activity_friend">Friends</string>
     <string name="title_section1">Section 1</string>
     <string name="title_section2">Section 2</string>
     <string name="title_section3">Section 3</string>
