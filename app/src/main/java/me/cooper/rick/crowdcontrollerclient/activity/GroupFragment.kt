@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.friend
+package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.content.Context
 import android.os.Bundle
@@ -11,8 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent
+import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent.DummyItem
 
 /**
  * A fragment representing a list of Items.
@@ -25,7 +25,7 @@ import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.D
  * Mandatory empty constructor for the fragment manager to instantiate the
  * fragment (e.g. upon screen orientation changes).
  */
-class FriendFragment : Fragment() {
+class GroupFragment : Fragment() {
     // TODO: Customize parameters
     private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
@@ -40,7 +40,7 @@ class FriendFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_friend_list, container, false)
+        val view = inflater!!.inflate(R.layout.fragment_group_list, container, false)
 
         // Set the adapter
         if (view is RecyclerView) {
@@ -50,7 +50,7 @@ class FriendFragment : Fragment() {
             } else {
                 view.layoutManager = GridLayoutManager(context, mColumnCount)
             }
-            view.adapter = FriendRecyclerViewAdapter(DummyContent.FRIENDS, mListener)
+            view.adapter = MyGroupRecyclerViewAdapter(DummyContent.ITEMS, mListener)
         }
         return view
     }
@@ -90,8 +90,8 @@ class FriendFragment : Fragment() {
         private val ARG_COLUMN_COUNT = "column-count"
 
         // TODO: Customize parameter initialization
-        fun newInstance(columnCount: Int): FriendFragment {
-            val fragment = FriendFragment()
+        fun newInstance(columnCount: Int): GroupFragment {
+            val fragment = GroupFragment()
             val args = Bundle()
             args.putInt(ARG_COLUMN_COUNT, columnCount)
             fragment.arguments = args

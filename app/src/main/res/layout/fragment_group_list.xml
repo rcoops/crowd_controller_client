@@ -3,12 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/list"
-    android:name="me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment"
+    android:name="me.cooper.rick.crowdcontrollerclient.activity.GroupFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
     app:layoutManager="LinearLayoutManager"
-    tools:context="me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment"
-    tools:listitem="@layout/fragment_friend"
-    android:background="@color/colorPrimary" />
+    tools:context="me.cooper.rick.crowdcontrollerclient.activity.GroupFragment"
+    tools:listitem="@layout/fragment_group"
+    android:background="@color/colorPrimary"/>

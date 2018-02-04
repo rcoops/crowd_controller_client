@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.friend
+package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
@@ -7,22 +7,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import me.cooper.rick.crowdcontrollerclient.R
-
-import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnListFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.activity.GroupFragment.OnListFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent.DummyItem
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the
  * specified [OnListFragmentInteractionListener].
  * TODO: Replace the implementation with code for your data type.
  */
-class FriendRecyclerViewAdapter(
-        private val mValues: List<DummyItem>,
-        private val mListener: OnListFragmentInteractionListener?): RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
+class MyGroupRecyclerViewAdapter(private val mValues: List<DummyItem>, private val mListener: OnListFragmentInteractionListener?) : RecyclerView.Adapter<MyGroupRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_friend, parent, false)
+        val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.fragment_group, parent, false)
         return ViewHolder(view)
     }
 
@@ -54,4 +51,5 @@ class FriendRecyclerViewAdapter(
             return "${super.toString()} '${mContentView.text}'"
         }
     }
+
 }
