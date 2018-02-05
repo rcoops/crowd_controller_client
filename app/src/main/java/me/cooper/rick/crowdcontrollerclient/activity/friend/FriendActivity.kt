@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
@@ -12,6 +13,7 @@ import kotlinx.android.synthetic.main.activity_friend.*
 import kotlinx.android.synthetic.main.app_bar_friend.*
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent
+import me.cooper.rick.crowdcontrollerclient.activity.group.GroupActivity
 
 class FriendActivity : AppCompatActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -62,6 +64,8 @@ class FriendActivity : AppCompatActivity(),
         // Handle navigation view item clicks here.
         when (item.itemId) {
             R.id.navCreateGroup -> {
+                val intent = Intent(this, GroupActivity::class.java)
+                startActivity(intent)
                 // Handle the camera action
             }
             R.id.navNewFriend -> {

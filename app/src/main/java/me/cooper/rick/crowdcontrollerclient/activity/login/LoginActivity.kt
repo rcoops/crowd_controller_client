@@ -244,7 +244,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         username.setAdapter(adapter)
     }
 
-    private fun displayResponse(response: Message) {
+    private fun openActivity(response: Message) {
         val intent = Intent(this, FriendActivity::class.java)
         intent.putExtra("message", response.text)
         startActivity(intent)
@@ -297,7 +297,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         }
 
         override fun onPostExecute(result: Message) {
-            displayResponse(result)
+            openActivity(result)
         }
 
     }

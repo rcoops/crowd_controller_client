@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity
+package me.cooper.rick.crowdcontrollerclient.activity.group
 
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
@@ -7,8 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.GroupFragment.OnListFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.activity.group.GroupFragment.OnListFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent.DummyItem
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the

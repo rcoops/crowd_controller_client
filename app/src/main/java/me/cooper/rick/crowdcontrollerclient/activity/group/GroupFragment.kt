@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity
+package me.cooper.rick.crowdcontrollerclient.activity.group
 
 import android.content.Context
 import android.os.Bundle
@@ -11,8 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent
-import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent
+import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent.DummyItem
 
 /**
  * A fragment representing a list of Items.
@@ -29,6 +29,8 @@ class GroupFragment : Fragment() {
     // TODO: Customize parameters
     private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
+
+    var adapter: MyGroupRecyclerViewAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +52,8 @@ class GroupFragment : Fragment() {
             } else {
                 view.layoutManager = GridLayoutManager(context, mColumnCount)
             }
-            view.adapter = MyGroupRecyclerViewAdapter(DummyContent.ITEMS, mListener)
+            adapter = MyGroupRecyclerViewAdapter(DummyContent.ITEMS, mListener)
+            view.adapter = adapter
         }
         return view
     }
@@ -68,6 +71,10 @@ class GroupFragment : Fragment() {
     override fun onDetach() {
         super.onDetach()
         mListener = null
+    }
+
+    fun updateView() {
+        adapter?.notifyDataSetChanged()
     }
 
     /**

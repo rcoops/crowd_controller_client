@@ -9,6 +9,7 @@
     <string name="action_sign_in">Sign in or register</string>
     <string name="action_register">Register</string>
     <string name="action_sign_in_short">Sign in</string>
+    <string name="action_get_directions">Directions</string>
 
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
@@ -38,4 +39,8 @@
     <string name="action_sign_out">Sign Out</string>
     <string name="header_app_menu">App</string>
     <string name="title_activity_group">GroupActivity</string>
+    <string name="title_activity_location">Location</string>
+
+    <string name="dummy_address_header">The Oast House</string>
+    <string name="dummy_address">The Avenue Courtyard, SpinningFields, Green Square, Manchester, M3 3AY</string>
 </resources>

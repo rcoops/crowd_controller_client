@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.dummy
+package me.cooper.rick.crowdcontrollerclient.activity.group.dummy
 
 import java.util.ArrayList
 import java.util.HashMap
@@ -17,23 +17,17 @@ object DummyContent {
      */
     val ITEMS: MutableList<DummyItem> = ArrayList()
 
-    /**
-     * A map of sample (dummy) items, by ID.
-     */
-    val ITEM_MAP: MutableMap<String, DummyItem> = HashMap()
-
     private val COUNT = 25
 
     init {
         // Add some sample items.
-        for (i in 1..COUNT) {
-            addItem(createDummyItem(i))
-        }
+//        for (i in 1..COUNT) {
+//            addItem(createDummyItem(i))
+//        }
     }
 
     private fun addItem(item: DummyItem) {
         ITEMS.add(item)
-        ITEM_MAP[item.id] = item
     }
 
     private fun createDummyItem(position: Int): DummyItem {

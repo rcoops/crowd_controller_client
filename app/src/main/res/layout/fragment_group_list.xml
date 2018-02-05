@@ -9,6 +9,6 @@
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
     app:layoutManager="LinearLayoutManager"
-    tools:context="me.cooper.rick.crowdcontrollerclient.activity.GroupFragment"
+    tools:context="me.cooper.rick.crowdcontrollerclient.activity.group.GroupFragment"
     tools:listitem="@layout/fragment_group"
     android:background="@color/colorPrimary"/>

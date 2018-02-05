@@ -1,5 +1,6 @@
-package me.cooper.rick.crowdcontrollerclient.activity
+package me.cooper.rick.crowdcontrollerclient.activity.group
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
@@ -10,10 +11,13 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_group.*
 import kotlinx.android.synthetic.main.app_bar_group.*
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.dummy.DummyContent
+import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent
+import java.util.*
 
 class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
         GroupFragment.OnListFragmentInteractionListener {
+
+    var groupFragment: GroupFragment? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,9 +30,17 @@ class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         toggle.syncState()
 
         nav_view.setNavigationItemSelectedListener(this)
-
+        groupFragment = GroupFragment()
+        val friends = me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.FRIENDS
+        btnAdd.setOnClickListener {
+            val rand = Random()
+            val index = rand.nextInt(friends.size)
+            val friend = friends[index]
+            DummyContent.ITEMS.add(DummyContent.DummyItem(index.toString(), friend.content, ""))
+            groupFragment?.updateView()
+        }
         supportFragmentManager.beginTransaction()
-                .replace(R.id.groupFragmentLayout, GroupFragment())
+                .replace(R.id.groupFragmentLayout, groupFragment)
                 .commit()
     }
 
@@ -59,23 +71,9 @@ class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.nav_camera -> {
-                // Handle the camera action
-            }
-            R.id.nav_gallery -> {
-
-            }
-            R.id.nav_slideshow -> {
-
-            }
-            R.id.nav_manage -> {
-
-            }
-            R.id.nav_share -> {
-
-            }
-            R.id.nav_send -> {
-
+            R.id.nav_location -> {
+                val intent = Intent(this, LocationActivity::class.java)
+                startActivity(intent)
             }
         }
 
