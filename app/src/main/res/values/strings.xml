@@ -43,4 +43,11 @@
 
     <string name="dummy_address_header">The Oast House</string>
     <string name="dummy_address">The Avenue Courtyard, SpinningFields, Green Square, Manchester, M3 3AY</string>
+
+    <string name="jwt_client_id">crowdcontrollerclientid</string>
+    <string name="jwt_client_secret">IKUJENFiewf8124ensdcfwfSDF</string>
+    <string name="jwt_grant_type">password</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

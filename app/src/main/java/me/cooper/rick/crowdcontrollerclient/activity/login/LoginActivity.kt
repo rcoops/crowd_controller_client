@@ -5,6 +5,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
 import android.app.LoaderManager.LoaderCallbacks
+import android.content.Context
 import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
@@ -24,10 +25,13 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import android.widget.Toast
+import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_login.*
-import me.cooper.rick.crowdcontrollerapi.dto.Message
+import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
+import me.cooper.rick.crowdcontrollerclient.auth.JwtAuthentication
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import org.springframework.http.*
 import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter
@@ -244,10 +248,21 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         username.setAdapter(adapter)
     }
 
-    private fun openActivity(response: Message) {
-        val intent = Intent(this, FriendActivity::class.java)
-        intent.putExtra("message", response.text)
-        startActivity(intent)
+    private fun openActivity(response: Token?) {
+        if (response != null) {
+            val sharedPreferences = getPreferences(Context.MODE_PRIVATE) ?: return
+            with(sharedPreferences.edit()) {
+                putString("access_token", response.accessToken)
+                commit()
+            }
+            if (response.accessToken != null) {
+
+                showProgress(true)
+                val getCitiesTask = GetCitiesTask(response.accessToken as String)
+                getCitiesTask.execute(null as Void?)
+            }
+
+        }
     }
 
     object ProfileQuery {
@@ -262,42 +277,79 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    inner class UserLoginTask internal constructor(private val username: String, private val password: String) : AsyncTask<Void, Void, Message>() {
+    inner class UserLoginTask internal constructor(
+            private val username: String,
+            private val password: String): AsyncTask<Void, Void, Token?>() {
 
-//        override fun onPreExecute() {
-//            showLoadingProgressDialog()
-//        }
-
-        override fun doInBackground(vararg params: Void): Message {
-            val url = getString(R.string.base_uri) + "/getmessage"
+        override fun doInBackground(vararg params: Void): Token? {
+            val baseTokenUrl = "${getString(R.string.base_uri)}/oauth/token"
+            val url = "$baseTokenUrl?grant_type=${getString(R.string.jwt_grant_type)}&username=$username&password=$password"
 
             // Populate the HTTP Basic Authentication header with the username and password
-            val authHeader = HttpBasicAuthentication(username, password)
+            val authHeader = HttpBasicAuthentication(
+                    getString(R.string.jwt_client_id),
+                    getString(R.string.jwt_client_secret)
+            )
             val requestHeaders = HttpHeaders()
             requestHeaders.setAuthorization(authHeader)
             requestHeaders.accept = listOf(MediaType.APPLICATION_JSON)
-
             // Create a new RestTemplate instance
             val restTemplate = RestTemplate()
             restTemplate.messageConverters.add(MappingJacksonHttpMessageConverter())
-
             return try {
                 // Make the network request
                 Log.d(TAG, url)
-                val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Any>(requestHeaders), Message::class.java)
+                val response = restTemplate.exchange(url, HttpMethod.POST, HttpEntity<Any>(requestHeaders), Token::class.java)
                 response.body
             } catch (e: HttpClientErrorException) {
                 Log.e(TAG, e.localizedMessage, e)
-                Message(0, e.statusText, e.localizedMessage)
+                null
             } catch (e: ResourceAccessException) {
                 Log.e(TAG, e.localizedMessage, e)
-                Message(0, e.javaClass.simpleName, e.localizedMessage)
+                null
             }
-
         }
 
-        override fun onPostExecute(result: Message) {
+        override fun onPostExecute(result: Token?) {
             openActivity(result)
+        }
+
+    }
+
+    /**
+     * Represents an asynchronous login/registration task used to authenticate
+     * the user.
+     */
+    inner class GetCitiesTask internal constructor(
+            private val auth: String): AsyncTask<Void, Void, String?>() {
+
+        override fun doInBackground(vararg params: Void): String? {
+            val url = "${getString(R.string.base_uri)}/springjwt/cities"
+
+            // Populate the HTTP Basic Authentication header with the username and password
+            val authHeader = JwtAuthentication(auth)
+            val requestHeaders = HttpHeaders()
+            requestHeaders.setAuthorization(authHeader)
+            requestHeaders.accept = listOf(MediaType.APPLICATION_JSON)
+            // Create a new RestTemplate instance
+            val restTemplate = RestTemplate()
+            restTemplate.messageConverters.add(MappingJacksonHttpMessageConverter())
+            return try {
+                // Make the network request
+                Log.d(TAG, url)
+                val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Any>(requestHeaders), Any::class.java)
+                response.body.toString()
+            } catch (e: HttpClientErrorException) {
+                Log.e(TAG, e.localizedMessage, e)
+                "client exception"
+            } catch (e: ResourceAccessException) {
+                Log.e(TAG, e.localizedMessage, e)
+                "resource exception"
+            }
+        }
+
+        override fun onPostExecute(result: String?) {
+            makeText(this@LoginActivity, result ?: "nothing", Toast.LENGTH_LONG).show()
         }
 
     }
