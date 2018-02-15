@@ -44,18 +44,27 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support:design:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation "com.google.android.gms:play-services-maps:11.8.0"
-    implementation 'org.codehaus.jackson:jackson-mapper-asl:1.9.13'
-    implementation 'me.cooper.rick:crowd-controller-api:1.0-SNAPSHOT'
+
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
-    implementation "android.arch.persistence.room:runtime:1.0.0"
+
+//    implementation 'com.squareup.okhttp3:okhttp:3.9.1'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.9.1'
+
     implementation('org.springframework.android:spring-android-auth:1.0.1.RELEASE') {
         exclude group: 'org.springframework', module: 'spring-core'
     }
+
+    implementation 'me.cooper.rick:crowd-controller-api:1.0-SNAPSHOT'
+
+    implementation "android.arch.persistence.room:runtime:1.0.0"
     kapt "android.arch.persistence.room:compiler:1.0.0"
+
     testImplementation 'junit:junit:4.12'
+
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }

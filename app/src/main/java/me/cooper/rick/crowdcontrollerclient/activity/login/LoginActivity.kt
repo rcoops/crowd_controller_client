@@ -37,6 +37,7 @@ import me.cooper.rick.crowdcontrollerclient.db.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.db.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import java.net.ConnectException
 import java.util.*
 
 /**
@@ -255,10 +256,10 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun openActivity(response: Token?) {
-        if (response != null) {
-            if (response.accessToken != null) {
-                SaveTokenTask(response).execute()
+    private fun openActivity(token: Token?) {
+        if (token != null) {
+            if (token.accessToken != null) {
+                SaveTokenTask(token).execute()
                 val intent = Intent(this, TestActivity::class.java)
                 intent.putExtra("username", username.text.toString())
                 startActivity(intent)
@@ -300,13 +301,17 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
             )
-            val response = userClient
-                    .getToken(getString(R.string.jwt_grant_type), username, password)
-                    .execute()
 
-            //TODO error checking
+            // TODO ERROR HANDLING
+            val response = try {
+                userClient
+                        .getToken(getString(R.string.jwt_grant_type), username, password)
+                        .execute()
+            } catch (e: ConnectException) {
+                null
+            }
 
-            return response.body()
+            return response?.body()
         }
 
         override fun onPostExecute(result: Token?) {
