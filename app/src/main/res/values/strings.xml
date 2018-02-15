@@ -5,6 +5,9 @@
     <!-- Strings related to login -->
     <string name="prompt_username">Username</string>
     <string name="prompt_password">Password</string>
+    <string name="prompt_password_confirm">Confirm Password</string>
+    <string name="prompt_email">Email (optional)</string>
+    <string name="prompt_mobile">Mobile Number</string>
 
     <string name="action_sign_in">Sign in or register</string>
     <string name="action_register">Register</string>
@@ -50,4 +53,7 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_test">TestActivity</string>
+    <string name="title_activity_auth">AuthActivity</string>
+    <string name="header_register">Register</string>
 </resources>

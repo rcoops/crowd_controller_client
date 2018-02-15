@@ -34,14 +34,22 @@
         <activity
             android:name=".activity.friend.FriendActivity"
             android:label="@string/title_activity_friend"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activity.group.GroupActivity"
             android:label="@string/title_activity_group"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activity.group.LocationActivity"
             android:label="@string/title_activity_location"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activity.TestActivity"
+            android:label="@string/title_activity_test"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".auth.AuthActivity"
+            android:label="@string/title_activity_auth"
             android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 

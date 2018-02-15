@@ -5,7 +5,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
 import android.app.LoaderManager.LoaderCallbacks
-import android.content.Context
+import android.arch.persistence.room.Room
 import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
@@ -20,30 +20,30 @@ import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
-import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_login.*
 import me.cooper.rick.crowdcontrollerapi.dto.Token
+import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
-import me.cooper.rick.crowdcontrollerclient.auth.JwtAuthentication
+import me.cooper.rick.crowdcontrollerclient.activity.TestActivity
+import me.cooper.rick.crowdcontrollerclient.auth.LoginClient
+import me.cooper.rick.crowdcontrollerclient.auth.UserClient
+import me.cooper.rick.crowdcontrollerclient.db.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.db.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
-import org.springframework.http.*
-import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter
-import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.ResourceAccessException
-import org.springframework.web.client.RestTemplate
+import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import java.util.*
 
 /**
  * A login screen that offers login via email/password.
  */
-class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
+class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
+        RegistrationFragment.OnRegistrationListener {
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -69,6 +69,13 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         btnEmailSignIn.setOnClickListener { attemptLogin() }
 
         OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txtHeader)
+
+        btnRegister.setOnClickListener {
+            supportFragmentManager.beginTransaction()
+                    .add(R.id.content, RegistrationFragment())
+                    .addToBackStack("reg")
+                    .commit()
+        }
     }
 
     private fun populateAutoComplete() {
@@ -250,19 +257,24 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
 
     private fun openActivity(response: Token?) {
         if (response != null) {
-            val sharedPreferences = getPreferences(Context.MODE_PRIVATE) ?: return
-            with(sharedPreferences.edit()) {
-                putString("access_token", response.accessToken)
-                commit()
-            }
             if (response.accessToken != null) {
-
-                showProgress(true)
-                val getCitiesTask = GetCitiesTask(response.accessToken as String)
-                getCitiesTask.execute(null as Void?)
+                SaveTokenTask(response).execute()
+                val intent = Intent(this, TestActivity::class.java)
+                intent.putExtra("username", username.text.toString())
+                startActivity(intent)
             }
 
         }
+    }
+
+    private fun listUsers(users: List<UserDto>) {
+        val userList = users.joinToString("\n")
+        makeText(this, userList, LENGTH_LONG).show()
+    }
+
+    override fun onFragmentInteraction(userDto: UserDto) {
+        supportFragmentManager.popBackStackImmediate()
+        listUsers(listOf(userDto))
     }
 
     object ProfileQuery {
@@ -282,32 +294,19 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
             private val password: String): AsyncTask<Void, Void, Token?>() {
 
         override fun doInBackground(vararg params: Void): Token? {
-            val baseTokenUrl = "${getString(R.string.base_uri)}/oauth/token"
-            val url = "$baseTokenUrl?grant_type=${getString(R.string.jwt_grant_type)}&username=$username&password=$password"
-
-            // Populate the HTTP Basic Authentication header with the username and password
-            val authHeader = HttpBasicAuthentication(
+            val userClient = ServiceGenerator.createService(
+                    LoginClient::class.java,
+//                    "nothing",
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
             )
-            val requestHeaders = HttpHeaders()
-            requestHeaders.setAuthorization(authHeader)
-            requestHeaders.accept = listOf(MediaType.APPLICATION_JSON)
-            // Create a new RestTemplate instance
-            val restTemplate = RestTemplate()
-            restTemplate.messageConverters.add(MappingJacksonHttpMessageConverter())
-            return try {
-                // Make the network request
-                Log.d(TAG, url)
-                val response = restTemplate.exchange(url, HttpMethod.POST, HttpEntity<Any>(requestHeaders), Token::class.java)
-                response.body
-            } catch (e: HttpClientErrorException) {
-                Log.e(TAG, e.localizedMessage, e)
-                null
-            } catch (e: ResourceAccessException) {
-                Log.e(TAG, e.localizedMessage, e)
-                null
-            }
+            val response = userClient
+                    .getToken(getString(R.string.jwt_grant_type), username, password)
+                    .execute()
+
+            //TODO error checking
+
+            return response.body()
         }
 
         override fun onPostExecute(result: Token?) {
@@ -320,37 +319,46 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    inner class GetCitiesTask internal constructor(
-            private val auth: String): AsyncTask<Void, Void, String?>() {
+    inner class UsersTask internal constructor(
+            private val token: String): AsyncTask<Void, Void, List<UserDto>>() {
 
-        override fun doInBackground(vararg params: Void): String? {
-            val url = "${getString(R.string.base_uri)}/springjwt/cities"
+        override fun doInBackground(vararg params: Void): List<UserDto> {
+            val userClient = ServiceGenerator.createService(
+                    UserClient::class.java, token
+            )
+            val response = userClient
+                    .users()
+                    .execute()
 
-            // Populate the HTTP Basic Authentication header with the username and password
-            val authHeader = JwtAuthentication(auth)
-            val requestHeaders = HttpHeaders()
-            requestHeaders.setAuthorization(authHeader)
-            requestHeaders.accept = listOf(MediaType.APPLICATION_JSON)
-            // Create a new RestTemplate instance
-            val restTemplate = RestTemplate()
-            restTemplate.messageConverters.add(MappingJacksonHttpMessageConverter())
-            return try {
-                // Make the network request
-                Log.d(TAG, url)
-                val response = restTemplate.exchange(url, HttpMethod.GET, HttpEntity<Any>(requestHeaders), Any::class.java)
-                response.body.toString()
-            } catch (e: HttpClientErrorException) {
-                Log.e(TAG, e.localizedMessage, e)
-                "client exception"
-            } catch (e: ResourceAccessException) {
-                Log.e(TAG, e.localizedMessage, e)
-                "resource exception"
-            }
+            //TODO error checking
+
+            return response.body() ?: emptyList()
         }
 
-        override fun onPostExecute(result: String?) {
-            makeText(this@LoginActivity, result ?: "nothing", Toast.LENGTH_LONG).show()
+        override fun onPostExecute(result: List<UserDto>) {
+            listUsers(result)
         }
 
     }
+
+    /**
+     * Represents an asynchronous login/registration task used to authenticate
+     * the user.
+     */
+    inner class SaveTokenTask internal constructor(
+            token: Token): AsyncTask<Void, Void, Unit>() {
+
+        private val token: Token = token.copy(tokenType = token.tokenType.capitalize())
+
+        override fun doInBackground(vararg params: Void) {
+            val db = Room.databaseBuilder(this@LoginActivity, AppDatabase::class.java, "app-db").build()
+            val dao = db.tokenDao()
+            val savedToken = dao.getToken()
+            if (savedToken != null) dao.delete(savedToken)
+            dao.insert(TokenEntity.fromDto(token))
+        }
+
+    }
+
+
 }

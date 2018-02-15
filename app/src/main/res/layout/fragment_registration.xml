@@ -1,6 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
@@ -10,7 +9,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="me.cooper.rick.crowdcontrollerclient.activity.login.LoginActivity">
+    tools:context="me.cooper.rick.crowdcontrollerclient.activity.login.RegistrationFragment">
 
     <!-- Login progress -->
     <ProgressBar
@@ -22,12 +21,12 @@
         android:visibility="gone" />
 
     <ScrollView
-        android:id="@+id/login_form"
+        android:id="@+id/registrationForm"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <LinearLayout
-            android:id="@+id/email_login_form"
+            android:id="@+id/emailRegistrationForm"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -38,14 +37,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/text_margin"
                 android:layout_marginTop="@dimen/text_margin"
-                android:fontFamily="sans-serif"
-                android:lines="2"
                 android:padding="2dp"
                 android:shadowColor="@android:color/white"
                 android:shadowDx="-1"
                 android:shadowDy="-1"
                 android:shadowRadius="2"
-                android:text="@string/app_name"
+                android:text="@string/header_register"
                 android:textAlignment="center"
                 android:textColor="@color/colorPrimaryLight"
                 android:textSize="@dimen/text_header_size" />
@@ -55,8 +52,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/text_margin"
                 android:layout_marginTop="@dimen/text_margin">
-
-                <AutoCompleteTextView
+                <EditText
                     android:id="@+id/username"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -85,44 +81,70 @@
                     android:maxLines="1"
                     android:singleLine="true" />
 
-                <Button
-                    style="@style/AppTheme.LinkButton"
-                    android:layout_width="wrap_content"
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/text_margin"
+                android:layout_marginTop="@dimen/text_margin">
+
+                <EditText
+                    android:id="@+id/passwordConfirm"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/action_reset_password" />
+                    android:hint="@string/prompt_password_confirm"
+                    android:imeActionId="6"
+                    android:imeActionLabel="@string/action_sign_in_short"
+                    android:imeOptions="actionUnspecified"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:singleLine="true" />
+
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/text_margin"
+                android:layout_marginTop="@dimen/text_margin">
+                <EditText
+                    android:id="@+id/email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/prompt_email"
+                    android:inputType="textEmailAddress"
+                    android:maxLines="1"
+                    android:singleLine="true" />
+
+            </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/text_margin"
+                android:layout_marginTop="@dimen/text_margin">
+                <EditText
+                    android:id="@+id/mobileNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/prompt_mobile"
+                    android:inputType="phone"
+                    android:maxLines="1"
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
             <Button
-                android:id="@+id/btnEmailSignIn"
+                android:id="@+id/btnRegisterAccount"
                 style="@style/AppTheme.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/text_margin"
                 android:layout_marginTop="@dimen/btn_login_margin"
-                android:text="@string/action_sign_in_short"
+                android:text="@string/action_register"
                 android:textColor="@color/colorPrimaryLight"
                 android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:gravity="start"
-                    android:text="@string/txt_register" />
-
-                <Button
-                    android:id="@+id/btnRegister"
-                    style="@style/AppTheme.LinkButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/action_register" />
-            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
