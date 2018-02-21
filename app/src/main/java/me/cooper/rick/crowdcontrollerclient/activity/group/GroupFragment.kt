@@ -94,7 +94,7 @@ class GroupFragment : Fragment() {
     companion object {
 
         // TODO: Customize parameter argument names
-        private val ARG_COLUMN_COUNT = "column-count"
+        private val ARG_COLUMN_COUNT = "column-isToken"
 
         // TODO: Customize parameter initialization
         fun newInstance(columnCount: Int): GroupFragment {

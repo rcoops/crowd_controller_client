@@ -20,6 +20,7 @@ import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
@@ -32,9 +33,10 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.TestActivity
 import me.cooper.rick.crowdcontrollerclient.auth.LoginClient
-import me.cooper.rick.crowdcontrollerclient.auth.UserClient
-import me.cooper.rick.crowdcontrollerclient.db.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.db.TokenEntity
+import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
+import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
+import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import java.net.ConnectException
@@ -70,7 +72,6 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         btnEmailSignIn.setOnClickListener { attemptLogin() }
 
         OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txtHeader)
-
         btnRegister.setOnClickListener {
             supportFragmentManager.beginTransaction()
                     .add(R.id.content, RegistrationFragment())
@@ -138,7 +139,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         var cancel = false
         var focusView: View? = null
 
-        // Check for a valid password, if the user entered one.
+        // Check for a valid password, if the baseUserEntity entered one.
         if (!TextUtils.isEmpty(passwordStr) && !isPasswordValid(passwordStr)) {
             password.error = getString(R.string.error_invalid_password)
             focusView = password
@@ -163,7 +164,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             focusView?.requestFocus()
         } else {
             // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
+            // perform the baseUserEntity login attempt.
             showProgress(true)
             mAuthTask = UserLoginTask(usernameStr, passwordStr)
             mAuthTask!!.execute(null as Void?)
@@ -220,7 +221,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreateLoader(i: Int, bundle: Bundle?): Loader<Cursor> {
         return CursorLoader(this,
-                // Retrieve data rows for the device user's 'profile' contact.
+                // Retrieve data rows for the device baseUserEntity's 'profile' contact.
                 Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
                         ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
 
@@ -229,7 +230,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
                 .CONTENT_ITEM_TYPE),
 
                 // Show primary email addresses first. Note that there won't be
-                // a primary email address if the user hasn't specified one.
+                // a primary email address if the baseUserEntity hasn't specified one.
                 ContactsContract.Contacts.Data.IS_PRIMARY + " DESC")
     }
 
@@ -288,7 +289,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
 
     /**
      * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * the baseUserEntity.
      */
     inner class UserLoginTask internal constructor(
             private val username: String,
@@ -322,33 +323,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
 
     /**
      * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    inner class UsersTask internal constructor(
-            private val token: String): AsyncTask<Void, Void, List<UserDto>>() {
-
-        override fun doInBackground(vararg params: Void): List<UserDto> {
-            val userClient = ServiceGenerator.createService(
-                    UserClient::class.java, token
-            )
-            val response = userClient
-                    .users()
-                    .execute()
-
-            //TODO error checking
-
-            return response.body() ?: emptyList()
-        }
-
-        override fun onPostExecute(result: List<UserDto>) {
-            listUsers(result)
-        }
-
-    }
-
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * the baseUserEntity.
      */
     inner class SaveTokenTask internal constructor(
             token: Token): AsyncTask<Void, Void, Unit>() {
@@ -356,11 +331,20 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         private val token: Token = token.copy(tokenType = token.tokenType.capitalize())
 
         override fun doInBackground(vararg params: Void) {
-            val db = Room.databaseBuilder(this@LoginActivity, AppDatabase::class.java, "app-db").build()
-            val dao = db.tokenDao()
-            val savedToken = dao.getToken()
-            if (savedToken != null) dao.delete(savedToken)
-            dao.insert(TokenEntity.fromDto(token))
+            val db = AppDatabase.getInstance(this@LoginActivity)
+            val tokenDao = db.tokenDao()
+            val userDao = db.userDao()
+            val friendDao = db.friendsDao()
+            tokenDao.clear()
+            userDao.clear()
+            friendDao.clear()
+
+            tokenDao.insert(TokenEntity.fromDto(token))
+            userDao.insert(UserEntity.fromDto(token.user!!))
+            friendDao.insertAll(FriendEntity.fromDto(token.user!!))
+            val friends = friendDao.select()
+            val user = userDao.select()
+            Log.d("USERS", userDao.select().toString())
         }
 
     }

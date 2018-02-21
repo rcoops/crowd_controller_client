@@ -26,18 +26,25 @@ class TestActivity : AppCompatActivity() {
                     .setAction("Action", null).show()
         }
         RetrieveTokenTask(this, { this.token = "${it.tokenType} ${it.accessToken}" }).execute()
-        btnTest.setOnClickListener {
+        btnUser.setOnClickListener {
             UserTask(token!!, intent.getStringExtra("username")).execute()
+        }
+        btnUsers.setOnClickListener {
+            UsersTask(token!!).execute()
         }
     }
 
-    private fun listUsers(user: UserDto) {
+    private fun displayUser(user: UserDto) {
         Toast.makeText(this, user.toString(), Toast.LENGTH_LONG).show()
+    }
+
+    private fun listUsers(users: List<UserDto>?) {
+        Toast.makeText(this, users?.joinToString(), Toast.LENGTH_LONG).show()
     }
 
     /**
      * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * the baseUserEntity.
      */
     inner class UserTask internal constructor(
             private val token: String,
@@ -57,6 +64,31 @@ class TestActivity : AppCompatActivity() {
         }
 
         override fun onPostExecute(result: UserDto) {
+            displayUser(result)
+        }
+
+    }
+    /**
+     * Represents an asynchronous login/registration task used to authenticate
+     * the baseUserEntity.
+     */
+    inner class UsersTask internal constructor(
+            private val token: String): AsyncTask<Void, Void, List<UserDto>?>() {
+
+        override fun doInBackground(vararg params: Void): List<UserDto>? {
+            val userClient = ServiceGenerator.createService(
+                    UserClient::class.java, token
+            )
+            val response = userClient
+                    .users()
+                    .execute()
+
+            //TODO error checking
+
+            return response.body()
+        }
+
+        override fun onPostExecute(result: List<UserDto>?) {
             listUsers(result)
         }
 

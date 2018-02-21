@@ -38,6 +38,7 @@ object ServiceGenerator {
             val interceptor = AuthenticationInterceptor(authToken!!)
 
             if (!httpClient.interceptors().contains(interceptor)) {
+                httpClient.interceptors().removeAll { it.javaClass == AuthenticationInterceptor::class.java }
                 httpClient.addInterceptor(interceptor)
             }
         }

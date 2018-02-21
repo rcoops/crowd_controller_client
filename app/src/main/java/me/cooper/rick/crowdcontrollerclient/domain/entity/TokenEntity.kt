@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.db
+package me.cooper.rick.crowdcontrollerclient.domain.entity
 
 import android.arch.persistence.room.ColumnInfo
 import android.arch.persistence.room.Entity

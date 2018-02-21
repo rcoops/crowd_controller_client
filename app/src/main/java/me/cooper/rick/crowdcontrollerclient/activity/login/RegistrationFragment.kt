@@ -39,8 +39,6 @@ class RegistrationFragment : Fragment() {
             mParam1 = arguments.getString(ARG_PARAM1)
             mParam2 = arguments.getString(ARG_PARAM2)
         }
-        RetrieveTokenTask(this.activity, { this.token = "${it.tokenType} ${it.accessToken}" })
-                .execute()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
@@ -53,7 +51,7 @@ class RegistrationFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         btnRegisterAccount.setOnClickListener {
             // TODO validate password
-            RegisterTask(token!!, createDto())
+            RegisterTask(createDto()).execute()
         }
 
     }
@@ -110,15 +108,14 @@ class RegistrationFragment : Fragment() {
 
     /**
      * Represents an asynchronous login/registration task used to authenticate
-     * the user.
+     * the baseUserEntity.
      */
     inner class RegisterTask internal constructor(
-            private val token: String,
             private val registrationDto: RegistrationDto) : AsyncTask<Void, Void, UserDto>() {
 
         override fun doInBackground(vararg params: Void): UserDto {
             val userClient = ServiceGenerator.createService(
-                    UserClient::class.java, token
+                    UserClient::class.java
             )
             val response = userClient
                     .create(registrationDto)

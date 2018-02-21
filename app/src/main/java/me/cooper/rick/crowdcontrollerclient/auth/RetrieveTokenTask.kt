@@ -4,8 +4,8 @@ import android.app.Activity
 import android.arch.persistence.room.Room
 import android.os.AsyncTask
 import android.os.Build
-import me.cooper.rick.crowdcontrollerclient.db.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.db.TokenEntity
+import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import java.lang.ref.WeakReference
 
 class RetrieveTokenTask(activity: Activity,
@@ -25,7 +25,7 @@ class RetrieveTokenTask(activity: Activity,
                 .build()
 
         val dao = db.tokenDao()
-        val token = dao.getToken()
+        val token = dao.select()
         return token
     }
 

@@ -11,7 +11,7 @@ interface UserClient {
     fun me(@Path("username") username: String): Call<UserDto>
 
     @GET("/users")
-    fun users(): Call<List<UserDto>>
+    fun users(): Call<List<UserDto>?>
 
     @POST("/users")
     fun create(@Body registrationDto: RegistrationDto): Call<UserDto>
