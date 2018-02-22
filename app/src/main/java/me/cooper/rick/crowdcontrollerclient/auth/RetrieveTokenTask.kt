@@ -16,7 +16,7 @@ class RetrieveTokenTask(activity: Activity,
 
     override fun doInBackground(vararg params: Void): TokenEntity? {
         val activity = weakActivity.get()
-        if (isValid(activity)) return null
+        if (isInvalid(activity)) return null
 
         val db = Room.databaseBuilder(
                 activity!!.applicationContext,
@@ -33,7 +33,7 @@ class RetrieveTokenTask(activity: Activity,
         if (result != null) func(result)
     }
 
-    private fun isValid(activity: Activity?): Boolean {
+    private fun isInvalid(activity: Activity?): Boolean {
         return activity == null || activity.isFinishing ||
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed
     }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
+import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_test.*
 import kotlinx.android.synthetic.main.content_test.*
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
@@ -27,7 +28,7 @@ class TestActivity : AppCompatActivity() {
         }
         RetrieveTokenTask(this, { this.token = "${it.tokenType} ${it.accessToken}" }).execute()
         btnUser.setOnClickListener {
-            UserTask(token!!, intent.getStringExtra("username")).execute()
+            UserTask(token!!, intent.getLongExtra("id", 1L)).execute()
         }
         btnUsers.setOnClickListener {
             UsersTask(token!!).execute()
@@ -35,11 +36,11 @@ class TestActivity : AppCompatActivity() {
     }
 
     private fun displayUser(user: UserDto) {
-        Toast.makeText(this, user.toString(), Toast.LENGTH_LONG).show()
+        makeText(this, user.toString(), Toast.LENGTH_LONG).show()
     }
 
     private fun listUsers(users: List<UserDto>?) {
-        Toast.makeText(this, users?.joinToString(), Toast.LENGTH_LONG).show()
+        makeText(this, users?.joinToString(), Toast.LENGTH_LONG).show()
     }
 
     /**
@@ -48,14 +49,14 @@ class TestActivity : AppCompatActivity() {
      */
     inner class UserTask internal constructor(
             private val token: String,
-            private val username: String): AsyncTask<Void, Void, UserDto>() {
+            private val userId: Long): AsyncTask<Void, Void, UserDto>() {
 
         override fun doInBackground(vararg params: Void): UserDto {
             val userClient = ServiceGenerator.createService(
                     UserClient::class.java, token
             )
             val response = userClient
-                    .me(username)
+                    .user(userId)
                     .execute()
 
             //TODO error checking

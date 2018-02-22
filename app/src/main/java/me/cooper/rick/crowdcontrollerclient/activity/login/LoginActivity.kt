@@ -262,7 +262,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             if (token.accessToken != null) {
                 SaveTokenTask(token).execute()
                 val intent = Intent(this, TestActivity::class.java)
-                intent.putExtra("username", username.text.toString())
+                intent.putExtra("id", token.user?.id)
                 startActivity(intent)
             }
 
