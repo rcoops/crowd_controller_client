@@ -12,7 +12,7 @@ import me.cooper.rick.crowdcontrollerclient.domain.repository.TokenDao
 import me.cooper.rick.crowdcontrollerclient.domain.repository.UserDao
 
 
-@Database(entities = [TokenEntity::class, UserEntity::class, FriendEntity::class], version = 2)
+@Database(entities = [TokenEntity::class, UserEntity::class, FriendEntity::class], version = 8)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun tokenDao(): TokenDao

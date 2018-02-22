@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.auth
+package me.cooper.rick.crowdcontrollerclient.api
 
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto

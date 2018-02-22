@@ -9,7 +9,7 @@ import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import java.lang.ref.WeakReference
 
 class RetrieveTokenTask(activity: Activity,
-                        private val func: (TokenEntity) -> Unit) :
+                        private val function: (TokenEntity) -> Unit) :
         AsyncTask<Void, Void, TokenEntity?>() {
 
     private val weakActivity = WeakReference<Activity>(activity)
@@ -17,20 +17,14 @@ class RetrieveTokenTask(activity: Activity,
     override fun doInBackground(vararg params: Void): TokenEntity? {
         val activity = weakActivity.get()
         if (isInvalid(activity)) return null
-
-        val db = Room.databaseBuilder(
-                activity!!.applicationContext,
-                AppDatabase::class.java,
-                "app-db")
-                .build()
+        val db = AppDatabase.getInstance(activity!!.applicationContext)
 
         val dao = db.tokenDao()
-        val token = dao.select()
-        return token
+        return dao.select()
     }
 
     override fun onPostExecute(result: TokenEntity?) {
-        if (result != null) func(result)
+        if (result != null) function(result)
     }
 
     private fun isInvalid(activity: Activity?): Boolean {

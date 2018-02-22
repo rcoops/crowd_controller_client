@@ -5,7 +5,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
 import android.app.LoaderManager.LoaderCallbacks
-import android.arch.persistence.room.Room
 import android.content.CursorLoader
 import android.content.Intent
 import android.content.Loader
@@ -31,8 +30,8 @@ import kotlinx.android.synthetic.main.activity_login.*
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.TestActivity
-import me.cooper.rick.crowdcontrollerclient.auth.LoginClient
+import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
+import me.cooper.rick.crowdcontrollerclient.api.LoginClient
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
@@ -58,6 +57,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        CheckTokenTask().execute()
         setContentView(R.layout.activity_login)
         // Set up the login form.
         populateAutoComplete()
@@ -257,16 +257,8 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun openActivity(token: Token?) {
-        if (token != null) {
-            if (token.accessToken != null) {
-                SaveTokenTask(token).execute()
-                val intent = Intent(this, TestActivity::class.java)
-                intent.putExtra("id", token.user?.id)
-                startActivity(intent)
-            }
-
-        }
+    private fun openActivity(isToken: Boolean) {
+        if (isToken) startActivity(Intent(this, FriendActivity::class.java))
     }
 
     private fun listUsers(users: List<UserDto>) {
@@ -298,25 +290,40 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         override fun doInBackground(vararg params: Void): Token? {
             val userClient = ServiceGenerator.createService(
                     LoginClient::class.java,
-//                    "nothing",
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
             )
 
             // TODO ERROR HANDLING
             val response = try {
-                userClient
-                        .getToken(getString(R.string.jwt_grant_type), username, password)
-                        .execute()
+                userClient.getToken(getString(R.string.jwt_grant_type), username, password).execute()
             } catch (e: ConnectException) {
                 null
             }
 
-            return response?.body()
+            val token = response?.body()
+            if (token != null) {
+                val db = AppDatabase.getInstance(this@LoginActivity)
+                val tokenDao = db.tokenDao()
+                val userDao = db.userDao()
+                val friendDao = db.friendsDao()
+                tokenDao.clear()
+                userDao.clear()
+                friendDao.clear()
+
+                tokenDao.insert(TokenEntity.fromDto(token))
+                userDao.insert(UserEntity.fromDto(token.user!!))
+                friendDao.insertAll(FriendEntity.fromDto(token.user!!))
+
+                Log.d("TOKEN", tokenDao.select().toString())
+                Log.d("USER", userDao.select().toString())
+                Log.d("USER", friendDao.select().joinToString(", ", "Friends[", "]"))
+            }
+            return token
         }
 
-        override fun onPostExecute(result: Token?) {
-            openActivity(result)
+        override fun onPostExecute(token: Token?) {
+            openActivity(token != null)
         }
 
     }
@@ -345,6 +352,24 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             val friends = friendDao.select()
             val user = userDao.select()
             Log.d("USERS", userDao.select().toString())
+        }
+
+    }
+
+    /**
+     * Represents an asynchronous login/registration task used to authenticate
+     * the baseUserEntity.
+     */
+    inner class CheckTokenTask: AsyncTask<Void, Void, Boolean>() {
+
+        override fun doInBackground(vararg params: Void): Boolean {
+            val db = AppDatabase.getInstance(this@LoginActivity)
+            val tokenDao = db.tokenDao()
+            return tokenDao.select() != null
+        }
+
+        override fun onPostExecute(result: Boolean) {
+            openActivity(result)
         }
 
     }

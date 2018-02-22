@@ -5,13 +5,16 @@ import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
+import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_test.*
 import kotlinx.android.synthetic.main.content_test.*
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.auth.RetrieveTokenTask
-import me.cooper.rick.crowdcontrollerclient.auth.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.UserClient
+import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 
 class TestActivity : AppCompatActivity() {
@@ -27,45 +30,45 @@ class TestActivity : AppCompatActivity() {
                     .setAction("Action", null).show()
         }
         RetrieveTokenTask(this, { this.token = "${it.tokenType} ${it.accessToken}" }).execute()
-        btnUser.setOnClickListener {
-            UserTask(token!!, intent.getLongExtra("id", 1L)).execute()
-        }
-        btnUsers.setOnClickListener {
-            UsersTask(token!!).execute()
-        }
+        btnUser.setOnClickListener { UserTask().execute() }
+        btnUsers.setOnClickListener { UsersTask(token!!).execute() }
     }
 
     private fun displayUser(user: UserDto) {
-        makeText(this, user.toString(), Toast.LENGTH_LONG).show()
+        makeText(this, user.toString(), LENGTH_LONG).show()
     }
 
     private fun listUsers(users: List<UserDto>?) {
-        makeText(this, users?.joinToString(), Toast.LENGTH_LONG).show()
+        makeText(this, users?.joinToString(), LENGTH_LONG).show()
     }
 
     /**
      * Represents an asynchronous login/registration task used to authenticate
      * the baseUserEntity.
      */
-    inner class UserTask internal constructor(
-            private val token: String,
-            private val userId: Long): AsyncTask<Void, Void, UserDto>() {
+    inner class UserTask: AsyncTask<Void, Void, UserDto>() {
+        var db: AppDatabase? = null
 
-        override fun doInBackground(vararg params: Void): UserDto {
+        override fun doInBackground(vararg params: Void): UserDto? {
+            db = AppDatabase.getInstance(this@TestActivity)
             val userClient = ServiceGenerator.createService(
-                    UserClient::class.java, token
+                    UserClient::class.java, db!!.tokenDao().select()!!.toTokenString()
             )
+
             val response = userClient
-                    .user(userId)
+                    .user(db!!.userDao().select()!!.id!!)
                     .execute()
 
             //TODO error checking
 
-            return response.body() ?: UserDto()
+            return response.body()
         }
 
-        override fun onPostExecute(result: UserDto) {
-            displayUser(result)
+        override fun onPostExecute(result: UserDto?) {
+            if (result != null) {
+                db?.userDao()?.insert(UserEntity.fromDto(result))
+                displayUser(result)
+            }
         }
 
     }

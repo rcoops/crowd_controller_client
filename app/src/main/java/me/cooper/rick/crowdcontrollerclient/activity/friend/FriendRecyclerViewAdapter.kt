@@ -6,10 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnListFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the
@@ -17,18 +19,19 @@ import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.D
  * TODO: Replace the implementation with code for your data type.
  */
 class FriendRecyclerViewAdapter(
-        private val mValues: List<DummyItem>,
-        private val mListener: OnListFragmentInteractionListener?): RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
+        private val mValues: List<FriendDto>,
+        private val mListener: OnListFragmentInteractionListener?
+): RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.getContext())
+        val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.fragment_friend, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.mItem = mValues[position]
-        holder.mContentView.text = mValues[position].content
+        holder.mContentView.text = mValues[position].username
 
         holder.mView.setOnClickListener {
             mListener?.onListFragmentInteraction(holder.mItem!!)
@@ -42,7 +45,7 @@ class FriendRecyclerViewAdapter(
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
         val mContentView: TextView = mView.findViewById(R.id.content)
         val btnContextMenu: FloatingActionButton = mView.findViewById(R.id.btnContextMenu)
-        var mItem: DummyItem? = null
+        var mItem: FriendDto? = null
 
         init {
             btnContextMenu.setOnClickListener {

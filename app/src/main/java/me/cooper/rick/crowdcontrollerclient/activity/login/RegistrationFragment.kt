@@ -12,8 +12,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.auth.RetrieveTokenTask
-import me.cooper.rick.crowdcontrollerclient.auth.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.UserClient
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 
 /**

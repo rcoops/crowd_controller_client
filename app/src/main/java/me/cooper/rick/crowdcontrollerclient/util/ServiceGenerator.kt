@@ -1,6 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.util
 
+import android.content.res.Resources
 import android.text.TextUtils
+import me.cooper.rick.crowdcontrollerclient.App
+import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.auth.AuthenticationInterceptor
 import okhttp3.Credentials
 import retrofit2.converter.gson.GsonConverterFactory
@@ -11,14 +14,13 @@ import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
 
 object ServiceGenerator {
 
-    // http://stb098.edu.csesalford.com
-    private val API_BASE_URL = "http://2.102.15.226"
+    private val API_BASE_URL = App.context?.getString(R.string.base_uri)
     private val httpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().setLevel(BODY))
 
 
     private val builder = Retrofit.Builder()
-            .baseUrl(API_BASE_URL)
+            .baseUrl(API_BASE_URL?:"http://localhost:9098")
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient.build())
 

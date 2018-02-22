@@ -9,10 +9,9 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-
+import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.DummyItem
+import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 
 /**
  * A fragment representing a list of Items.
@@ -29,10 +28,13 @@ class FriendFragment : Fragment() {
     // TODO: Customize parameters
     private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
+    private var friends: MutableList<FriendDto> = mutableListOf()
+    var adapter: FriendRecyclerViewAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        friends = (activity as FriendActivity).friends
         if (arguments != null) {
             mColumnCount = arguments.getInt(ARG_COLUMN_COUNT)
         }
@@ -41,7 +43,6 @@ class FriendFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val view = inflater!!.inflate(R.layout.fragment_friend_list, container, false)
-
         // Set the adapter
         if (view is RecyclerView) {
             val context = view.getContext()
@@ -50,7 +51,8 @@ class FriendFragment : Fragment() {
             } else {
                 view.layoutManager = GridLayoutManager(context, mColumnCount)
             }
-            view.adapter = FriendRecyclerViewAdapter(DummyContent.FRIENDS, mListener)
+            adapter = FriendRecyclerViewAdapter(friends, mListener)
+            view.adapter = adapter
         }
         return view
     }
@@ -70,6 +72,8 @@ class FriendFragment : Fragment() {
         mListener = null
     }
 
+
+
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -81,7 +85,7 @@ class FriendFragment : Fragment() {
      */
     interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        fun onListFragmentInteraction(item: DummyItem)
+        fun onListFragmentInteraction(item: FriendDto)
     }
 
     companion object {

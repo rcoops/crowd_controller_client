@@ -2,6 +2,7 @@ package me.cooper.rick.crowdcontrollerclient.domain.entity
 
 import android.arch.persistence.room.Entity
 import android.arch.persistence.room.ForeignKey
+import android.arch.persistence.room.ForeignKey.CASCADE
 import android.arch.persistence.room.PrimaryKey
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
@@ -10,13 +11,19 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
         foreignKeys = [
             ForeignKey(entity = UserEntity::class,
                     parentColumns = ["id"],
-                    childColumns = ["userId"])
+                    childColumns = ["userId"],
+                    onDelete = CASCADE)
         ])
-class FriendEntity(@PrimaryKey(autoGenerate = true) var id: Long = -1,
-                   var userId: Long = -1,
-                   var tag: String = "",
-                   var isInviter: Boolean = false,
-                   var activated: Boolean = false) {
+data class FriendEntity(@PrimaryKey(autoGenerate = true) var id: Long? = null,
+                        var userId: Long = -1,
+                        var friendId: Long = -1,
+                        var username: String = "",
+                        var isInviter: Boolean = false,
+                        var activated: Boolean = false) {
+
+    fun toDto(): FriendDto {
+        return FriendDto(friendId, username, isInviter, activated)
+    }
 
     companion object {
 
@@ -24,9 +31,11 @@ class FriendEntity(@PrimaryKey(autoGenerate = true) var id: Long = -1,
             return userDto.friends.map { FriendEntity.fromDto(userDto.id, it) }.toSet()
         }
 
-        private fun fromDto(userId: Long, dto: FriendDto): FriendEntity {
-            return FriendEntity(userId = userId,
-                    tag = dto.tag,
+        fun fromDto(userId: Long, dto: FriendDto): FriendEntity {
+            return FriendEntity(
+                    userId = userId,
+                    friendId = dto.id,
+                    username = dto.username,
                     isInviter = dto.isInviter,
                     activated = dto.activated)
         }
