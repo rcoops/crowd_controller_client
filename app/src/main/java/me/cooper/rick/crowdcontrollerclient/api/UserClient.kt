@@ -25,10 +25,10 @@ interface UserClient {
 
     @PUT("/users/{userId}/friends/{friendIdentifier}")
     fun addFriend(@Path("userId") userId: Long,
-                  @Path("friendIdentifier") friendIdentifier: String): Call<UserDto>
+                  @Path("friendIdentifier") friendIdentifier: String): Call<Set<FriendDto>>
 
     @PUT("/users/{userId}/friends/{friendId}/activate")
     fun acceptFriendRequest(@Path("userId") userId: Long,
-                            @Path("friendId") friendId: Long): Call<UserDto>
+                            @Path("friendId") friendId: Long): Call<Set<FriendDto>>
 
 }

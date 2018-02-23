@@ -30,6 +30,7 @@ import kotlinx.android.synthetic.main.activity_login.*
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
 import me.cooper.rick.crowdcontrollerclient.api.LoginClient
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
@@ -43,7 +44,7 @@ import java.util.*
 /**
  * A login screen that offers login via email/password.
  */
-class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
+class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         RegistrationFragment.OnRegistrationListener {
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
@@ -52,14 +53,21 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
 
     private val REQUEST_READ_CONTACTS = 1
 
-    protected val TAG = LoginActivity::class.java.simpleName
+    private val TAG = LoginActivity::class.java.simpleName
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        CheckTokenTask().execute()
+        CheckTokenTask().execute()
         setContentView(R.layout.activity_login)
         // Set up the login form.
         populateAutoComplete()
+
+        OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txtHeader)
+
+        setListeners()
+    }
+
+    private fun setListeners() {
         password.setOnEditorActionListener(TextView.OnEditorActionListener { _, id, _ ->
             if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
                 attemptLogin()
@@ -67,10 +75,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             }
             false
         })
-
         btnEmailSignIn.setOnClickListener { attemptLogin() }
-
-        OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txtHeader)
         btnRegister.setOnClickListener {
             supportFragmentManager.beginTransaction()
                     .add(R.id.content, RegistrationFragment())
@@ -151,11 +156,6 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             focusView = username
             cancel = true
         }
-//        else if (!isEmailValid(emailStr)) {
-//            username.error = getString(R.string.error_invalid_email)
-//            focusView = username
-//            cancel = true
-//        }
 
         if (cancel) {
             // There was an error; don't attempt login and focus the first
@@ -168,11 +168,6 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             mAuthTask = UserLoginTask(usernameStr, passwordStr)
             mAuthTask!!.execute(null as Void?)
         }
-    }
-
-    private fun isEmailValid(email: String): Boolean {
-        //TODO: Replace this with your own logic
-        return email.contains("@")
     }
 
     private fun isPasswordValid(password: String): Boolean {
@@ -256,8 +251,17 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun openActivity(isToken: Boolean) {
+    private fun dealWithLoginTaskResponse(isToken: Boolean) {
         if (isToken) startActivity(Intent(this, FriendActivity::class.java))
+        else {
+            showProgress(false)
+            mAuthTask?.cancel(true)
+            mAuthTask = null
+            showDismissablePopup(
+                    getString(R.string.header_bad_credentials),
+                    getString(R.string.txt_bad_credentials)
+            )
+        }
     }
 
     private fun listUsers(users: List<UserDto>) {
@@ -318,31 +322,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(token: Token?) {
-            openActivity(token != null)
-        }
-
-    }
-
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the baseUserEntity.
-     */
-    inner class SaveTokenTask internal constructor(
-            token: Token): AsyncTask<Void, Void, Unit>() {
-
-        private val token: Token = token.copy(tokenType = token.tokenType.capitalize())
-
-        override fun doInBackground(vararg params: Void) {
-            val db = AppDatabase.getInstance(this@LoginActivity)
-            val tokenDao = db.tokenDao()
-            val userDao = db.userDao()
-            tokenDao.clear()
-            userDao.clear()
-
-            tokenDao.insert(TokenEntity.fromDto(token))
-            userDao.insert(UserEntity.fromDto(token.user!!))
-            val user = userDao.select()
-            Log.d("USERS", userDao.select().toString())
+            dealWithLoginTaskResponse(token != null)
         }
 
     }
@@ -360,7 +340,7 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(result: Boolean) {
-            openActivity(result)
+            dealWithLoginTaskResponse(result)
         }
 
     }

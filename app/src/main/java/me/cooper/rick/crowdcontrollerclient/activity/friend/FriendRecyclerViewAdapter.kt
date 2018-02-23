@@ -33,6 +33,8 @@ class FriendRecyclerViewAdapter(
         holder.mView.setOnClickListener {
             mListener?.onListFragmentInteraction(holder.mItem!!)
         }
+
+        holder.mView.isEnabled = holder.mItem!!.activated
     }
 
     override fun getItemCount(): Int {

@@ -7,30 +7,34 @@ import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast.LENGTH_LONG
 import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_friend.*
+import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.app_bar_friend.*
+import kotlinx.android.synthetic.main.content_add_friend.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
-import me.cooper.rick.crowdcontrollerapi.exception.FriendNotFoundException
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.R.id.*
+import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.group.GroupActivity
 import me.cooper.rick.crowdcontrollerclient.api.UserClient
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import retrofit2.Response
 import java.net.ConnectException
 
-class FriendActivity : AppCompatActivity(),
+class FriendActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
-        FriendFragment.OnListFragmentInteractionListener,
-        AddFriendFragment.OnFragmentInteractionListener {
+        FriendFragment.OnListFragmentInteractionListener {
 
     var friends: MutableList<FriendDto> = mutableListOf()
     var friendFragment: FriendFragment? = null
+    var addFriendDialogView: View? = null
+    var addFriendDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,17 +47,26 @@ class FriendActivity : AppCompatActivity(),
         drawer_layout.addDrawerListener(toggle)
         toggle.syncState()
 
-        nav_view.setNavigationItemSelectedListener(this)
-
-        val addFriendDialog = AlertDialog.Builder(this)
+        addFriendDialogView = layoutInflater.inflate(R.layout.content_add_friend, content)
+        addFriendDialogView!!.btn_add_friend.setOnClickListener {
+            AddFriendTask(addFriendDialogView!!.actv_user_detail.text.toString()).execute()
+        }
+        addFriendDialog = AlertDialog.Builder(this)
                 .setTitle(R.string.header_add_friend)
-                .setView(layoutInflater.inflate(R.layout.content_add_friend, null))
+                .setView(addFriendDialogView).create()
+        addFriendDialogView!!.btn_cancel_add_friend.setOnClickListener {
+            addFriendDialog!!.dismiss()
+        }
+        nav_view.setNavigationItemSelectedListener(this)
 
         friendFragment = FriendFragment()
         supportFragmentManager.beginTransaction()
                 .replace(R.id.friendFragmentLayout, friendFragment)
                 .commit()
-        fab.setOnClickListener { addFriendDialog.show() }
+        fab.setOnClickListener {
+            addFriendDialogView!!.actv_user_detail.text.clear()
+            addFriendDialog!!.show()
+        }
     }
 
     override fun onBackPressed() {
@@ -103,14 +116,28 @@ class FriendActivity : AppCompatActivity(),
         return true
     }
 
-    override fun onFragmentInteraction(userDetail: String) {
-        try {
-            AddFriendTask(userDetail).execute()
-        } catch (e: FriendNotFoundException) {
-            AlertDialog.Builder(this)
-                    .setTitle("Friend Not Found")
-                    .setMessage(e.message)
-                    .setNegativeButton(getString(R.string.action_ok), { _, _ -> onBackPressed() })
+    private fun dealWithResponse(response: Response<Set<FriendDto>>?) {
+        when {
+            response == null -> {
+                addFriendDialog!!.dismiss()
+                showDismissablePopup(
+                        getString(R.string.header_connection_failed),
+                        getString(R.string.txt_connection_failed)
+                )
+            }
+            HttpStatus.NOT_FOUND == response.code() -> {
+                val detail = addFriendDialogView!!.actv_user_detail.text.toString()
+                showDismissablePopup(
+                        getString(R.string.header_friend_not_found),
+                        getString(R.string.txt_friend_not_found, detail)
+                )
+            }
+            else -> {
+                addFriendDialog!!.dismiss()
+                friends.clear()
+                friends.addAll(response.body()!!.toSet())
+                friendFragment?.adapter?.notifyDataSetChanged()
+            }
         }
     }
 
@@ -152,9 +179,9 @@ class FriendActivity : AppCompatActivity(),
     }
 
     inner class AddFriendTask internal constructor(private val friendIdentifier: String):
-            AsyncTask<Void, Void, List<FriendDto>>() {
+            AsyncTask<Void, Void, Response<Set<FriendDto>>?>() {
 
-        override fun doInBackground(vararg params: Void): List<FriendDto> {
+        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>>? {
             val db = AppDatabase.getInstance(this@FriendActivity)
             val userId = db.userDao().select()?.id
             val userClient = ServiceGenerator.createService(
@@ -162,24 +189,15 @@ class FriendActivity : AppCompatActivity(),
                     db.tokenDao().select()?.toTokenString()
             )
 
-            // TODO ERROR HANDLING
-            val response = try {
+            return try {
                 userClient.addFriend(userId!!, friendIdentifier).execute()
             } catch (e: ConnectException) {
                 null
             }
-            if (404 == response?.code()) {
-                throw FriendNotFoundException("No friend exists with details: $friendIdentifier")
-            }
-            val friends = response?.body()?.friends?.toList()
-
-            return friends ?: emptyList()
         }
 
-        override fun onPostExecute(friends: List<FriendDto>) {
-            this@FriendActivity.friends.clear()
-            this@FriendActivity.friends.addAll(friends)
-            this@FriendActivity.friendFragment?.adapter?.notifyDataSetChanged()
+        override fun onPostExecute(response: Response<Set<FriendDto>>?) {
+            dealWithResponse(response)
         }
 
     }
