@@ -321,21 +321,20 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                 }
             }
             val body = response.body()
-            if (body is Token) {
-                val db = AppDatabase.getInstance(this@LoginActivity)
-                val tokenDao = db.tokenDao()
-                val userDao = db.userDao()
-                tokenDao.clear()
-                userDao.clear()
-
-                tokenDao.insert(TokenEntity.fromDto(body))
-                userDao.insert(UserEntity.fromDto(body.user!!))
-
-                Log.d("TOKEN", tokenDao.select().toString())
-                Log.d("USER", userDao.select().toString())
-            }
+            if (body is Token) save(body)
 
             return response.code()
+        }
+
+        private fun save(token: Token) {
+            val db = AppDatabase.getInstance(this@LoginActivity)
+            val tokenDao = db.tokenDao()
+            val userDao = db.userDao()
+            tokenDao.clear()
+            userDao.clear()
+
+            tokenDao.insert(TokenEntity.fromDto(token))
+            userDao.insert(UserEntity.fromDto(token.user!!))
         }
 
         override fun onPostExecute(responseCode: Int) {
