@@ -16,7 +16,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.support.design.widget.Snackbar
-import android.support.v7.app.AppCompatActivity
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.util.Log
@@ -32,13 +31,22 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
-import me.cooper.rick.crowdcontrollerclient.api.LoginClient
+import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.BAD_REQUEST
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.OK
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.UNAUTHORIZED
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import okhttp3.MediaType
+import okhttp3.ResponseBody
+import retrofit2.Response
 import java.net.ConnectException
+import java.net.SocketTimeoutException
 import java.util.*
 
 /**
@@ -251,17 +259,20 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun dealWithLoginTaskResponse(isToken: Boolean) {
-        if (isToken) startActivity(Intent(this, FriendActivity::class.java))
-        else {
-            showProgress(false)
-            mAuthTask?.cancel(true)
-            mAuthTask = null
-            showDismissablePopup(
-                    getString(R.string.header_bad_credentials),
-                    getString(R.string.txt_bad_credentials)
-            )
-        }
+    private fun successfulLogin() {
+        destroyAuthTask()
+        startActivity(Intent(this, FriendActivity::class.java))
+    }
+
+    private fun failedLogin(header: String, message: String) {
+        destroyAuthTask()
+        showDismissablePopup(header, message)
+    }
+
+    private fun destroyAuthTask() {
+        showProgress(false)
+        mAuthTask?.cancel(true)
+        mAuthTask = null
     }
 
     private fun listUsers(users: List<UserDto>) {
@@ -288,9 +299,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      */
     inner class UserLoginTask internal constructor(
             private val username: String,
-            private val password: String): AsyncTask<Void, Void, Token?>() {
+            private val password: String): AsyncTask<Void, Void, Int>() {
 
-        override fun doInBackground(vararg params: Void): Token? {
+        override fun doInBackground(vararg params: Void): Int {
             val userClient = ServiceGenerator.createService(
                     LoginClient::class.java,
                     getString(R.string.jwt_client_id),
@@ -298,31 +309,43 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             )
 
             // TODO ERROR HANDLING
-            val response = try {
+            val response =  try {
                 userClient.getToken(getString(R.string.jwt_grant_type), username, password).execute()
-            } catch (e: ConnectException) {
-                null
+            } catch (e: Exception) {
+                when (e) {
+                    is ConnectException, is SocketTimeoutException -> {
+                        Response.error<Any>(SERVICE_UNAVAILABLE, ResponseBody
+                                .create(MediaType.parse("text/plain"), "Connection Failed"))
+                    }
+                    else -> throw e
+                }
             }
-
-            val token = response?.body()
-            if (token != null) {
+            val body = response.body()
+            if (body is Token) {
                 val db = AppDatabase.getInstance(this@LoginActivity)
                 val tokenDao = db.tokenDao()
                 val userDao = db.userDao()
                 tokenDao.clear()
                 userDao.clear()
 
-                tokenDao.insert(TokenEntity.fromDto(token))
-                userDao.insert(UserEntity.fromDto(token.user!!))
+                tokenDao.insert(TokenEntity.fromDto(body))
+                userDao.insert(UserEntity.fromDto(body.user!!))
 
                 Log.d("TOKEN", tokenDao.select().toString())
                 Log.d("USER", userDao.select().toString())
             }
-            return token
+
+            return response.code()
         }
 
-        override fun onPostExecute(token: Token?) {
-            dealWithLoginTaskResponse(token != null)
+        override fun onPostExecute(responseCode: Int) {
+            when (responseCode) {
+                OK -> successfulLogin()
+                BAD_REQUEST, UNAUTHORIZED -> failedLogin(getString(R.string.header_bad_credentials),
+                        getString(R.string.txt_bad_credentials))
+                SERVICE_UNAVAILABLE -> failedLogin(getString(R.string.header_connect_fail),
+                        getString(R.string.txt_connect_fail))
+            }
         }
 
     }
@@ -340,7 +363,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(result: Boolean) {
-            dealWithLoginTaskResponse(result)
+            successfulLogin()
         }
 
     }

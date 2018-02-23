@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.api
+package me.cooper.rick.crowdcontrollerclient.api.client
 
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
@@ -7,6 +7,8 @@ import retrofit2.Call
 import retrofit2.http.*
 
 interface UserClient {
+
+    /* USER */
 
     @GET("/users")
     fun users(): Call<List<UserDto>?>
@@ -20,6 +22,8 @@ interface UserClient {
     @PUT("/users/{userId}")
     fun update(@Path("userId") userId: Long, @Body userDto: UserDto): Call<UserDto>
 
+    /* FRIENDS */
+
     @GET("/users/{userId}/friends")
     fun friends(@Path("userId") userId: Long): Call<Set<FriendDto>>
 
@@ -30,5 +34,9 @@ interface UserClient {
     @PUT("/users/{userId}/friends/{friendId}/activate")
     fun acceptFriendRequest(@Path("userId") userId: Long,
                             @Path("friendId") friendId: Long): Call<Set<FriendDto>>
+
+    @DELETE("/users/{userId}/friends/{friendId}")
+    fun removeFriend(@Path("userId") userId: Long,
+                     @Path("friendId") friendId: Long): Call<Set<FriendDto>>
 
 }

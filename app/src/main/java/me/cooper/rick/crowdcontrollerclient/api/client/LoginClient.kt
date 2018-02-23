@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.api
+package me.cooper.rick.crowdcontrollerclient.api.client
 
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import retrofit2.Call

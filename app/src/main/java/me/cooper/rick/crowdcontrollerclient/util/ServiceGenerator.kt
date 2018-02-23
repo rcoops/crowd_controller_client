@@ -51,6 +51,8 @@ object ServiceGenerator {
         return retrofit.create(serviceClass)
     }
 
+    fun retrofit(): Retrofit = builder.build()
+
     private fun valid(username: String, password: String): Boolean =
         !TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)
 

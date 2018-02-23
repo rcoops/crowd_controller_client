@@ -2,11 +2,11 @@ package me.cooper.rick.crowdcontrollerclient.activity.friend
 
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import android.widget.AdapterView
 import android.widget.TextView
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
+import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnListFragmentInteractionListener
 
@@ -17,7 +17,7 @@ import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnLis
  */
 class FriendRecyclerViewAdapter(
         private val mValues: List<FriendDto>,
-        private val mListener: OnListFragmentInteractionListener?
+        private val mListener: OnListFragmentInteractionListener
 ): RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -31,25 +31,41 @@ class FriendRecyclerViewAdapter(
         holder.mContentView.text = mValues[position].username
 
         holder.mView.setOnClickListener {
-            mListener?.onListFragmentInteraction(holder.mItem!!)
+            mListener.onListFragmentInteraction(holder.mItem!!)
         }
-
-        holder.mView.isEnabled = holder.mItem!!.activated
     }
 
     override fun getItemCount(): Int {
         return mValues.size
     }
 
-    inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView) {
+    inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
         val mContentView: TextView = mView.findViewById(R.id.content)
         val btnContextMenu: FloatingActionButton = mView.findViewById(R.id.btnContextMenu)
         var mItem: FriendDto? = null
 
         init {
             btnContextMenu.setOnClickListener {
-                mListener?.onListFragmentInteraction(mItem!!)
+                mListener.onListFragmentInteraction(mItem!!)
             }
+            mView.setOnCreateContextMenuListener(this)
+        }
+
+        override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+//            val info = menuInfo as AdapterView.AdapterContextMenuInfo
+            menu!!.setHeaderTitle(mItem!!.username)
+            val menuItemNames = App.context!!.resources.getStringArray(R.array.menu_context_friend)
+            menuItemNames.forEachIndexed { i, menuItemName ->
+                val menuItem = menu.add(Menu.NONE, i, i, menuItemName)
+                menuItem.setOnMenuItemClickListener(this)
+            }
+        }
+
+        override fun onMenuItemClick(item: MenuItem?): Boolean {
+            mListener.onListFragmentInteraction(mItem!!)
+            return true
         }
 
         override fun toString(): String {

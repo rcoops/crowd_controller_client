@@ -7,8 +7,12 @@ import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.TextView
+import android.widget.Toast
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 
@@ -28,7 +32,7 @@ class FriendFragment : Fragment() {
     private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
     private var friends: MutableList<FriendDto> = mutableListOf()
-    var adapter: FriendRecyclerViewAdapter? = null
+    lateinit var adapter: FriendRecyclerViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,12 +54,13 @@ class FriendFragment : Fragment() {
             } else {
                 view.layoutManager = GridLayoutManager(context, mColumnCount)
             }
-            adapter = FriendRecyclerViewAdapter(friends, mListener)
+            adapter = FriendRecyclerViewAdapter(friends, mListener!!)
             view.adapter = adapter
         }
+
+        registerForContextMenu(view)
         return view
     }
-
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
@@ -70,8 +75,6 @@ class FriendFragment : Fragment() {
         super.onDetach()
         mListener = null
     }
-
-
 
     /**
      * This interface must be implemented by activities that contain this

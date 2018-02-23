@@ -67,4 +67,12 @@
     <string name="txt_connection_failed">Unfortunately the service is currently unavailable, please try again later</string>
     <string name="header_friend_not_found">Friend Not Found</string>
     <string name="txt_friend_not_found">No user exists with the details: %1$s. Please try again.</string>
+    <string name="header_confirm">Confirm</string>
+    <string name="txt_confirm_remove_friend">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="header_connect_fail">Connection Failure</string>
+    <string name="txt_connect_fail">It appears the server is currently down. Please try again later.</string>
+    <string-array name="menu_context_friend">
+        <item>Add to Group</item>
+        <item>Delete</item>
+    </string-array>
 </resources>
