@@ -33,7 +33,6 @@ import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
 import me.cooper.rick.crowdcontrollerclient.api.LoginClient
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
@@ -306,18 +305,14 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
                 val db = AppDatabase.getInstance(this@LoginActivity)
                 val tokenDao = db.tokenDao()
                 val userDao = db.userDao()
-                val friendDao = db.friendsDao()
                 tokenDao.clear()
                 userDao.clear()
-                friendDao.clear()
 
                 tokenDao.insert(TokenEntity.fromDto(token))
                 userDao.insert(UserEntity.fromDto(token.user!!))
-                friendDao.insertAll(FriendEntity.fromDto(token.user!!))
 
                 Log.d("TOKEN", tokenDao.select().toString())
                 Log.d("USER", userDao.select().toString())
-                Log.d("USER", friendDao.select().joinToString(", ", "Friends[", "]"))
             }
             return token
         }
@@ -341,15 +336,11 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor>,
             val db = AppDatabase.getInstance(this@LoginActivity)
             val tokenDao = db.tokenDao()
             val userDao = db.userDao()
-            val friendDao = db.friendsDao()
             tokenDao.clear()
             userDao.clear()
-            friendDao.clear()
 
             tokenDao.insert(TokenEntity.fromDto(token))
             userDao.insert(UserEntity.fromDto(token.user!!))
-            friendDao.insertAll(FriendEntity.fromDto(token.user!!))
-            val friends = friendDao.select()
             val user = userDao.select()
             Log.d("USERS", userDao.select().toString())
         }

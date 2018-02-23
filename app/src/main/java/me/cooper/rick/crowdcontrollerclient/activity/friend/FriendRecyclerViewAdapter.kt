@@ -8,10 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnListFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.DummyItem
-import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the

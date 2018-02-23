@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 
 /**
  * A fragment representing a list of Items.

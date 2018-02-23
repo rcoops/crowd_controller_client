@@ -4,20 +4,16 @@ import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
-import me.cooper.rick.crowdcontrollerclient.domain.entity.FriendEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
-import me.cooper.rick.crowdcontrollerclient.domain.repository.FriendsDao
 import me.cooper.rick.crowdcontrollerclient.domain.repository.TokenDao
 import me.cooper.rick.crowdcontrollerclient.domain.repository.UserDao
 
 
-@Database(entities = [TokenEntity::class, UserEntity::class, FriendEntity::class], version = 8)
+@Database(entities = [TokenEntity::class, UserEntity::class], version = 9)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun tokenDao(): TokenDao
-
-    abstract fun friendsDao(): FriendsDao
 
     abstract fun userDao(): UserDao
 

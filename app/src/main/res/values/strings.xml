@@ -56,4 +56,9 @@
     <string name="title_activity_test">TestActivity</string>
     <string name="title_activity_auth">AuthActivity</string>
     <string name="header_register">Register</string>
+    <string name="header_add_friend">Add Friend</string>
+    <string name="action_add_friend">Add</string>
+    <string name="prompt_user_detail">Username / email / mobile number</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">Ok</string>
 </resources>

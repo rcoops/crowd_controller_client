@@ -31,13 +31,13 @@ class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         nav_view.setNavigationItemSelectedListener(this)
         groupFragment = GroupFragment()
-        val friends = me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.FRIENDS
+//        val friends = me.cooper.rick.crowdcontrollerclient.activity.friend.dummy.DummyContent.FRIENDS
         btnAdd.setOnClickListener {
-            val rand = Random()
-            val index = rand.nextInt(friends.size)
-            val friend = friends[index]
-            DummyContent.ITEMS.add(DummyContent.DummyItem(index.toString(), friend.content, ""))
-            groupFragment?.updateView()
+//            val rand = Random()
+//            val index = rand.nextInt(friends.size)
+//            val friend = friends[index]
+//            DummyContent.ITEMS.add(DummyContent.DummyItem(index.toString(), friend.content, ""))
+//            groupFragment?.updateView()
         }
         supportFragmentManager.beginTransaction()
                 .replace(R.id.groupFragmentLayout, groupFragment)
