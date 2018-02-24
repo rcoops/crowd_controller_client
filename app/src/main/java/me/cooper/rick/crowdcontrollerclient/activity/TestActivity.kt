@@ -64,9 +64,9 @@ class TestActivity : AppCompatActivity() {
         }
 
         override fun onPostExecute(result: UserDto?) {
-            if (result != null) {
-                db?.userDao()?.insert(UserEntity.fromDto(result))
-                displayUser(result)
+            result?.let {
+                db?.userDao()?.insert(UserEntity.fromDto(it))
+                displayUser(it)
             }
         }
 

@@ -38,9 +38,7 @@ class FriendFragment : Fragment() {
         super.onCreate(savedInstanceState)
 
         friends = (activity as FriendActivity).friends
-        if (arguments != null) {
-            mColumnCount = arguments.getInt(ARG_COLUMN_COUNT)
-        }
+        arguments?.let { mColumnCount = it.getInt(ARG_COLUMN_COUNT) }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,

@@ -136,9 +136,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      * errors are presented and no actual login attempt is made.
      */
     private fun attemptLogin() {
-        if (mAuthTask != null) {
-            return
-        }
+        if (mAuthTask != null) return
 
         // Reset errors.
         username.error = null

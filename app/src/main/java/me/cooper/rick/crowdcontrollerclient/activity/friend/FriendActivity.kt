@@ -221,7 +221,7 @@ class FriendActivity : AppActivity(),
 
         override fun onPostExecute(response: Response<Set<FriendDto>>?) {
             val friends = response?.body()
-            if (friends != null) refreshFriends(friends)
+            friends?.let(this@FriendActivity::refreshFriends)
         }
 
     }

@@ -24,7 +24,7 @@ class RetrieveTokenTask(activity: Activity,
     }
 
     override fun onPostExecute(result: TokenEntity?) {
-        if (result != null) function(result)
+        result?.let { function(result) }
     }
 
     private fun isInvalid(activity: Activity?): Boolean {

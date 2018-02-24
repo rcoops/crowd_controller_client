@@ -23,10 +23,10 @@ class LocationActivity : AppCompatActivity(), OnMapReadyCallback {
                 .findFragmentById(R.id.fragment) as SupportMapFragment
         mapFragment.getMapAsync(this)
         var params = mapFragment.view?.layoutParams
-        if (params != null) {
-            params.height = 900
-            params.width = 900
-            mapFragment.view?.layoutParams = params
+        params?.let {
+            it.height = 900
+            it.width = 900
+            mapFragment.view?.layoutParams = it
         }
 
     }
