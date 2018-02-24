@@ -10,6 +10,8 @@ import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast.LENGTH_LONG
+import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_friend.*
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.app_bar_friend.*
@@ -121,12 +123,9 @@ class FriendActivity : AppActivity(),
     }
 
     private fun addFriend(response: Response<Set<FriendDto>>?) {
-        addFriendTask?.cancel(true)
-        addFriendTask = null
+        cancelFriendTasks()
         when {
             response == null -> {
-                getFriendsTask!!.cancel(true)
-                getFriendsTask = null
                 addFriendDialog.dismiss()
                 showDismissablePopup(
                         getString(R.string.header_connection_failed),
@@ -134,8 +133,6 @@ class FriendActivity : AppActivity(),
                 )
             }
             HttpStatus.NOT_FOUND == response.code() -> {
-                getFriendsTask!!.cancel(true)
-                getFriendsTask = null
                 val detail = addFriendDialogView.actv_user_detail.text.toString()
                 showDismissablePopup(
                         getString(R.string.header_friend_not_found),
@@ -149,25 +146,39 @@ class FriendActivity : AppActivity(),
         }
     }
 
-    private fun refreshFriends(replacementFriends: Set<FriendDto>) {
+    private fun cancelFriendTasks() {
         getFriendsTask?.cancel(true)
         getFriendsTask = null
         removeFriendTask?.cancel(true)
         removeFriendTask = null
+    }
+
+    private fun cancelTasksAndRefreshFriends(replacementFriends: Set<FriendDto>) {
+        cancelFriendTasks()
+        refreshFriends(replacementFriends)
+    }
+
+    private fun refreshFriends(replacementFriends: Set<FriendDto>) {
         friends.clear()
         friends.addAll(replacementFriends)
         friendFragment.adapter.notifyDataSetChanged()
     }
 
-    override fun onListFragmentInteraction(item: FriendDto) {
+    override fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem) {
+        when (menuItem.itemId) {
+            R.id.action_remove_friend -> showRemoveFriendDialog(item)
+            R.id.action_add_to_group -> makeText(this, "${item.username} poked", LENGTH_LONG).show()
+            else -> throw NotImplementedError("Not Implemented!!")
+        }
+    }
+
+    private fun showRemoveFriendDialog(item: FriendDto) {
         AlertDialog.Builder(this)
                 .setTitle(getString(R.string.header_confirm))
                 .setMessage(getString(R.string.txt_confirm_remove_friend, item.username))
                 .setPositiveButton(getString(R.string.action_ok), { _, _ -> removeFriend(item.id) })
                 .setNegativeButton(getString(R.string.action_cancel), { _,_ -> })
                 .show()
-
-//        makeText(this, "${item.username} poked", LENGTH_LONG).show()
     }
 
     private fun removeFriend(id: Long) {
@@ -196,7 +207,7 @@ class FriendActivity : AppActivity(),
         }
 
         override fun onPostExecute(friends: Set<FriendDto>) {
-            refreshFriends(friends)
+            cancelTasksAndRefreshFriends(friends)
         }
 
     }

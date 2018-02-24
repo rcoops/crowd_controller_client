@@ -28,15 +28,15 @@ import me.cooper.rick.crowdcontrollerclient.R
  * fragment (e.g. upon screen orientation changes).
  */
 class FriendFragment : Fragment() {
-    // TODO: Customize parameters
+
     private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
-    private var friends: MutableList<FriendDto> = mutableListOf()
+    private lateinit var friends: MutableList<FriendDto>
     lateinit var adapter: FriendRecyclerViewAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        if (activity !is FriendActivity) throw RuntimeException()
         friends = (activity as FriendActivity).friends
         arguments?.let { mColumnCount = it.getInt(ARG_COLUMN_COUNT) }
     }
@@ -47,10 +47,10 @@ class FriendFragment : Fragment() {
         // Set the adapter
         if (view is RecyclerView) {
             val context = view.getContext()
-            if (mColumnCount <= 1) {
-                view.layoutManager = LinearLayoutManager(context)
+            view.layoutManager = if (mColumnCount <= 1) {
+                LinearLayoutManager(context)
             } else {
-                view.layoutManager = GridLayoutManager(context, mColumnCount)
+                GridLayoutManager(context, mColumnCount)
             }
             adapter = FriendRecyclerViewAdapter(friends, mListener!!)
             view.adapter = adapter
@@ -62,11 +62,10 @@ class FriendFragment : Fragment() {
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        if (context is OnListFragmentInteractionListener) {
-            mListener = context
-        } else {
-            throw RuntimeException(context!!.toString() + " must implement OnListFragmentInteractionListener")
+        if (context !is OnListFragmentInteractionListener) {
+            throw RuntimeException("${context!!} must implement OnListFragmentInteractionListener")
         }
+        mListener = context
     }
 
     override fun onDetach() {
@@ -85,7 +84,7 @@ class FriendFragment : Fragment() {
      */
     interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        fun onListFragmentInteraction(item: FriendDto)
+        fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem)
     }
 
     companion object {

@@ -6,8 +6,10 @@
     <dimen name="friend_padding">8dp</dimen>
     <dimen name="text_margin">16dp</dimen>
     <dimen name="btn_login_margin">40dp</dimen>
+    <dimen name="context_header_size">25sp</dimen>
     <dimen name="text_list_size">20sp</dimen>
     <dimen name="text_header_size">44sp</dimen>
+    <dimen name="padding_header">2dp</dimen>
 
     <!-- Per the design guidelines, navigation drawers should be between 240dp and 320dp:
          https://developer.android.com/design/patterns/navigation-drawer.html -->

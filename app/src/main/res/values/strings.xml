@@ -60,7 +60,8 @@
     <string name="action_add_friend">Add</string>
     <string name="prompt_user_detail">Username / email / mobile number</string>
     <string name="action_cancel">Cancel</string>
-    <string name="action_ok">Ok</string>
+    <string name="action_ok">OK</string>
+    <string name="action_remove">Remove</string>
     <string name="header_bad_credentials">Bad Credentials</string>
     <string name="txt_bad_credentials">Username or password is incorrect. Please try again.</string>
     <string name="header_connection_failed">Connection Failed</string>
