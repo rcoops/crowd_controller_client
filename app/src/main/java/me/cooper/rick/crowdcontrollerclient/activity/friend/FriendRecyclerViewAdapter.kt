@@ -58,7 +58,7 @@ class FriendRecyclerViewAdapter(
                     .inflate(R.layout.context_header, parent, false)
                     .apply { (findViewById<TextView>(R.id.txt_header)).text = mItem!!.username })
 
-            for (i in 0 until menu.size()) menu.getItem(i).setOnMenuItemClickListener(this)
+            (0 until menu.size()).forEach { menu.getItem(it).setOnMenuItemClickListener(this) }
         }
 
         override fun onMenuItemClick(item: MenuItem?): Boolean {
