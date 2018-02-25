@@ -21,10 +21,11 @@ import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.group.GroupActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
+import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Response
+import java.io.IOException
 import java.net.ConnectException
 
 class FriendActivity : AppActivity(),
@@ -32,6 +33,7 @@ class FriendActivity : AppActivity(),
         FriendFragment.OnListFragmentInteractionListener {
 
     var friends: MutableList<FriendDto> = mutableListOf()
+
     private lateinit var friendFragment: FriendFragment
     private lateinit var addFriendDialogView: View
     private lateinit var addFriendDialog: AlertDialog
@@ -39,6 +41,14 @@ class FriendActivity : AppActivity(),
     private var getFriendsTask: GetFriendsTask? = null
     private var addFriendTask: AddFriendTask? = null
     private var removeFriendTask: RemoveFriendTask? = null
+    private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask)
+
+    private val refreshFriends: (Set<FriendDto>) -> Unit = {
+        cancelFriendTasks()
+        friends.clear()
+        friends.addAll(it)
+        friendFragment.adapter.notifyDataSetChanged()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,46 +132,8 @@ class FriendActivity : AppActivity(),
         return true
     }
 
-    private fun addFriend(response: Response<Set<FriendDto>>?) {
-        cancelFriendTasks()
-        when {
-            response == null -> {
-                addFriendDialog.dismiss()
-                showDismissablePopup(
-                        getString(R.string.header_connection_failed),
-                        getString(R.string.txt_connection_failed)
-                )
-            }
-            HttpStatus.NOT_FOUND == response.code() -> {
-                val detail = addFriendDialogView.actv_user_detail.text.toString()
-                showDismissablePopup(
-                        getString(R.string.header_friend_not_found),
-                        getString(R.string.txt_friend_not_found, detail)
-                )
-            }
-            else -> {
-                addFriendDialog.dismiss()
-                refreshFriends(response.body()!!.toSet())
-            }
-        }
-    }
-
     private fun cancelFriendTasks() {
-        getFriendsTask?.cancel(true)
-        getFriendsTask = null
-        removeFriendTask?.cancel(true)
-        removeFriendTask = null
-    }
-
-    private fun cancelTasksAndRefreshFriends(replacementFriends: Set<FriendDto>) {
-        cancelFriendTasks()
-        refreshFriends(replacementFriends)
-    }
-
-    private fun refreshFriends(replacementFriends: Set<FriendDto>) {
-        friends.clear()
-        friends.addAll(replacementFriends)
-        friendFragment.adapter.notifyDataSetChanged()
+        friendsTasks.forEach { it?.cancel(true) }
     }
 
     override fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem) {
@@ -177,7 +149,7 @@ class FriendActivity : AppActivity(),
                 .setTitle(getString(R.string.header_confirm))
                 .setMessage(getString(R.string.txt_confirm_remove_friend, item.username))
                 .setPositiveButton(getString(R.string.action_ok), { _, _ -> removeFriend(item.id) })
-                .setNegativeButton(getString(R.string.action_cancel), { _,_ -> })
+                .setNegativeButton(getString(R.string.action_cancel), { _, _ -> })
                 .show()
     }
 
@@ -186,9 +158,9 @@ class FriendActivity : AppActivity(),
         removeFriendTask!!.execute()
     }
 
-    inner class GetFriendsTask internal constructor(): AsyncTask<Void, Void, Set<FriendDto>>() {
+    inner class GetFriendsTask internal constructor() : AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
 
-        override fun doInBackground(vararg params: Void): Set<FriendDto> {
+        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
             val db = AppDatabase.getInstance(this@FriendActivity)
             val userId = db.userDao().select()?.id
             val userClient = ServiceGenerator.createService(
@@ -196,26 +168,23 @@ class FriendActivity : AppActivity(),
                     db.tokenDao().select()?.toTokenString()
             )
 
-            // TODO ERROR HANDLING
-            val response = try {
+            return try {
                 userClient.friends(userId!!).execute()
-            } catch (e: ConnectException) {
-                null
+            } catch (e: IOException) {
+                handleConnectionException(e)
             }
-
-            return response?.body() ?: emptySet()
         }
 
-        override fun onPostExecute(friends: Set<FriendDto>) {
-            cancelTasksAndRefreshFriends(friends)
+        override fun onPostExecute(response: Response<Set<FriendDto>>) {
+            handleResponse(response, refreshFriends)
         }
 
     }
 
-    inner class RemoveFriendTask internal constructor(private val friendId: Long):
-            AsyncTask<Void, Void, Response<Set<FriendDto>>?>() {
+    inner class RemoveFriendTask internal constructor(private val friendId: Long) :
+            AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
 
-        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>>? {
+        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
             val db = AppDatabase.getInstance(this@FriendActivity)
             val userId = db.userDao().select()?.id
             val userClient = ServiceGenerator.createService(
@@ -225,22 +194,21 @@ class FriendActivity : AppActivity(),
 
             return try {
                 userClient.removeFriend(userId!!, friendId).execute()
-            } catch (e: ConnectException) {
-                null
+            } catch (e: IOException) {
+                handleConnectionException(e)
             }
         }
 
-        override fun onPostExecute(response: Response<Set<FriendDto>>?) {
-            val friends = response?.body()
-            friends?.let(this@FriendActivity::refreshFriends)
+        override fun onPostExecute(response: Response<Set<FriendDto>>) {
+            handleResponse(response, refreshFriends)
         }
 
     }
 
-    inner class AddFriendTask internal constructor(private val friendIdentifier: String):
-            AsyncTask<Void, Void, Response<Set<FriendDto>>?>() {
+    inner class AddFriendTask internal constructor(private val friendIdentifier: String) :
+            AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
 
-        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>>? {
+        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
             val db = AppDatabase.getInstance(this@FriendActivity)
             val userId = db.userDao().select()?.id
             val userClient = ServiceGenerator.createService(
@@ -250,13 +218,13 @@ class FriendActivity : AppActivity(),
 
             return try {
                 userClient.addFriend(userId!!, friendIdentifier).execute()
-            } catch (e: ConnectException) {
-                null
+            } catch (e: IOException) {
+                handleConnectionException(e)
             }
         }
 
-        override fun onPostExecute(response: Response<Set<FriendDto>>?) {
-            addFriend(response)
+        override fun onPostExecute(response: Response<Set<FriendDto>>) {
+            handleResponse(response, refreshFriends)
         }
 
     }

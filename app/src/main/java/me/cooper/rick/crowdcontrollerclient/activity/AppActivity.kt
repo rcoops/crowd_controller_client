@@ -6,8 +6,16 @@ import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.util.parseError
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.BAD_REQUEST
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.NOT_FOUND
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.UNAUTHORIZED
+import org.springframework.http.HttpStatus
+import retrofit2.Response
+import java.util.function.Consumer
 
-abstract class AppActivity: AppCompatActivity() {
+abstract class AppActivity : AppCompatActivity() {
 
     protected var app: App? = null
 
@@ -31,11 +39,21 @@ abstract class AppActivity: AppCompatActivity() {
         super.onDestroy()
     }
 
-    fun showDismissablePopup(title: String, message: String) {
+    fun <T> handleResponse(response: Response<T>, consumer: (T) -> Unit) {
+        when (response.code()) {
+            in 200 until 400 -> consumer(response.body()!!)
+            else -> {
+                val apiError = parseError(response)
+                showDismissablePopup(apiError.error, apiError.errorDescription)
+            }
+        }
+    }
+
+    private fun showDismissablePopup(title: String, message: String) {
         AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setNegativeButton(getString(R.string.action_ok), { _, _ ->  })
+                .setNegativeButton(getString(R.string.action_ok), { _, _ -> })
                 .show()
     }
 

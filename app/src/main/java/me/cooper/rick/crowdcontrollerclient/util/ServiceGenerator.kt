@@ -1,16 +1,15 @@
 package me.cooper.rick.crowdcontrollerclient.util
 
-import android.content.res.Resources
 import android.text.TextUtils
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.auth.AuthenticationInterceptor
 import okhttp3.Credentials
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.Retrofit
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 object ServiceGenerator {
 
