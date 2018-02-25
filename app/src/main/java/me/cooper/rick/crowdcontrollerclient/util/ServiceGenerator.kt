@@ -14,13 +14,13 @@ import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
 
 object ServiceGenerator {
 
-    private val API_BASE_URL = App.context?.getString(R.string.base_uri)
+    private val API_BASE_URL = App.context!!.getString(R.string.base_uri)!!
     private val httpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().setLevel(BODY))
 
 
     private val builder = Retrofit.Builder()
-            .baseUrl(API_BASE_URL?:"http://localhost:9098")
+            .baseUrl(API_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient.build())
 

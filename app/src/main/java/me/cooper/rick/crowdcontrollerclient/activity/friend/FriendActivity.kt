@@ -67,7 +67,7 @@ class FriendActivity : AppActivity(),
 
         friendFragment = FriendFragment()
         supportFragmentManager.beginTransaction()
-                .replace(R.id.friendFragmentLayout, friendFragment)
+                .replace(R.id.friend_fragment_content, friendFragment)
                 .commit()
         fab.setOnClickListener {
             addFriendDialogView.actv_user_detail.text.clear()
