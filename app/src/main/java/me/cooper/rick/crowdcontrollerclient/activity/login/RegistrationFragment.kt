@@ -116,9 +116,7 @@ class RegistrationFragment : Fragment() {
             private val registrationDto: RegistrationDto) : AsyncTask<Void, Void, Response<UserDto>>() {
 
         override fun doInBackground(vararg params: Void): Response<UserDto> {
-            val userClient = ServiceGenerator.createService(
-                    UserClient::class.java
-            )
+            val userClient = ServiceGenerator.createService(UserClient::class)
             return try {
                 userClient.create(registrationDto).execute()
             } catch (e: IOException) {

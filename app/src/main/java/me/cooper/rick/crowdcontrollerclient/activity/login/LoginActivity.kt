@@ -233,7 +233,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     private fun registrationSuccessful(dto: UserDto) {
-        showDismissablePopup(
+        showDismissiblePopup(
                 getString(R.string.hdr_registration_successful),
                 getString(R.string.txt_registration_successful),
                 destroyTasksOnClickListener
@@ -261,7 +261,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
         override fun doInBackground(vararg params: Void): Response<Token> {
             val userClient = ServiceGenerator.createService(
-                    LoginClient::class.java,
+                    LoginClient::class,
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
             )

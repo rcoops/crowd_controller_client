@@ -42,7 +42,7 @@ abstract class AppActivity : AppCompatActivity() {
             in 200 until 400 -> consumer(response.body()!!)
             else -> {
                 val apiError = parseError(response)
-                showDismissablePopup(apiError.error, apiError.errorDescription,
+                showDismissiblePopup(apiError.error, apiError.errorDescription,
                         destroyTasksOnClickListener)
             }
         }
@@ -55,7 +55,7 @@ abstract class AppActivity : AppCompatActivity() {
 
     protected abstract fun destroyTasks()
 
-    protected fun showDismissablePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
+    protected fun showDismissiblePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
         AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)

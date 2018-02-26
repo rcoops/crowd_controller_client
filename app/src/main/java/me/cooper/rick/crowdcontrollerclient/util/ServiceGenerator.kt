@@ -10,6 +10,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import kotlin.reflect.KClass
 
 object ServiceGenerator {
 
@@ -23,18 +24,17 @@ object ServiceGenerator {
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient.build())
 
-    fun <S> createService(serviceClass: Class<S>): S {
+    fun <S : Any> createService(serviceClass: KClass<S>): S {
         return createService(serviceClass, null)
     }
 
-    fun <S> createService(
-            serviceClass: Class<S>, username: String, password: String): S {
+    fun <S : Any> createService(serviceClass: KClass<S>, username: String, password: String): S {
         val token = if (valid(username, password)) Credentials.basic(username, password) else ""
 
         return createService(serviceClass, token)
     }
 
-    fun <S> createService(serviceClass: Class<S>, authToken: String?): S {
+    fun <S : Any> createService(serviceClass: KClass<S>, authToken: String?): S {
         if (!TextUtils.isEmpty(authToken)) {
             val interceptor = AuthenticationInterceptor(authToken!!)
 
@@ -47,13 +47,13 @@ object ServiceGenerator {
         builder.client(httpClient.build())
         val retrofit: Retrofit = builder.build()
 
-        return retrofit.create(serviceClass)
+        return retrofit.create(serviceClass.java)
     }
 
     fun retrofit(): Retrofit = builder.build()
 
     private fun valid(username: String, password: String): Boolean =
-        !TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)
+            !TextUtils.isEmpty(username) && !TextUtils.isEmpty(password)
 
 
 }
