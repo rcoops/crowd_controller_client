@@ -59,8 +59,6 @@
     <string name="header_add_friend">Add Friend</string>
     <string name="action_add_friend">Add</string>
     <string name="prompt_user_detail">Username / email / mobile number</string>
-    <string name="action_cancel">Cancel</string>
-    <string name="action_ok">OK</string>
     <string name="action_remove">Remove</string>
     <string name="header_bad_credentials">Bad Credentials</string>
     <string name="txt_bad_credentials">Username or password is incorrect. Please try again.</string>
@@ -72,6 +70,8 @@
     <string name="txt_friend_not_found">No user exists with the details: %1$s. Please try again.</string>
     <string name="header_confirm">Confirm</string>
     <string name="txt_confirm_remove_friend">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="hdr_registration_successful">Registration Successful!</string>
+    <string name="txt_registration_successful">Please log in to continue.</string>
     <string-array name="menu_context_friend">
         <item>Add to Group</item>
         <item>Delete</item>

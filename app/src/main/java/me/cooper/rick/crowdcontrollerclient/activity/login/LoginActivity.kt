@@ -6,7 +6,6 @@ import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
 import android.app.LoaderManager.LoaderCallbacks
 import android.content.CursorLoader
-import android.content.Intent
 import android.content.Loader
 import android.content.pm.PackageManager
 import android.database.Cursor
@@ -22,8 +21,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
-import android.widget.Toast.LENGTH_LONG
-import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_login.*
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
@@ -47,17 +44,12 @@ import java.util.*
 class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         RegistrationFragment.OnRegistrationListener {
 
-    private val TAG = LoginActivity::class.java.simpleName
-
     private var mAuthTask: UserLoginTask? = null
     private var mCheckTokenTask: CheckTokenTask? = null
 
     private val REQUEST_READ_CONTACTS = 1
 
-    private val completeLogin: (Any) -> Unit = {
-        destroyTasks()
-        startActivity(Intent(this, FriendActivity::class.java))
-    }
+    private val loginSuccess: (Any) -> Unit = { startActivity(FriendActivity::class) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,18 +81,14 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     private fun populateAutoComplete() {
-        if (!mayRequestContacts()) {
-            return
+        if (mayRequestContacts()) {
+            loaderManager.initLoader(0, null, this)
         }
-
-        loaderManager.initLoader(0, null, this)
     }
 
     private fun mayRequestContacts(): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return true
-        }
-        if (checkSelfPermission(READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                checkSelfPermission(READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             return true
         }
         if (shouldShowRequestPermissionRationale(READ_CONTACTS)) {
@@ -144,14 +132,12 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         var cancel = false
         var focusView: View? = null
 
-        // Check for a valid password, if the baseUserEntity entered one.
         if (!TextUtils.isEmpty(passwordStr) && !isPasswordValid(passwordStr)) {
             password.error = getString(R.string.error_invalid_password)
             focusView = password
             cancel = true
         }
 
-        // Check for a valid email address.
         if (TextUtils.isEmpty(usernameStr)) {
             username.error = getString(R.string.error_field_required)
             focusView = username
@@ -159,21 +145,15 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         if (cancel) {
-            // There was an error; don't attempt login and focus the first
-            // form field with an error.
             focusView?.requestFocus()
         } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the baseUserEntity login attempt.
             showProgress(true)
-            mAuthTask = UserLoginTask(usernameStr, passwordStr)
-            mAuthTask!!.execute(null as Void?)
+            mAuthTask = UserLoginTask(usernameStr, passwordStr).apply { execute() }
         }
     }
 
     private fun isPasswordValid(password: String): Boolean {
-        //TODO: Replace this with your own logic
-        return true//password.length > 4
+        return password.length > 4
     }
 
     /**
@@ -181,37 +161,27 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     private fun showProgress(show: Boolean) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-            val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
+        val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
 
-            login_form.visibility = if (show) View.GONE else View.VISIBLE
-            login_form.animate()
-                    .setDuration(shortAnimTime)
-                    .alpha((if (show) 0 else 1).toFloat())
-                    .setListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            login_form.visibility = if (show) View.GONE else View.VISIBLE
-                        }
-                    })
+        login_form.visibility = if (show) View.GONE else View.VISIBLE
+        login_form.animate()
+                .setDuration(shortAnimTime)
+                .alpha((if (show) 0 else 1).toFloat())
+                .setListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        login_form.visibility = if (show) View.GONE else View.VISIBLE
+                    }
+                })
 
-            login_progress.visibility = if (show) View.VISIBLE else View.GONE
-            login_progress.animate()
-                    .setDuration(shortAnimTime)
-                    .alpha((if (show) 1 else 0).toFloat())
-                    .setListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            login_progress.visibility = if (show) View.VISIBLE else View.GONE
-                        }
-                    })
-        } else {
-            // The ViewPropertyAnimator APIs are not available, so simply show
-            // and hide the relevant UI components.
-            login_progress.visibility = if (show) View.VISIBLE else View.GONE
-            login_form.visibility = if (show) View.GONE else View.VISIBLE
-        }
+        login_progress.visibility = if (show) View.VISIBLE else View.GONE
+        login_progress.animate()
+                .setDuration(shortAnimTime)
+                .alpha((if (show) 1 else 0).toFloat())
+                .setListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        login_progress.visibility = if (show) View.VISIBLE else View.GONE
+                    }
+                })
     }
 
     override fun onCreateLoader(i: Int, bundle: Bundle?): Loader<Cursor> {
@@ -220,12 +190,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                 Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
                         ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
 
-                // Select only email addresses.
                 ContactsContract.Contacts.Data.MIMETYPE + " = ?", arrayOf(ContactsContract.CommonDataKinds.Email
                 .CONTENT_ITEM_TYPE),
 
-                // Show primary email addresses first. Note that there won't be
-                // a primary email address if the baseUserEntity hasn't specified one.
                 ContactsContract.Contacts.Data.IS_PRIMARY + " DESC")
     }
 
@@ -252,7 +219,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun destroyTasks() {
+    override fun destroyTasks() {
         showProgress(false)
         mAuthTask?.cancel(true)
         mAuthTask = null
@@ -260,14 +227,20 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         mCheckTokenTask = null
     }
 
-    private fun listUsers(users: List<UserDto>) {
-        val userList = users.joinToString("\n")
-        makeText(this, userList, LENGTH_LONG).show()
+    override fun onFragmentInteraction(userDto: Response<UserDto>) {
+        supportFragmentManager.popBackStackImmediate()
+        handleResponse(userDto, { registrationSuccessful(it) })
     }
 
-    override fun onFragmentInteraction(userDto: UserDto) {
-        supportFragmentManager.popBackStackImmediate()
-        listUsers(listOf(userDto))
+    private fun registrationSuccessful(dto: UserDto) {
+        showDismissablePopup(
+                getString(R.string.hdr_registration_successful),
+                getString(R.string.txt_registration_successful),
+                destroyTasksOnClickListener
+        )
+        username.setText(dto.username)
+        password.text.clear()
+        password.requestFocus()
     }
 
     object ProfileQuery {
@@ -284,7 +257,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      */
     inner class UserLoginTask internal constructor(
             private val username: String,
-            private val password: String): AsyncTask<Void, Void, Response<Token>>() {
+            private val password: String) : AsyncTask<Void, Void, Response<Token>>() {
 
         override fun doInBackground(vararg params: Void): Response<Token> {
             val userClient = ServiceGenerator.createService(
@@ -315,16 +288,12 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(token: Response<Token>) {
-            handleResponse(token, completeLogin)
+            handleResponse(token, loginSuccess)
         }
 
     }
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the baseUserEntity.
-     */
-    inner class CheckTokenTask: AsyncTask<Void, Void, TokenEntity?>() {
+    inner class CheckTokenTask : AsyncTask<Void, Void, TokenEntity?>() {
 
         override fun doInBackground(vararg params: Void): TokenEntity? {
             val db = AppDatabase.getInstance(this@LoginActivity)
@@ -333,7 +302,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(result: TokenEntity?) {
-            result?.let { completeLogin(it) }
+            result?.let { loginSuccess(it) }
         }
 
     }

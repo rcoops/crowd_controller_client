@@ -13,7 +13,10 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import retrofit2.Response
+import java.io.IOException
 
 /**
  * A simple [Fragment] subclass.
@@ -77,7 +80,7 @@ class RegistrationFragment : Fragment() {
     )
 
     interface OnRegistrationListener {
-        fun onFragmentInteraction(userDto: UserDto)
+        fun onFragmentInteraction(userDto: Response<UserDto>)
     }
 
     companion object {
@@ -110,22 +113,20 @@ class RegistrationFragment : Fragment() {
      * the baseUserEntity.
      */
     inner class RegisterTask internal constructor(
-            private val registrationDto: RegistrationDto) : AsyncTask<Void, Void, UserDto>() {
+            private val registrationDto: RegistrationDto) : AsyncTask<Void, Void, Response<UserDto>>() {
 
-        override fun doInBackground(vararg params: Void): UserDto {
+        override fun doInBackground(vararg params: Void): Response<UserDto> {
             val userClient = ServiceGenerator.createService(
                     UserClient::class.java
             )
-            val response = userClient
-                    .create(registrationDto)
-                    .execute()
-
-            //TODO error checking
-
-            return response.body() ?: UserDto()
+            return try {
+                userClient.create(registrationDto).execute()
+            } catch (e: IOException) {
+                handleConnectionException(e)
+            }
         }
 
-        override fun onPostExecute(result: UserDto) {
+        override fun onPostExecute(result: Response<UserDto>) {
             mListener!!.onFragmentInteraction(result)
         }
 

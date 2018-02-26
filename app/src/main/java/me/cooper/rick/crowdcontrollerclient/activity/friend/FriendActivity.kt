@@ -1,6 +1,5 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
-import android.content.Intent
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.design.widget.NavigationView
@@ -20,13 +19,14 @@ import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.group.GroupActivity
+import me.cooper.rick.crowdcontrollerclient.activity.login.LoginActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
+import me.cooper.rick.crowdcontrollerclient.auth.DestroyTokenTask
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Response
 import java.io.IOException
-import java.net.ConnectException
 
 class FriendActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -41,10 +41,11 @@ class FriendActivity : AppActivity(),
     private var getFriendsTask: GetFriendsTask? = null
     private var addFriendTask: AddFriendTask? = null
     private var removeFriendTask: RemoveFriendTask? = null
-    private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask)
+    private var destroyTokenTask: DestroyTokenTask? = null
+    private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask, destroyTokenTask)
 
     private val refreshFriends: (Set<FriendDto>) -> Unit = {
-        cancelFriendTasks()
+        destroyTasks()
         friends.clear()
         friends.addAll(it)
         friendFragment.adapter.notifyDataSetChanged()
@@ -79,10 +80,12 @@ class FriendActivity : AppActivity(),
         supportFragmentManager.beginTransaction()
                 .replace(R.id.friend_fragment_content, friendFragment)
                 .commit()
-        fab.setOnClickListener {
-            addFriendDialogView.actv_user_detail.text.clear()
-            addFriendDialog.show()
-        }
+        fab.setOnClickListener { addFriend() }
+    }
+
+    private fun addFriend() {
+        addFriendDialogView.actv_user_detail.text.clear()
+        addFriendDialog.show()
     }
 
     override fun onBackPressed() {
@@ -112,28 +115,16 @@ class FriendActivity : AppActivity(),
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.navCreateGroup -> {
-                val intent = Intent(this, GroupActivity::class.java)
-                startActivity(intent)
-                // Handle the camera action
-            }
-            R.id.navNewFriend -> {
-
-            }
+            R.id.navCreateGroup -> { startActivity(GroupActivity::class) }
+            R.id.navNewFriend -> { addFriend() }
             R.id.navSettings -> {
 
             }
-            R.id.navSignOut -> {
-
-            }
+            R.id.navSignOut -> DestroyTokenTask({ startActivity(LoginActivity::class) }).execute()
         }
 
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
-    }
-
-    private fun cancelFriendTasks() {
-        friendsTasks.forEach { it?.cancel(true) }
     }
 
     override fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem) {
@@ -144,18 +135,19 @@ class FriendActivity : AppActivity(),
         }
     }
 
+    override fun destroyTasks() = friendsTasks.forEach { it?.cancel(true) }
+
     private fun showRemoveFriendDialog(item: FriendDto) {
         AlertDialog.Builder(this)
                 .setTitle(getString(R.string.header_confirm))
                 .setMessage(getString(R.string.txt_confirm_remove_friend, item.username))
-                .setPositiveButton(getString(R.string.action_ok), { _, _ -> removeFriend(item.id) })
-                .setNegativeButton(getString(R.string.action_cancel), { _, _ -> })
+                .setPositiveButton(getString(android.R.string.ok), { _, _ -> removeFriend(item.id) })
+                .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
                 .show()
     }
 
     private fun removeFriend(id: Long) {
-        removeFriendTask = RemoveFriendTask(id)
-        removeFriendTask!!.execute()
+        removeFriendTask = RemoveFriendTask(id).apply { execute() }
     }
 
     inner class GetFriendsTask internal constructor() : AsyncTask<Void, Void, Response<Set<FriendDto>>>() {

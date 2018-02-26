@@ -1,23 +1,21 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
-import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import me.cooper.rick.crowdcontrollerclient.App
-import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.BAD_REQUEST
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.NOT_FOUND
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.UNAUTHORIZED
-import org.springframework.http.HttpStatus
 import retrofit2.Response
-import java.util.function.Consumer
+import kotlin.reflect.KClass
 
 abstract class AppActivity : AppCompatActivity() {
 
     protected var app: App? = null
+
+    protected val destroyTasksOnClickListener = DialogInterface.OnClickListener { _, _ -> destroyTasks() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,17 +42,31 @@ abstract class AppActivity : AppCompatActivity() {
             in 200 until 400 -> consumer(response.body()!!)
             else -> {
                 val apiError = parseError(response)
-                showDismissablePopup(apiError.error, apiError.errorDescription)
+                showDismissablePopup(apiError.error, apiError.errorDescription,
+                        destroyTasksOnClickListener)
             }
         }
     }
 
-    private fun showDismissablePopup(title: String, message: String) {
+    protected fun startActivity(clazz: KClass<out Any>) {
+        destroyTasks()
+        startActivity(Intent(this, clazz.java))
+    }
+
+    protected abstract fun destroyTasks()
+
+    protected fun showDismissablePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
         AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setNegativeButton(getString(R.string.action_ok), { _, _ -> })
+                .setNegativeButton(getString(android.R.string.ok), onClickListener)
                 .show()
+    }
+
+    private fun getTag(clazz: KClass<out Any>): String = clazz.java.simpleName
+
+    protected fun debug(message: String) {
+        Log.d(getTag(this::class), message)
     }
 
     private fun clearReferences() {

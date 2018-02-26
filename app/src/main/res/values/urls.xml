@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--<string name="base_uri">http://stb098.edu.csesalford.com</string>-->
-    <string name="base_uri">http://2.102.15.226</string>
+    <string name="base_uri">http://stb098.edu.csesalford.com</string>
+    <!--<string name="base_uri">http://2.102.15.226</string>-->
 </resources>
