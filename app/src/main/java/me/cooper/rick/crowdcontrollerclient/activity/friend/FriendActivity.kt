@@ -49,6 +49,7 @@ class FriendActivity : AppActivity(),
 
     private val refreshFriends: (Set<FriendDto>) -> Unit = {
         destroyTasks()
+        dismissDialogs()
         friends.clear()
         friends.addAll(it)
         friendFragment.adapter.notifyDataSetChanged()
@@ -56,7 +57,6 @@ class FriendActivity : AppActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getFriendsTask = GetFriendsTask().apply { execute() }
         setContentView(R.layout.activity_friend)
         setSupportActionBar(toolbar)
 
@@ -74,7 +74,7 @@ class FriendActivity : AppActivity(),
                 .setTitle(R.string.header_add_friend)
                 .setView(addFriendDialogView).create()
 
-        addFriendDialogView.btn_cancel_add_friend.setOnClickListener { addFriendDialog.dismiss() }
+        addFriendDialogView.btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
 
         nav_view.setNavigationItemSelectedListener(this)
 
@@ -84,6 +84,14 @@ class FriendActivity : AppActivity(),
                 .replace(R.id.friend_fragment_content, friendFragment)
                 .commit()
         fab.setOnClickListener { addFriend() }
+    }
+
+    private fun dismissDialogs() {
+        dismissDialog(addFriendDialog)
+    }
+
+    private fun dismissDialog(alertDialog: AlertDialog) {
+        if (alertDialog.isShowing) alertDialog.dismiss()
     }
 
     private fun addFriend() {
@@ -97,6 +105,11 @@ class FriendActivity : AppActivity(),
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        getFriendsTask = GetFriendsTask().apply { execute() }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -178,72 +191,5 @@ class FriendActivity : AppActivity(),
         }
 
     }
-
-    // TODO - inheritance on these tasks?? executeClientTask(userClient: UserClient, id: Long, vararg params: String)
-//    inner class GetFriendsTask internal constructor() : AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
-//
-//        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
-//            val db = AppDatabase.getInstance(this@FriendActivity)
-//            val userId = db.userDao().select()?.id
-//            val token = db.tokenDao().select()?.toTokenString()
-//            val userClient = ServiceGenerator.createService(UserClient::class, token)
-//
-//            return try {
-//                userClient.friends(userId!!).execute()
-//            } catch (e: IOException) {
-//                handleConnectionException(e)
-//            }
-//        }
-//
-//        override fun onPostExecute(response: Response<Set<FriendDto>>) {
-//            handleResponse(response, refreshFriends)
-//        }
-//
-
-//    }
-
-    //    inner class RemoveFriendTask internal constructor(private val friendId: Long) :
-//            AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
-//
-//        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
-//            val db = AppDatabase.getInstance(this@FriendActivity)
-//            val userId = db.userDao().select()?.id
-//            val token = db.tokenDao().select()?.toTokenString()
-//            val userClient = ServiceGenerator.createService(UserClient::class, token)
-//
-//            return try {
-//                userClient.removeFriend(userId!!, friendId).execute()
-//            } catch (e: IOException) {
-//                handleConnectionException(e)
-//            }
-//        }
-//
-//        override fun onPostExecute(response: Response<Set<FriendDto>>) {
-//            handleResponse(response, refreshFriends)
-//        }
-//
-
-//    }
-//    inner class AddFriendTask internal constructor(private val friendIdentifier: String) :
-//            AsyncTask<Void, Void, Response<Set<FriendDto>>>() {
-//
-//        override fun doInBackground(vararg params: Void): Response<Set<FriendDto>> {
-//            val db = AppDatabase.getInstance(this@FriendActivity)
-//            val userId = db.userDao().select()?.id
-//            val token = db.tokenDao().select()?.toTokenString()
-//            val userClient = ServiceGenerator.createService(UserClient::class, token)
-//
-//            return try {
-//                userClient.addFriend(userId!!, friendIdentifier).execute()
-//            } catch (e: IOException) {
-//                handleConnectionException(e)
-//            }
-//        }
-//
-//        override fun onPostExecute(response: Response<Set<FriendDto>>) {
-//            handleResponse(response, refreshFriends)
-//        }
-//
-//    }
 
 }

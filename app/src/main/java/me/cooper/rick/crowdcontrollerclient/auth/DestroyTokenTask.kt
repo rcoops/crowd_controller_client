@@ -9,9 +9,7 @@ class DestroyTokenTask(private val func: () -> Unit) :
         AsyncTask<Void, Void, Void?>() {
     override fun doInBackground(vararg params: Void?): Void? {
         val db = AppDatabase.getInstance(App.currentActivity!!.applicationContext)
-        val tokenDao = db.tokenDao()
         val userDao = db.userDao()
-        tokenDao.clear()
         userDao.clear()
         return null
     }

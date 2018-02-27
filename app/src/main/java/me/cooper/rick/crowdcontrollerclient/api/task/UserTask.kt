@@ -17,18 +17,18 @@ abstract class UserTask<T>(private val consumer: (T) -> Unit) : AsyncTask<Void, 
 
     override fun doInBackground(vararg params: Void): Response<T> {
         val db = AppDatabase.getInstance(App.currentActivity!!)
-        val userId = db.userDao().select()?.id
-        val token = db.tokenDao().select()?.toTokenString()
-        val userClient = ServiceGenerator.createService(UserClient::class, token)
+        val user = db.userDao().select()!!
+        val userClient = ServiceGenerator.createService(UserClient::class, user.token)
 
         return try {
-            buildCall(userClient, userId!!).execute()
+            buildCall(userClient, user.id!!).execute()
         } catch (e: IOException) {
             handleConnectionException(e)
         }
     }
 
     override fun onPostExecute(response: Response<T>) {
-        App.currentActivity!!.handleResponse(response, consumer)
+        App.currentActivity?.handleResponse(response, consumer)
     }
+
 }

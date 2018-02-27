@@ -47,9 +47,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     private var mAuthTask: UserLoginTask? = null
     private var mCheckTokenTask: CheckTokenTask? = null
 
-    private val REQUEST_READ_CONTACTS = 1
-
-    private val loginSuccess: (Any) -> Unit = { startActivity(FriendActivity::class) }
+    private val loginSuccess: (Any) -> Unit = {
+        startActivity(FriendActivity::class)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -260,14 +260,14 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             private val password: String) : AsyncTask<Void, Void, Response<Token>>() {
 
         override fun doInBackground(vararg params: Void): Response<Token> {
-            val userClient = ServiceGenerator.createService(
+            val loginClient = ServiceGenerator.createService(
                     LoginClient::class,
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
             )
 
             return try {
-                val response = userClient.getToken(getString(R.string.jwt_grant_type), username, password).execute()
+                val response = loginClient.getToken(getString(R.string.jwt_grant_type), username, password).execute()
                 val body = response.body()
                 if (body is Token) save(body)
                 response
@@ -278,13 +278,10 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
         private fun save(token: Token) {
             val db = AppDatabase.getInstance(this@LoginActivity)
-            val tokenDao = db.tokenDao()
             val userDao = db.userDao()
-            tokenDao.clear()
             userDao.clear()
 
-            tokenDao.insert(TokenEntity.fromDto(token))
-            userDao.insert(UserEntity.fromDto(token.user!!))
+            userDao.insert(UserEntity.fromDto(token))
         }
 
         override fun onPostExecute(token: Response<Token>) {
@@ -293,19 +290,25 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     }
 
-    inner class CheckTokenTask : AsyncTask<Void, Void, TokenEntity?>() {
+    inner class CheckTokenTask : AsyncTask<Void, Void, String?>() {
 
-        override fun doInBackground(vararg params: Void): TokenEntity? {
+        override fun doInBackground(vararg params: Void): String? {
             val db = AppDatabase.getInstance(this@LoginActivity)
-            val tokenDao = db.tokenDao()
-            return tokenDao.select()
+            val userDao = db.userDao()
+            return userDao.select()?.token
         }
 
-        override fun onPostExecute(result: TokenEntity?) {
-            result?.let { loginSuccess(it) }
+        override fun onPostExecute(result: String?) {
+            result?.let { loginSuccess(result) }
         }
 
     }
 
+
+    companion object {
+
+        private const val REQUEST_READ_CONTACTS = 1
+
+    }
 
 }
