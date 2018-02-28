@@ -12,7 +12,6 @@ import kotlinx.android.synthetic.main.activity_group.*
 import kotlinx.android.synthetic.main.app_bar_group.*
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent
-import java.util.*
 
 class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
         GroupFragment.OnListFragmentInteractionListener {
@@ -23,7 +22,6 @@ class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group)
         setSupportActionBar(toolbar)
-        val
         val friendId = intent.getLongExtra("friendId", -1)
 //        if (friendId != -1L)
 

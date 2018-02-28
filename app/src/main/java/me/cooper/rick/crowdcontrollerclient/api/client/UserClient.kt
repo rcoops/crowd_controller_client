@@ -10,33 +10,37 @@ interface UserClient {
 
     /* USER */
 
-    @GET("/users")
+    @GET(BASE_PATH)
     fun users(): Call<List<UserDto>?>
 
-    @GET("/users/{userId}")
+    @GET("/{userId}")
     fun user(@Path("userId") userId: Long): Call<UserDto>
 
-    @POST("/users")
+    @POST(BASE_PATH)
     fun create(@Body registrationDto: RegistrationDto): Call<UserDto>
 
-    @PUT("/users/{userId}")
+    @PUT("$BASE_PATH/{userId}")
     fun update(@Path("userId") userId: Long, @Body userDto: UserDto): Call<UserDto>
 
     /* FRIENDS */
 
-    @GET("/users/{userId}/friends")
+    @GET("$BASE_PATH/{userId}/friends")
     fun friends(@Path("userId") userId: Long): Call<Set<FriendDto>>
 
-    @PUT("/users/{userId}/friends/{friendIdentifier}")
+    @PUT("$BASE_PATH/{userId}/friends/{friendIdentifier}")
     fun addFriend(@Path("userId") userId: Long,
                   @Path("friendIdentifier") friendIdentifier: String): Call<Set<FriendDto>>
 
-    @PUT("/users/{userId}/friends/{friendId}/accept")
+    @PUT("$BASE_PATH/{userId}/friends/{friendId}/accept")
     fun acceptFriendRequest(@Path("userId") userId: Long,
                             @Path("friendId") friendId: Long): Call<Set<FriendDto>>
 
-    @DELETE("/users/{userId}/friends/{friendId}")
+    @DELETE("$BASE_PATH/{userId}/friends/{friendId}")
     fun removeFriend(@Path("userId") userId: Long,
                      @Path("friendId") friendId: Long): Call<Set<FriendDto>>
 
+    companion object {
+        const val BASE_PATH = "/users"
+    }
+    
 }
