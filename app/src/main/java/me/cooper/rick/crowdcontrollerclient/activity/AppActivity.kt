@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
+import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
 import retrofit2.Response
 import kotlin.reflect.KClass
 
@@ -37,13 +39,13 @@ abstract class AppActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    fun <T> handleResponse(response: Response<T>, consumer: (T) -> Unit) {
+    fun <T> handleResponse(response: Response<T>, responseConsumer: (T) -> Unit,
+                           errorConsumer: ((APIErrorDto) -> Unit)? = null) {
         when (response.code()) {
-            in 200 until 400 -> consumer(response.body()!!)
+            in HttpStatus.OK until HttpStatus.BAD_REQUEST -> responseConsumer(response.body()!!)
             else -> {
                 val apiError = parseError(response)
-                showDismissiblePopup(apiError.error, apiError.errorDescription,
-                        destroyTasksOnClickListener)
+                showAPIErrorPopup(apiError, errorConsumer)
             }
         }
     }
@@ -54,18 +56,30 @@ abstract class AppActivity : AppCompatActivity() {
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
-    protected abstract fun destroyTasks()
-
     protected fun showDismissiblePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
-        AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(message)
+        buildBasePopup(title, message)
                 .setNegativeButton(getString(android.R.string.ok), onClickListener)
                 .show()
     }
 
-    protected fun showDismissiblePopup(title: String, message: String, listener: (DialogInterface, Int) -> Unit) {
-        showDismissiblePopup(title, message, DialogInterface.OnClickListener(listener))
+    protected fun showDismissiblePopup(title: String, message: String, apiError: APIError? = null) {
+        buildBasePopup(title, message)
+                .setNegativeButton(getString(android.R.string.ok),
+                        { _, _ -> apiError?.call() })
+                .show()
+    }
+
+    protected abstract fun destroyTasks()
+
+    private fun showAPIErrorPopup(apiErrorDto: APIErrorDto,
+                                  errorConsumer: ((APIErrorDto) -> Unit)?) {
+        showDismissiblePopup(apiErrorDto.error, apiErrorDto.errorDescription, APIError(apiErrorDto, errorConsumer))
+    }
+
+    private fun buildBasePopup(title: String, message: String): AlertDialog.Builder {
+        return AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
     }
 
     private fun getTag(clazz: KClass<out Any>): String = clazz.java.simpleName
@@ -78,4 +92,12 @@ abstract class AppActivity : AppCompatActivity() {
         if (this == App.currentActivity) App.currentActivity = null
     }
 
+    inner class APIError(private val apiErrorDto: APIErrorDto,
+                         private val consumer: ((APIErrorDto) -> Unit)?) {
+
+        fun call() = consumer?.let { it(apiErrorDto) }
+
+    }
+
 }
+

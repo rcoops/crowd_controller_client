@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
@@ -144,7 +145,7 @@ class FriendActivity : AppActivity(),
             R.id.action_remove_friend -> showRemoveFriendDialog(friend)
             R.id.action_add_to_group -> {
                 if (friend.inGroup) {
-                    showDismissiblePopup("Grouped", "${friend.username} is already in a group!", { _, _ -> })
+                    showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
                 } else {
                     startActivity(GroupActivity::class, Pair("friendId", friend.id))
                 }

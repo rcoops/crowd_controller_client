@@ -9,7 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.jackson.JacksonConverterFactory
 import kotlin.reflect.KClass
 
 object ServiceGenerator {
@@ -21,7 +21,7 @@ object ServiceGenerator {
 
     private val builder = Retrofit.Builder()
             .baseUrl(API_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(JacksonConverterFactory.create())
             .client(httpClient.build())
 
     fun <S : Any> createService(serviceClass: KClass<S>): S {

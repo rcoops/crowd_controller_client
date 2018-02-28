@@ -48,13 +48,10 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:11.8.0'
 
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
+
+    implementation 'com.squareup.retrofit2:converter-jackson:2.3.0'
 
     implementation 'com.squareup.okhttp3:logging-interceptor:3.9.1'
-
-    implementation('org.springframework.android:spring-android-auth:1.0.1.RELEASE') {
-        exclude group: 'org.springframework', module: 'spring-core'
-    }
 
     implementation 'me.cooper.rick:crowd-controller-api:1.0-SNAPSHOT'
 

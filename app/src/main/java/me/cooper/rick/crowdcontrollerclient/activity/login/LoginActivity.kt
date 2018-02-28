@@ -24,10 +24,12 @@ import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_login.*
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
+import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
+import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
@@ -46,8 +48,13 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     private var mAuthTask: UserLoginTask? = null
     private var mCheckTokenTask: CheckTokenTask? = null
 
-    private val loginSuccess: (Any) -> Unit = {
-        startActivity(FriendActivity::class)
+    private val loginSuccess: (Any) -> Unit = { startActivity(FriendActivity::class) }
+
+    private val handleLoginError: (APIErrorDto) -> Unit = {
+        destroyTasks()
+        showProgress(false)
+        if (it.error == BAD_PASSWORD) password?.requestFocus()
+        else username?.requestFocus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +64,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         // Set up the login form.
         populateAutoComplete()
 
-        OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txtHeader)
+        OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txt_header)
 
         setListeners()
     }
@@ -70,8 +77,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             }
             false
         })
-        btnEmailSignIn.setOnClickListener { attemptLogin() }
-        btnRegister.setOnClickListener {
+        btn_username_signin.setOnClickListener { attemptLogin() }
+        btn_register.setOnClickListener {
             supportFragmentManager.beginTransaction()
                     .add(R.id.content, RegistrationFragment())
                     .addToBackStack("reg")
@@ -219,7 +226,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     override fun destroyTasks() {
-        showProgress(false)
         mAuthTask?.cancel(true)
         mAuthTask = null
         mCheckTokenTask?.cancel(true)
@@ -283,8 +289,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             userDao.insert(UserEntity.fromDto(token))
         }
 
-        override fun onPostExecute(token: Response<Token>) {
-            handleResponse(token, loginSuccess)
+        override fun onPostExecute(response: Response<Token>) {
+            handleResponse(response, loginSuccess, handleLoginError)
         }
 
     }

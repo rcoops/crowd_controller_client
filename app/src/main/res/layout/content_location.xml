@@ -51,7 +51,7 @@
         app:layout_constraintTop_toBottomOf="@+id/address"/>
 
     <Button
-        android:id="@+id/btnEmailSignIn"
+        android:id="@+id/btn_username_signin"
         style="@style/AppTheme.Button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
