@@ -1,7 +1,5 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
-import android.os.AsyncTask
-import android.os.AsyncTask.execute
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
@@ -21,13 +19,8 @@ import me.cooper.rick.crowdcontrollerclient.activity.group.GroupActivity
 import me.cooper.rick.crowdcontrollerclient.activity.login.LoginActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.task.UserTask
-import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.auth.DestroyTokenTask
-import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Call
-import retrofit2.Response
-import java.io.IOException
 
 class FriendActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -63,7 +56,6 @@ class FriendActivity : AppActivity(),
                         R.string.navigation_drawer_open, R.string.navigation_drawer_close)
                         .apply { syncState() }
         )
-
 
         addFriendDialogView = layoutInflater.inflate(R.layout.content_add_friend, content)
         addFriendDialogView.btn_add_friend.setOnClickListener {

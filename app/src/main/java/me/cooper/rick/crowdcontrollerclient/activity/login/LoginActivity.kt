@@ -30,7 +30,6 @@ import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
 import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator

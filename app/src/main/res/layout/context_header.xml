@@ -10,5 +10,5 @@
         android:textSize="@dimen/context_header_size"
         android:padding="@dimen/padding_header"
         android:textColor="@android:color/white"
-        android:background="@color/colorPrimaryDark" />
+        android:background="@color/primary_dark" />
 </LinearLayout>

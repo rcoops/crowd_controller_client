@@ -11,4 +11,4 @@
     app:layoutManager="LinearLayoutManager"
     tools:context="me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment"
     tools:listitem="@layout/fragment_friend"
-    android:background="@color/colorPrimary" />
+    android:background="@color/primary" />
