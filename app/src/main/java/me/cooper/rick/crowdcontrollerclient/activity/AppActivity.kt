@@ -48,9 +48,10 @@ abstract class AppActivity : AppCompatActivity() {
         }
     }
 
-    protected fun startActivity(clazz: KClass<out Any>) {
+    protected fun startActivity(clazz: KClass<out Any>, vararg extras: Pair<String, Long>) {
         destroyTasks()
-        startActivity(Intent(this, clazz.java))
+        startActivity(Intent(this, clazz.java)
+                .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
     protected abstract fun destroyTasks()
@@ -61,6 +62,10 @@ abstract class AppActivity : AppCompatActivity() {
                 .setMessage(message)
                 .setNegativeButton(getString(android.R.string.ok), onClickListener)
                 .show()
+    }
+
+    protected fun showDismissiblePopup(title: String, message: String, listener: (DialogInterface, Int) -> Unit) {
+        showDismissiblePopup(title, message, DialogInterface.OnClickListener(listener))
     }
 
     private fun getTag(clazz: KClass<out Any>): String = clazz.java.simpleName

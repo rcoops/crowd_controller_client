@@ -23,6 +23,9 @@ class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group)
         setSupportActionBar(toolbar)
+        val
+        val friendId = intent.getLongExtra("friendId", -1)
+//        if (friendId != -1L)
 
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)

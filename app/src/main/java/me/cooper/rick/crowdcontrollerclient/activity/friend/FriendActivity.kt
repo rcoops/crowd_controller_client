@@ -10,8 +10,6 @@ import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.Toast.LENGTH_LONG
-import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_friend.*
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.app_bar_friend.*
@@ -60,15 +58,17 @@ class FriendActivity : AppActivity(),
         setContentView(R.layout.activity_friend)
         setSupportActionBar(toolbar)
 
-        val toggle = ActionBarDrawerToggle(
-                this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
-        drawer_layout.addDrawerListener(toggle)
-        toggle.syncState()
+        drawer_layout.addDrawerListener(
+                ActionBarDrawerToggle(this, drawer_layout, toolbar,
+                        R.string.navigation_drawer_open, R.string.navigation_drawer_close)
+                        .apply { syncState() }
+        )
+
 
         addFriendDialogView = layoutInflater.inflate(R.layout.content_add_friend, content)
         addFriendDialogView.btn_add_friend.setOnClickListener {
             addFriendTask = AddFriendTask(addFriendDialogView.actv_user_detail.text.toString())
-            addFriendTask!!.execute()
+                    .apply { execute() }
         }
         addFriendDialog = AlertDialog.Builder(this)
                 .setTitle(R.string.header_add_friend)
@@ -131,8 +131,12 @@ class FriendActivity : AppActivity(),
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.navCreateGroup -> { startActivity(GroupActivity::class) }
-            R.id.navNewFriend -> { addFriend() }
+            R.id.navCreateGroup -> {
+                startActivity(GroupActivity::class)
+            }
+            R.id.navNewFriend -> {
+                addFriend()
+            }
             R.id.navSettings -> {
 
             }
@@ -143,10 +147,16 @@ class FriendActivity : AppActivity(),
         return true
     }
 
-    override fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem) {
+    override fun onListFragmentInteraction(friend: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
-            R.id.action_remove_friend -> showRemoveFriendDialog(item)
-            R.id.action_add_to_group -> makeText(this, "${item.username} poked", LENGTH_LONG).show()
+            R.id.action_remove_friend -> showRemoveFriendDialog(friend)
+            R.id.action_add_to_group -> {
+                if (friend.inGroup) {
+                    showDismissiblePopup("Grouped", "${friend.username} is already in a group!", { _, _ -> })
+                } else {
+                    startActivity(GroupActivity::class, Pair("friendId", friend.id))
+                }
+            }//makeText(this, "${item.username} poked", LENGTH_LONG).show()
             else -> throw NotImplementedError("Not Implemented!!")
         }
     }

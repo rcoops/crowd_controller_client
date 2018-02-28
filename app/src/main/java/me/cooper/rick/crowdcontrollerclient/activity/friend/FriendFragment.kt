@@ -84,7 +84,7 @@ class FriendFragment : Fragment() {
      */
     interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        fun onListFragmentInteraction(item: FriendDto, menuItem: MenuItem)
+        fun onListFragmentInteraction(friend: FriendDto, menuItem: MenuItem)
     }
 
     companion object {
