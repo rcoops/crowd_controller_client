@@ -36,35 +36,45 @@ class FriendRecyclerViewAdapter(
     }
 
     private fun setStatusView(holder: ViewHolder, friendDto: FriendDto) {
+        val btnAccept = holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
+        val btnDeny = holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
+
         when (friendDto.status) {
-            FriendDto.Status.ACTIVATED -> {
+            FriendDto.Status.ACTIVATED -> {//setHolderStatus(holder, friendDto, false, false)
                 holder.mOverlayView.visibility = View.GONE
                 holder.mConfirmView.visibility = View.GONE
+                holder.mOverlayView.text = ""
                 holder.mView.setOnCreateContextMenuListener(holder as View.OnCreateContextMenuListener)
                 holder.mView.isLongClickable = false
                 holder.mMainMenu.setOnClickListener { holder.mView.showContextMenu() }
-                holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
-                        ?.setOnClickListener(null)
-                holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
-                        ?.setOnClickListener(null)
+                noButtonListeners(btnAccept, btnDeny)
             }
-            FriendDto.Status.AWAITING_ACCEPT -> {
+            FriendDto.Status.AWAITING_ACCEPT -> {//setHolderStatus(holder, friendDto, true, false)
                 holder.mOverlayView.visibility = View.VISIBLE
+                holder.mConfirmView.visibility = View.GONE
+                holder.mOverlayView.text = (mListener as AppActivity).getString(R.string.txt_awaiting_friend_accept)
+                holder.mView.setOnCreateContextMenuListener(null)
+                noButtonListeners(btnAccept, btnDeny)
             }
-            FriendDto.Status.TO_ACCEPT -> {
-                holder.mOverlayView.text = ""
+            FriendDto.Status.TO_ACCEPT -> {//setHolderStatus(holder, friendDto, true, true)
                 holder.mOverlayView.visibility = View.VISIBLE
                 holder.mConfirmView.visibility = View.VISIBLE
-                holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
-                        ?.setOnClickListener {
+                holder.mOverlayView.text = ""
+                holder.mView.setOnCreateContextMenuListener(null)
+                btnAccept?.setOnClickListener {
                             mListener.onListItemFriendInviteResponse(friendDto, true)
                 }
-                holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
-                        ?.setOnClickListener {
+                btnDeny?.setOnClickListener {
                     mListener.onListItemFriendInviteResponse(friendDto, false)
                 }
             }
         }
+    }
+
+    private fun noButtonListeners(btnAccept: FloatingActionButton?,
+                                  btnDeny: FloatingActionButton?) {
+        btnAccept?.setOnClickListener(null)
+        btnDeny?.setOnClickListener(null)
     }
 
     override fun getItemCount(): Int {
