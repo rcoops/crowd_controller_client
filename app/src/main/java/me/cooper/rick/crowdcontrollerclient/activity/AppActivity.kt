@@ -89,6 +89,7 @@ abstract class AppActivity : AppCompatActivity() {
     }
 
     private fun clearReferences() {
+        destroyTasks()
         if (this == App.currentActivity) App.currentActivity = null
     }
 

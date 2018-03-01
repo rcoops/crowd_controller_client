@@ -4,5 +4,6 @@
     <color name="primary_dark">#303F9F</color>
     <color name="primary_light">#6573c3</color>
     <color name="link_text">#00BBFF</color>
-    <color name="shaded">#80FFFFFF</color>
+    <color name="shaded">#CCFFFFFF</color>
+    <!--<color name="shaded">#FFFFFF</color>-->
 </resources>

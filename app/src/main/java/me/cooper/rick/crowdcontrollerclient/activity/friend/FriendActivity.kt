@@ -1,9 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.view.GravityCompat
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
@@ -32,18 +32,22 @@ class FriendActivity : AppActivity(),
     private lateinit var friendFragment: FriendFragment
     private lateinit var addFriendDialogView: View
     private lateinit var addFriendDialog: AlertDialog
-
+    lateinit var swipeView: SwipeRefreshLayout
     private var getFriendsTask: GetFriendsTask? = null
     private var addFriendTask: AddFriendTask? = null
     private var removeFriendTask: RemoveFriendTask? = null
     private var destroyTokenTask: DestroyTokenTask? = null
-    private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask, destroyTokenTask)
+    private var friendRequestResponseTask: FriendRequestResponseTask? = null
+    private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask,
+            destroyTokenTask, friendRequestResponseTask)
 
-    private val refreshFriends: (Set<FriendDto>) -> Unit = {
+
+    private val refreshFriends: (List<FriendDto>) -> Unit = {
         destroyTasks()
         dismissDialogs()
         friends.clear()
         friends.addAll(it)
+        swipeView.apply { isRefreshing = false }
         friendFragment.adapter.notifyDataSetChanged()
     }
 
@@ -102,6 +106,10 @@ class FriendActivity : AppActivity(),
 
     override fun onResume() {
         super.onResume()
+        onSwipe(null)
+    }
+
+    override fun onSwipe(swipeView: SwipeRefreshLayout?) {
         getFriendsTask = GetFriendsTask().apply { execute() }
     }
 
@@ -124,15 +132,9 @@ class FriendActivity : AppActivity(),
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.navCreateGroup -> {
-                startActivity(GroupActivity::class)
-            }
-            R.id.navNewFriend -> {
-                addFriend()
-            }
-            R.id.navSettings -> {
-
-            }
+            R.id.navCreateGroup -> startActivity(GroupActivity::class)
+            R.id.navNewFriend -> addFriend()
+            R.id.navSettings -> {}
             R.id.navSignOut -> DestroyTokenTask({ startActivity(LoginActivity::class) }).execute()
         }
 
@@ -140,11 +142,11 @@ class FriendActivity : AppActivity(),
         return true
     }
 
-    override fun onListFragmentInteraction(friend: FriendDto, menuItem: MenuItem) {
+    override fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.action_remove_friend -> showRemoveFriendDialog(friend)
             R.id.action_add_to_group -> {
-                if (friend.inGroup) {
+                if (friend.confirmedGroup) {
                     showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
                 } else {
                     startActivity(GroupActivity::class, Pair("friendId", friend.id))
@@ -152,6 +154,11 @@ class FriendActivity : AppActivity(),
             }//makeText(this, "${item.username} poked", LENGTH_LONG).show()
             else -> throw NotImplementedError("Not Implemented!!")
         }
+    }
+
+    override fun onListItemFriendInviteResponse(friend: FriendDto, isAccepting: Boolean) {
+        friendRequestResponseTask = FriendRequestResponseTask(friend.id, isAccepting)
+                .apply { execute() }
     }
 
     override fun destroyTasks() = friendsTasks.forEach { it?.cancel(true) }
@@ -169,28 +176,38 @@ class FriendActivity : AppActivity(),
         removeFriendTask = RemoveFriendTask(id).apply { execute() }
     }
 
-    inner class GetFriendsTask internal constructor() : UserTask<Set<FriendDto>>(refreshFriends) {
+    inner class GetFriendsTask internal constructor() : UserTask<List<FriendDto>>(refreshFriends) {
 
-        override fun buildCall(userClient: UserClient, id: Long): Call<Set<FriendDto>> {
+        override fun buildCall(userClient: UserClient, id: Long): Call<List<FriendDto>> {
             return userClient.friends(id)
         }
 
     }
 
     inner class AddFriendTask internal constructor(private val friendIdentifier: String)
-        : UserTask<Set<FriendDto>>(refreshFriends) {
+        : UserTask<List<FriendDto>>(refreshFriends) {
 
-        override fun buildCall(userClient: UserClient, id: Long): Call<Set<FriendDto>> {
+        override fun buildCall(userClient: UserClient, id: Long): Call<List<FriendDto>> {
             return userClient.addFriend(id, friendIdentifier)
         }
 
     }
 
     inner class RemoveFriendTask internal constructor(private val friendId: Long)
-        : UserTask<Set<FriendDto>>(refreshFriends) {
+        : UserTask<List<FriendDto>>(refreshFriends) {
 
-        override fun buildCall(userClient: UserClient, id: Long): Call<Set<FriendDto>> {
+        override fun buildCall(userClient: UserClient, id: Long): Call<List<FriendDto>> {
             return userClient.removeFriend(id, friendId)
+        }
+
+    }
+
+    inner class FriendRequestResponseTask internal constructor(private val friendId: Long,
+                                                               private val response: Boolean)
+        : UserTask<List<FriendDto>>(refreshFriends) {
+
+        override fun buildCall(userClient: UserClient, id: Long): Call<List<FriendDto>> {
+            return userClient.respondToFriendRequest(id, friendId, response)
         }
 
     }

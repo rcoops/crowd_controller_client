@@ -1,9 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.activity.friend
 
 import android.support.constraint.ConstraintLayout
+import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
 import android.view.*
-import android.widget.FrameLayout
 import android.widget.TextView
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
@@ -37,13 +37,32 @@ class FriendRecyclerViewAdapter(
 
     private fun setStatusView(holder: ViewHolder, friendDto: FriendDto) {
         when (friendDto.status) {
+            FriendDto.Status.ACTIVATED -> {
+                holder.mOverlayView.visibility = View.GONE
+                holder.mConfirmView.visibility = View.GONE
+                holder.mView.setOnCreateContextMenuListener(holder as View.OnCreateContextMenuListener)
+                holder.mView.isLongClickable = false
+                holder.mMainMenu.setOnClickListener { holder.mView.showContextMenu() }
+                holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
+                        ?.setOnClickListener(null)
+                holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
+                        ?.setOnClickListener(null)
+            }
             FriendDto.Status.AWAITING_ACCEPT -> {
                 holder.mOverlayView.visibility = View.VISIBLE
             }
             FriendDto.Status.TO_ACCEPT -> {
+                holder.mOverlayView.text = ""
+                holder.mOverlayView.visibility = View.VISIBLE
                 holder.mConfirmView.visibility = View.VISIBLE
-            }
-            FriendDto.Status.ACTIVATED -> {
+                holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
+                        ?.setOnClickListener {
+                            mListener.onListItemFriendInviteResponse(friendDto, true)
+                }
+                holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
+                        ?.setOnClickListener {
+                    mListener.onListItemFriendInviteResponse(friendDto, false)
+                }
             }
         }
     }
@@ -58,11 +77,10 @@ class FriendRecyclerViewAdapter(
         val mContentView: TextView = mView.findViewById(R.id.txt_friend_content)
         val mOverlayView: TextView = mView.findViewById(R.id.overlay_awaiting_confirm)
         val mConfirmView: ConstraintLayout = mView.findViewById(R.id.layout_confirm_friend)
+        val mMainMenu: FloatingActionButton = mView.findViewById(R.id.fab_menu)
         var mItem: FriendDto? = null
 
-        init {
-            mView.setOnCreateContextMenuListener(this)
-        }
+        init { mView.isLongClickable = false }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             (mListener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)
@@ -75,7 +93,7 @@ class FriendRecyclerViewAdapter(
         }
 
         override fun onMenuItemClick(item: MenuItem?): Boolean {
-            mListener.onListFragmentInteraction(mItem!!, item!!)
+            mListener.onListItemContextMenuSelection(mItem!!, item!!)
             return true
         }
 

@@ -3,6 +3,7 @@ package me.cooper.rick.crowdcontrollerclient.activity.friend
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.GridLayoutManager
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -27,37 +28,34 @@ import me.cooper.rick.crowdcontrollerclient.R
  * Mandatory empty constructor for the fragment manager to instantiate the
  * fragment (e.g. upon screen orientation changes).
  */
-class FriendFragment : Fragment() {
+class FriendFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
 
-    private var mColumnCount = 1
     private var mListener: OnListFragmentInteractionListener? = null
     private lateinit var friends: MutableList<FriendDto>
     lateinit var adapter: FriendRecyclerViewAdapter
+    lateinit var swipeView: SwipeRefreshLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (activity !is FriendActivity) throw RuntimeException()
         friends = (activity as FriendActivity).friends
-        arguments?.let { mColumnCount = it.getInt(ARG_COLUMN_COUNT) }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val view = inflater!!.inflate(R.layout.fragment_friend_list, container, false)
-        // Set the adapter
-        if (view is RecyclerView) {
-            val context = view.getContext()
-            view.layoutManager = if (mColumnCount <= 1) {
-                LinearLayoutManager(context)
-            } else {
-                GridLayoutManager(context, mColumnCount)
-            }
-            adapter = FriendRecyclerViewAdapter(friends, mListener!!)
-            view.adapter = adapter
-        }
+        swipeView = (inflater!!
+                .inflate(R.layout.fragment_friend_list, container, false) as SwipeRefreshLayout)
+                .apply { setOnRefreshListener(this@FriendFragment) }
+
+        val view = swipeView.findViewById<RecyclerView>(R.id.list)
+        val context = swipeView.context
+        view.layoutManager = LinearLayoutManager(context)
+        adapter = FriendRecyclerViewAdapter(friends, mListener!!)
+        view.adapter = adapter
 
         registerForContextMenu(view)
-        return view
+        (activity as FriendActivity).swipeView = swipeView
+        return swipeView
     }
 
     override fun onAttach(context: Context?) {
@@ -73,6 +71,10 @@ class FriendFragment : Fragment() {
         mListener = null
     }
 
+    override fun onRefresh() {
+        mListener?.onSwipe(swipeView)
+    }
+
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated
@@ -84,7 +86,10 @@ class FriendFragment : Fragment() {
      */
     interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        fun onListFragmentInteraction(friend: FriendDto, menuItem: MenuItem)
+        fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem)
+
+        fun onListItemFriendInviteResponse(friend: FriendDto, isAccepting: Boolean)
+        fun onSwipe(swipeView: SwipeRefreshLayout?)
     }
 
     companion object {
