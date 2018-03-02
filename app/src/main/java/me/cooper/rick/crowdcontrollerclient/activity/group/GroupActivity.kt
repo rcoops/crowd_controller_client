@@ -16,14 +16,14 @@ import me.cooper.rick.crowdcontrollerclient.activity.group.dummy.DummyContent
 class GroupActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener,
         GroupFragment.OnListFragmentInteractionListener {
 
-    var groupFragment: GroupFragment? = null
+    private lateinit var groupFragment: GroupFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group)
         setSupportActionBar(toolbar)
         val friendId = intent.getLongExtra("friendId", -1)
-//        if (friendId != -1L)
+        if (friendId != -1L) throw RuntimeException("Intent was not received")
 
         val toggle = ActionBarDrawerToggle(
                 this, drawer_layout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)

@@ -55,6 +55,7 @@ class FriendRecyclerViewAdapter(
                 holder.mOverlayView.text = (mListener as AppActivity).getString(R.string.txt_awaiting_friend_accept)
                 holder.mView.setOnCreateContextMenuListener(null)
                 noButtonListeners(btnAccept, btnDeny)
+                // TODO - cancel invite
             }
             FriendDto.Status.TO_ACCEPT -> {//setHolderStatus(holder, friendDto, true, true)
                 holder.mOverlayView.visibility = View.VISIBLE
@@ -77,9 +78,7 @@ class FriendRecyclerViewAdapter(
         btnDeny?.setOnClickListener(null)
     }
 
-    override fun getItemCount(): Int {
-        return mValues.size
-    }
+    override fun getItemCount(): Int = mValues.size
 
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
             View.OnCreateContextMenuListener,

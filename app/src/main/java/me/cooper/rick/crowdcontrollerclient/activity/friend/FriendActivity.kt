@@ -27,7 +27,7 @@ class FriendActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
         FriendFragment.OnListFragmentInteractionListener {
 
-    var friends: MutableList<FriendDto> = mutableListOf()
+    val friends: MutableList<FriendDto> = mutableListOf()
 
     private lateinit var friendFragment: FriendFragment
     private lateinit var addFriendDialogView: View
@@ -40,7 +40,6 @@ class FriendActivity : AppActivity(),
     private var friendRequestResponseTask: FriendRequestResponseTask? = null
     private val friendsTasks = listOf(getFriendsTask, addFriendTask, removeFriendTask,
             destroyTokenTask, friendRequestResponseTask)
-
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
         destroyTasks()
