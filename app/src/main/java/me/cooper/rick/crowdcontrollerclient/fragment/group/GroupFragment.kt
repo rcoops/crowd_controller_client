@@ -31,7 +31,7 @@ class GroupFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener  {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         swipeView = (inflater!!
-                .inflate(R.layout.fragment_friend_list, container, false) as SwipeRefreshLayout)
+                .inflate(R.layout.fragment_group_list, container, false) as SwipeRefreshLayout)
                 .apply { setOnRefreshListener(this@GroupFragment) }
 
         val view = swipeView.findViewById<RecyclerView>(R.id.list)

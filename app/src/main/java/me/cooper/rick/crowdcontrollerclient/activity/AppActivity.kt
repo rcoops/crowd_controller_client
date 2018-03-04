@@ -1,11 +1,17 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.annotation.TargetApi
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.view.View
+import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
@@ -37,6 +43,31 @@ abstract class AppActivity : AppCompatActivity() {
     override fun onDestroy() {
         clearReferences()
         super.onDestroy()
+    }
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    protected fun showProgress(show: Boolean, contentView: View, progressBar: ProgressBar) {
+        val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
+
+        contentView.visibility = if (show) View.GONE else View.VISIBLE
+        contentView.animate()
+                .setDuration(shortAnimTime)
+                .alpha((if (show) 0 else 1).toFloat())
+                .setListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        contentView.visibility = if (show) View.GONE else View.VISIBLE
+                    }
+                })
+
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        progressBar.animate()
+                .setDuration(shortAnimTime)
+                .alpha((if (show) 1 else 0).toFloat())
+                .setListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+                    }
+                })
     }
 
     fun <T> handleResponse(response: Response<T>, responseConsumer: (T) -> Unit,

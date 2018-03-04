@@ -8,7 +8,14 @@ import android.widget.TextView
 import java.util.regex.Pattern
 
 // https://blog.stylingandroid.com/superscript/
-class OrdinalSuperscriptFormatter(private val stringBuilder: SpannableStringBuilder) {
+object OrdinalSuperscriptFormatter {
+
+    private const val SUPERSCRIPT_REGEX = "©"
+
+    private val PROPORTION = 0.5F
+    private val PATTERN = Pattern.compile(SUPERSCRIPT_REGEX)
+
+    private val stringBuilder = SpannableStringBuilder()
 
     fun format(textView: TextView) {
         val text = textView.text
@@ -28,9 +35,4 @@ class OrdinalSuperscriptFormatter(private val stringBuilder: SpannableStringBuil
         stringBuilder.setSpan(size, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
 
-    companion object {
-        private val SUPERSCRIPT_REGEX = "©"
-        private val PATTERN = Pattern.compile(SUPERSCRIPT_REGEX)
-        private val PROPORTION = 0.5f
-    }
 }

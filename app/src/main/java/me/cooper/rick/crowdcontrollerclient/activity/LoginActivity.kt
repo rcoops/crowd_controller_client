@@ -51,7 +51,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     private val handleLoginError: (APIErrorDto) -> Unit = {
         destroyTasks()
-        showProgress(false)
+        showProgress(false, login_form, login_progress)
         if (it.error == BAD_PASSWORD) password?.requestFocus()
         else username?.requestFocus()
     }
@@ -63,7 +63,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         // Set up the login form.
         populateAutoComplete()
 
-        OrdinalSuperscriptFormatter(SpannableStringBuilder()).format(txt_header)
+        OrdinalSuperscriptFormatter.format(txt_header)
 
         setListeners()
     }
@@ -86,9 +86,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     private fun populateAutoComplete() {
-        if (mayRequestContacts()) {
-            loaderManager.initLoader(0, null, this)
-        }
+        if (mayRequestContacts()) loaderManager.initLoader(0, null, this)
     }
 
     private fun mayRequestContacts(): Boolean {
@@ -111,11 +109,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
-        if (requestCode == REQUEST_READ_CONTACTS) {
-            if (grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                populateAutoComplete()
-            }
-        }
+        if (requestCode == REQUEST_READ_CONTACTS
+                && grantResults.size == 1
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) populateAutoComplete()
     }
 
     /**
@@ -152,41 +148,13 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         if (cancel) {
             focusView?.requestFocus()
         } else {
-            showProgress(true)
+            showProgress(true, login_form, login_progress)
             mAuthTask = UserLoginTask(usernameStr, passwordStr).apply { execute() }
         }
     }
 
     private fun isPasswordValid(password: String): Boolean {
         return password.length > 4
-    }
-
-    /**
-     * Shows the progress UI and hides the login form.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
-    private fun showProgress(show: Boolean) {
-        val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
-
-        login_form.visibility = if (show) View.GONE else View.VISIBLE
-        login_form.animate()
-                .setDuration(shortAnimTime)
-                .alpha((if (show) 0 else 1).toFloat())
-                .setListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        login_form.visibility = if (show) View.GONE else View.VISIBLE
-                    }
-                })
-
-        login_progress.visibility = if (show) View.VISIBLE else View.GONE
-        login_progress.animate()
-                .setDuration(shortAnimTime)
-                .alpha((if (show) 1 else 0).toFloat())
-                .setListener(object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        login_progress.visibility = if (show) View.VISIBLE else View.GONE
-                    }
-                })
     }
 
     override fun onCreateLoader(i: Int, bundle: Bundle?): Loader<Cursor> {
@@ -212,9 +180,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         addEmailsToAutoComplete(emails)
     }
 
-    override fun onLoaderReset(cursorLoader: Loader<Cursor>) {
-
-    }
+    override fun onLoaderReset(cursorLoader: Loader<Cursor>) {}
 
     private fun addEmailsToAutoComplete(emailAddressCollection: List<String>) {
         //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.

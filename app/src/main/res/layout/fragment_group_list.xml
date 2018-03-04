@@ -4,10 +4,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/group_swipe_container"
-    android:name="me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment"
+    android:name="me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment">
+    tools:context="me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment">
     <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"

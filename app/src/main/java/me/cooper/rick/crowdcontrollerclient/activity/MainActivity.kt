@@ -46,7 +46,7 @@ class MainActivity : AppActivity(),
 
     val friends: MutableList<FriendDto> = mutableListOf()
     val group: MutableList<UserDto> = mutableListOf()
-    private var groupId: Long = -1
+    private var groupId: Long = -1L
 
     private lateinit var friendFragment: FriendFragment
     private lateinit var groupFragment: GroupFragment
@@ -71,6 +71,11 @@ class MainActivity : AppActivity(),
         friends.addAll(it)
         swipeView.apply { isRefreshing = false }
         friendFragment.updateView()
+    }
+
+    private val createGroup: (GroupDto) -> Unit = {
+        refreshGroup(it)
+        addFragmentOnTop(groupFragment)
     }
 
     private val refreshGroup: (GroupDto) -> Unit = {
@@ -164,7 +169,7 @@ class MainActivity : AppActivity(),
 
     override fun onSwipe(swipeView: SwipeRefreshLayout?) {
         if (R.id.group_swipe_container == swipeView?.id) {
-            getGroupTask = GetGroupTask(groupId).apply { execute() }
+            if (groupId != -1L) getGroupTask = GetGroupTask(groupId).apply { execute() }
         } else getFriendsTask = GetFriendsTask().apply { execute() }
     }
 
@@ -205,11 +210,8 @@ class MainActivity : AppActivity(),
                         })
                         .setPositiveButton(android.R.string.ok, { _, _ ->
                             createGroupTask = CreateGroupTask(selectedFriends).apply { execute() }
-                            addFragmentOnTop(GroupFragment())
                         })
                         .show()
-
-                supportFragmentManager.fragments
             }
             R.id.navNewFriend -> addFriend()
             R.id.navSettings -> {}
@@ -302,7 +304,7 @@ class MainActivity : AppActivity(),
     }
 
     inner class CreateGroupTask internal constructor(private val friendIds: List<Long>)
-        : ClientTask<GroupClient, GroupDto>(refreshGroup, GroupClient::class) {
+        : ClientTask<GroupClient, GroupDto>(createGroup, GroupClient::class) {
 
         override fun buildCall(client: GroupClient, id: Long): Call<GroupDto> {
             return client.create(CreateGroupDto(id, friendIds))
