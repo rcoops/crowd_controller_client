@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.SwipeRefreshLayout
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/list"
-    android:name="me.cooper.rick.crowdcontrollerclient.activity.GroupFragment"
+    android:id="@+id/group_swipe_container"
+    android:name="me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_marginLeft="16dp"
-    android:layout_marginRight="16dp"
-    app:layoutManager="LinearLayoutManager"
-    tools:context="me.cooper.rick.crowdcontrollerclient.activity.group.GroupFragment"
-    tools:listitem="@layout/fragment_group"
-    android:background="@color/primary"/>
+    tools:context="me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment">
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        app:layoutManager="LinearLayoutManager"
+        tools:listitem="@layout/fragment_group"
+        android:background="@color/primary" />
+</android.support.v4.widget.SwipeRefreshLayout>

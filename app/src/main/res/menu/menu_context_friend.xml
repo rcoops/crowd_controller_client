@@ -1,6 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context=".activity.friend.FriendActivity">
+    tools:context=".activity.MainActivity">
     <item
         android:id="@+id/action_add_to_group"
         android:orderInCategory="100"

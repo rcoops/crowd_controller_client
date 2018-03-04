@@ -1,20 +1,15 @@
-package me.cooper.rick.crowdcontrollerclient.domain
+package me.cooper.rick.crowdcontrollerclient.persistence
 
 import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
 import android.content.Context
-import me.cooper.rick.crowdcontrollerclient.App.Companion.context
-import me.cooper.rick.crowdcontrollerclient.domain.entity.TokenEntity
-import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
-import me.cooper.rick.crowdcontrollerclient.domain.repository.TokenDao
-import me.cooper.rick.crowdcontrollerclient.domain.repository.UserDao
+import me.cooper.rick.crowdcontrollerclient.persistence.model.UserEntity
+import me.cooper.rick.crowdcontrollerclient.persistence.repository.UserDao
 
 
 @Database(entities = [UserEntity::class], version = 10)
 abstract class AppDatabase : RoomDatabase() {
-
-//    abstract fun tokenDao(): TokenDao
 
     abstract fun userDao(): UserDao
 

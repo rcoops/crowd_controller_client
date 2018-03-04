@@ -72,7 +72,8 @@
     <string name="txt_confirm_remove_friend">Are you sure you want to remove %1$s from your friends?</string>
     <string name="hdr_registration_successful">Registration Successful!</string>
     <string name="txt_registration_successful">Please log in to continue.</string>
-    <string name="txt_awaiting_friend_accept">Waiting for friend to accept...</string>
+    <string name="txt_awaiting_friend_accept">Waiting for friend to accept&#230;</string> <!-- &#230; = ... -->
+    <string name="txt_awaiting_group_accept">Waiting for group invite confirmation&#230;</string>
     <string name="txt_to_accept_friend_request">Hold to accept or confirm</string>
     <string-array name="menu_context_friend">
         <item>Add to Group</item>

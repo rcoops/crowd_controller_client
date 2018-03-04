@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.friend
+package me.cooper.rick.crowdcontrollerclient.fragment.friend
 
 import android.support.constraint.ConstraintLayout
 import android.support.design.widget.FloatingActionButton
@@ -8,16 +8,15 @@ import android.widget.TextView
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
-import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendFragment.OnListFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the
- * specified [OnListFragmentInteractionListener].
+ * specified [OnFriendFragmentInteractionListener].
  * TODO: Replace the implementation with code for your data type.
  */
-class FriendRecyclerViewAdapter(
-        private val mValues: List<FriendDto>,
-        private val mListener: OnListFragmentInteractionListener) :
+class FriendRecyclerViewAdapter(private val mValues: List<FriendDto>,
+                                private val mListener: OnFriendFragmentInteractionListener) :
         RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
 
     lateinit var parent: ViewGroup
@@ -31,41 +30,39 @@ class FriendRecyclerViewAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.mItem = mValues[position]
-        holder.mContentView.text = mValues[position].username
+        holder.txtContentView.text = mValues[position].username
         setStatusView(holder, holder.mItem!!)
     }
 
     private fun setStatusView(holder: ViewHolder, friendDto: FriendDto) {
-        val btnAccept = holder.mView.findViewById<FloatingActionButton>(R.id.btn_accept_friend)
-        val btnDeny = holder.mView.findViewById<FloatingActionButton>(R.id.btn_deny_friend)
 
         when (friendDto.status) {
-            FriendDto.Status.ACTIVATED -> {//setHolderStatus(holder, friendDto, false, false)
-                holder.mOverlayView.visibility = View.GONE
-                holder.mConfirmView.visibility = View.GONE
-                holder.mOverlayView.text = ""
+            FriendDto.Status.CONFIRMED -> {
+                holder.txtOverlayView.visibility = View.GONE
+                holder.cslConfirmView.visibility = View.GONE
+                holder.txtOverlayView.text = ""
                 holder.mView.setOnCreateContextMenuListener(holder as View.OnCreateContextMenuListener)
                 holder.mView.isLongClickable = false
-                holder.mMainMenu.setOnClickListener { holder.mView.showContextMenu() }
-                noButtonListeners(btnAccept, btnDeny)
+                holder.fabContextMenu.setOnClickListener { holder.mView.showContextMenu() }
+                noButtonListeners(holder.fabAccept, holder.fabRefuse)
             }
-            FriendDto.Status.AWAITING_ACCEPT -> {//setHolderStatus(holder, friendDto, true, false)
-                holder.mOverlayView.visibility = View.VISIBLE
-                holder.mConfirmView.visibility = View.GONE
-                holder.mOverlayView.text = (mListener as AppActivity).getString(R.string.txt_awaiting_friend_accept)
+            FriendDto.Status.AWAITING_ACCEPT -> {
+                holder.txtOverlayView.visibility = View.VISIBLE
+                holder.cslConfirmView.visibility = View.GONE
+                holder.txtOverlayView.text = (mListener as AppActivity).getString(R.string.txt_awaiting_friend_accept)
                 holder.mView.setOnCreateContextMenuListener(null)
-                noButtonListeners(btnAccept, btnDeny)
+                noButtonListeners(holder.fabAccept, holder.fabRefuse)
                 // TODO - cancel invite
             }
-            FriendDto.Status.TO_ACCEPT -> {//setHolderStatus(holder, friendDto, true, true)
-                holder.mOverlayView.visibility = View.VISIBLE
-                holder.mConfirmView.visibility = View.VISIBLE
-                holder.mOverlayView.text = ""
+            FriendDto.Status.TO_ACCEPT -> {
+                holder.txtOverlayView.visibility = View.VISIBLE
+                holder.cslConfirmView.visibility = View.VISIBLE
+                holder.txtOverlayView.text = ""
                 holder.mView.setOnCreateContextMenuListener(null)
-                btnAccept?.setOnClickListener {
+                holder.fabAccept.setOnClickListener {
                             mListener.onListItemFriendInviteResponse(friendDto, true)
                 }
-                btnDeny?.setOnClickListener {
+                holder.fabRefuse.setOnClickListener {
                     mListener.onListItemFriendInviteResponse(friendDto, false)
                 }
             }
@@ -83,10 +80,12 @@ class FriendRecyclerViewAdapter(
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
             View.OnCreateContextMenuListener,
             MenuItem.OnMenuItemClickListener {
-        val mContentView: TextView = mView.findViewById(R.id.txt_friend_content)
-        val mOverlayView: TextView = mView.findViewById(R.id.overlay_awaiting_confirm)
-        val mConfirmView: ConstraintLayout = mView.findViewById(R.id.layout_confirm_friend)
-        val mMainMenu: FloatingActionButton = mView.findViewById(R.id.fab_menu)
+        val fabAccept: FloatingActionButton = mView.findViewById(R.id.fab_accept_friend)
+        val fabRefuse: FloatingActionButton = mView.findViewById(R.id.fab_refuse_friend)
+        val txtContentView: TextView = mView.findViewById(R.id.txt_friend_content)
+        val txtOverlayView: TextView = mView.findViewById(R.id.overlay_awaiting_confirm)
+        val cslConfirmView: ConstraintLayout = mView.findViewById(R.id.layout_confirm_friend)
+        val fabContextMenu: FloatingActionButton = mView.findViewById(R.id.fab_menu)
         var mItem: FriendDto? = null
 
         init { mView.isLongClickable = false }
@@ -107,7 +106,9 @@ class FriendRecyclerViewAdapter(
         }
 
         override fun toString(): String {
-            return "${super.toString()} '${mContentView.text}'"
+            return "${super.toString()} '${txtContentView.text}'"
         }
+
     }
+
 }

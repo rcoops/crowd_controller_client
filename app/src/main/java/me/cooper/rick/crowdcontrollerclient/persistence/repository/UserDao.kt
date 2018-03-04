@@ -1,9 +1,9 @@
-package me.cooper.rick.crowdcontrollerclient.domain.repository
+package me.cooper.rick.crowdcontrollerclient.persistence.repository
 
 import android.arch.persistence.room.Dao
 import android.arch.persistence.room.Insert
 import android.arch.persistence.room.Query
-import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
+import me.cooper.rick.crowdcontrollerclient.persistence.model.UserEntity
 
 @Dao
 interface UserDao {

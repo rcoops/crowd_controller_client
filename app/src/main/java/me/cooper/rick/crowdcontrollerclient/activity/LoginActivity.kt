@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.login
+package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.Manifest.permission.READ_CONTACTS
 import android.animation.Animator
@@ -26,13 +26,12 @@ import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
-import me.cooper.rick.crowdcontrollerclient.activity.friend.FriendActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
-import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.domain.entity.UserEntity
+import me.cooper.rick.crowdcontrollerclient.persistence.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.persistence.model.UserEntity
+import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Response
@@ -48,7 +47,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     private var mAuthTask: UserLoginTask? = null
     private var mCheckTokenTask: CheckTokenTask? = null
 
-    private val loginSuccess: (Any) -> Unit = { startActivity(FriendActivity::class) }
+    private val loginSuccess: (Any) -> Unit = { startActivity(MainActivity::class) }
 
     private val handleLoginError: (APIErrorDto) -> Unit = {
         destroyTasks()

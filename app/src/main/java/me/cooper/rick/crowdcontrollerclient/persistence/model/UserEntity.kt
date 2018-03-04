@@ -1,7 +1,6 @@
-package me.cooper.rick.crowdcontrollerclient.domain.entity
+package me.cooper.rick.crowdcontrollerclient.persistence.model
 
 import android.arch.persistence.room.*
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 

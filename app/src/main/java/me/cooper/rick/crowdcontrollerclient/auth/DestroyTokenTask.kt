@@ -2,7 +2,7 @@ package me.cooper.rick.crowdcontrollerclient.auth
 
 import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerclient.App
-import me.cooper.rick.crowdcontrollerclient.domain.AppDatabase
+import me.cooper.rick.crowdcontrollerclient.persistence.AppDatabase
 
 
 class DestroyTokenTask(private val func: () -> Unit) :

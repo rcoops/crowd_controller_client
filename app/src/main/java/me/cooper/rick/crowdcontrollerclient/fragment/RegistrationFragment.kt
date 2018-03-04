@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.login
+package me.cooper.rick.crowdcontrollerclient.fragment
 
 import android.content.Context
 import android.os.AsyncTask

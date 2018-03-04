@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
+import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import retrofit2.Call
 import retrofit2.http.*
@@ -14,7 +15,7 @@ interface GroupClient {
     fun group(@Path("groupId") groupId: Long): Call<GroupDto>
 
     @POST(BASE_PATH)
-    fun create(@Body groupDto: GroupDto): Call<GroupDto>
+    fun create(@Body groupDto: CreateGroupDto): Call<GroupDto>
 
     @PUT("$BASE_PATH/{groupId}/members/{userId}")
     fun addToGroup(@Path("groupId") groupId: Long,

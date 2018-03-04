@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.activity.group
+package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
