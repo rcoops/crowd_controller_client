@@ -15,6 +15,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
+import kotlinx.android.synthetic.main.content_main.*
 import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
@@ -50,8 +51,7 @@ class MainActivity : AppActivity(),
 
     private lateinit var friendFragment: FriendFragment
     private lateinit var groupFragment: GroupFragment
-    private lateinit var addFriendDialogView: View
-    private lateinit var addFriendDialog: AlertDialog
+    private var addFriendDialog: AlertDialog? = null
     lateinit var swipeView: SwipeRefreshLayout
 
     private var getFriendsTask: GetFriendsTask? = null
@@ -103,17 +103,6 @@ class MainActivity : AppActivity(),
                         .apply { syncState() }
         )
 
-        addFriendDialogView = layoutInflater.inflate(R.layout.content_add_friend, content)
-        addFriendDialogView.btn_add_friend.setOnClickListener {
-            addFriendTask = AddFriendTask(addFriendDialogView.actv_user_detail.text.toString())
-                    .apply { execute() }
-        }
-        addFriendDialog = AlertDialog.Builder(this)
-                .setTitle(R.string.header_add_friend)
-                .setView(addFriendDialogView).create()
-
-        addFriendDialogView.btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
-
         nav_view.setNavigationItemSelectedListener(this)
 
         friendFragment = FriendFragment()
@@ -143,15 +132,26 @@ class MainActivity : AppActivity(),
 
     private fun dismissDialogs() {
         dismissDialog(addFriendDialog)
+        addFriendDialog = null
     }
 
-    private fun dismissDialog(alertDialog: AlertDialog) {
-        if (alertDialog.isShowing) alertDialog.dismiss()
+    private fun dismissDialog(alertDialog: AlertDialog?) {
+        alertDialog?.let {
+            if (alertDialog.isShowing) alertDialog.dismiss()
+        }
     }
 
     private fun addFriend() {
-        addFriendDialogView.actv_user_detail.text.clear()
-        addFriendDialog.show()
+        addFriendDialog = AlertDialog.Builder(this)
+                .setTitle(R.string.header_add_friend)
+                .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main, false).apply {
+                    btn_add_friend.setOnClickListener {
+                        addFriendTask = AddFriendTask(actv_user_detail.text.toString())
+                                .apply { execute() }
+                    }
+                    btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
+                })
+                .show()
     }
 
     override fun onBackPressed() {
