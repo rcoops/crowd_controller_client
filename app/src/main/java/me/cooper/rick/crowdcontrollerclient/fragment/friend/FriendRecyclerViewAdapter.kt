@@ -1,12 +1,11 @@
 package me.cooper.rick.crowdcontrollerclient.fragment.friend
 
-import android.support.constraint.ConstraintLayout
-import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.view.View.VISIBLE
 import android.view.View.GONE
 import android.widget.TextView
+import kotlinx.android.synthetic.main.fragment_list_item.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto.Status
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto.Status.*
@@ -14,102 +13,92 @@ import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 
-/**
- * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the
- * specified [OnFriendFragmentInteractionListener].
- * TODO: Replace the implementation with code for your data type.
- */
-class FriendRecyclerViewAdapter(private val mValues: List<FriendDto>,
-                                private val mListener: OnFriendFragmentInteractionListener) :
+class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
+                                private val listener: OnFriendFragmentInteractionListener) :
         RecyclerView.Adapter<FriendRecyclerViewAdapter.ViewHolder>() {
 
     lateinit var parent: ViewGroup
 
     private val statusUpdate: (FriendDto, Status) -> Unit = { friendDto, status ->
-        mListener.onListItemFriendUpdate(friendDto.copy(status = status))
+        listener.onListItemFriendUpdate(friendDto.copy(status = status))
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         this.parent = parent
         val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.fragment_friend, parent, false)
+                .inflate(R.layout.fragment_list_item, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.mItem = mValues[position]
-        holder.txtContentView.text = mValues[position].username
-        setStatusView(holder, holder.mItem!!)
+        holder.friendDto = friends[position]
+        holder.vwRoot.txt_content.text = friends[position].username
+        setStatusView(holder)
     }
 
-    private fun setStatusView(holder: ViewHolder, friendDto: FriendDto) {
-
+    private fun setStatusView(holder: ViewHolder) {
+        val friendDto = holder.friendDto
         when (friendDto.status) {
-            FriendDto.Status.CONFIRMED -> {
-                holder.vwOverlay.visibility = GONE
-                holder.cslConfirmView.visibility = GONE
-                holder.mView.setOnCreateContextMenuListener(holder as View.OnCreateContextMenuListener)
-                holder.mView.isLongClickable = false
-                holder.fabContextMenu.setOnClickListener { holder.mView.showContextMenu() }
-                holder.fabAccept.setOnClickListener(null)
-                holder.fabRefuse.setOnClickListener(null)
-            }
-            FriendDto.Status.AWAITING_ACCEPT -> {
-                holder.vwOverlay.visibility = VISIBLE
-                holder.cslConfirmView.visibility = VISIBLE
-                holder.fabAccept.visibility = GONE
-                holder.mView.setOnCreateContextMenuListener(null)
-                holder.txtAction.text = parent.context.getString(R.string.txt_cancel_friend_request)
-                holder.fabAccept.setOnClickListener(null)
-                holder.fabRefuse.setOnClickListener { statusUpdate(friendDto, INACTIVE) }
-            }
-            FriendDto.Status.TO_ACCEPT -> {
-                holder.vwOverlay.visibility = VISIBLE
-                holder.cslConfirmView.visibility = VISIBLE
-                holder.fabAccept.visibility = VISIBLE
-                holder.txtAction.text = parent.context.getString(R.string.txt_accept_friend_request)
-                holder.mView.setOnCreateContextMenuListener(null)
-                holder.fabAccept.setOnClickListener { statusUpdate(friendDto, CONFIRMED) }
-                holder.fabRefuse.setOnClickListener { statusUpdate(friendDto, INACTIVE) }
-            }
+            CONFIRMED -> setView(holder, GONE, GONE, GONE, holder,
+                    { holder.vwRoot.showContextMenu() })
+            AWAITING_ACCEPT -> setView(holder, VISIBLE, VISIBLE, GONE,
+                    null, null,
+                        parent.context.getString(R.string.txt_cancel_friend_request),
+                        { statusUpdate(friendDto, INACTIVE) })
+            TO_ACCEPT -> setView(holder, VISIBLE, VISIBLE, VISIBLE,
+                    null, null,
+                        parent.context.getString(R.string.txt_accept_friend_request),
+                        { statusUpdate(friendDto, INACTIVE) },
+                        { statusUpdate(friendDto, CONFIRMED) })
+            INACTIVE -> setView(holder, GONE, GONE, GONE,
+                    null, null)
         }
     }
 
-    override fun getItemCount(): Int = mValues.size
+    private fun setView(holder: ViewHolder, overlayVisibility: Int, actionPanelVisibility: Int,
+                        fabAcceptVisiblity: Int, contextMenuListener: View.OnCreateContextMenuListener?,
+                        menuOnClickListener: (() -> Unit)?, action: String? = "",
+                        refuseListener: (() -> Unit)? = null, acceptListener: (() -> Unit)? = null) {
+        val vwRoot = holder.vwRoot
+        vwRoot.vw_overlay.visibility = overlayVisibility
+        vwRoot.layout_action.visibility = actionPanelVisibility
+        vwRoot.fab_accept_invite.visibility = fabAcceptVisiblity
 
-    inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
+        vwRoot.setOnCreateContextMenuListener(contextMenuListener)
+        vwRoot.fab_menu.setOnClickListener { menuOnClickListener?.let { menuOnClickListener() } }
+        vwRoot.isLongClickable = false
+
+        vwRoot.txt_action.text = action
+
+        vwRoot.fab_accept_invite.setOnClickListener { acceptListener?.let { acceptListener() } }
+        vwRoot.fab_refuse_invite.setOnClickListener { refuseListener?.let { refuseListener() } }
+    }
+
+    override fun getItemCount(): Int = friends.size
+
+    inner class ViewHolder(val vwRoot: View) : RecyclerView.ViewHolder(vwRoot),
             View.OnCreateContextMenuListener,
             MenuItem.OnMenuItemClickListener {
-        val fabAccept: FloatingActionButton = mView.findViewById(R.id.fab_accept_friend)
-        val fabRefuse: FloatingActionButton = mView.findViewById(R.id.fab_refuse_friend)
-        val txtContentView: TextView = mView.findViewById(R.id.txt_friend_content)
-        val vwOverlay: View = mView.findViewById(R.id.vw_friend_overlay)
-        val txtAction: TextView = mView.findViewById(R.id.txt_friend_action)
-        val cslConfirmView: ConstraintLayout = mView.findViewById(R.id.layout_friend_action)
-        val fabContextMenu: FloatingActionButton = mView.findViewById(R.id.fab_friend_menu)
-        var mItem: FriendDto? = null
 
-        init {
-            mView.isLongClickable = false
-        }
+        lateinit var friendDto: FriendDto
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-            (mListener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)
+            (listener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)
 
             menu!!.setHeaderView(LayoutInflater.from(parent.context)
                     .inflate(R.layout.context_header, parent, false)
-                    .apply { (findViewById<TextView>(R.id.txt_header)).text = mItem!!.username })
+                    .apply { (findViewById<TextView>(R.id.txt_header)).text = friendDto.username })
 
             (0 until menu.size()).forEach { menu.getItem(it).setOnMenuItemClickListener(this) }
         }
 
         override fun onMenuItemClick(item: MenuItem?): Boolean {
-            mListener.onListItemContextMenuSelection(mItem!!, item!!)
+            listener.onListItemContextMenuSelection(friendDto, item!!)
             return true
         }
 
         override fun toString(): String {
-            return "${super.toString()} '${txtContentView.text}'"
+            return "${super.toString()} '${vwRoot.txt_content.text}'"
         }
 
     }

@@ -1,10 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.fragment.group
 
-import android.support.constraint.ConstraintLayout
-import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.TextView
+import kotlinx.android.synthetic.main.fragment_list_item.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
@@ -19,13 +18,13 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         this.parent = parent
         val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.fragment_group, parent, false)
+                .inflate(R.layout.fragment_list_item, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.mItem = mValues[position]
-        holder.txtContent.text = mValues[position].username
+        holder.mView.txt_content.text = mValues[position].username
 
         setStatusView(holder, holder.mItem!!)
     }
@@ -39,18 +38,7 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
             View.OnCreateContextMenuListener,
             MenuItem.OnMenuItemClickListener {
-        val fabAccept: FloatingActionButton = mView.findViewById(R.id.fab_accept_group_invite)
-        val fabRefuse: FloatingActionButton = mView.findViewById(R.id.fab_refuse_group_invite)
-        val txtContent: TextView = mView.findViewById(R.id.txt_group_content)
-        val vwOverlay: View = mView.findViewById(R.id.vw_group_overlay)
-        val txtAction: TextView = mView.findViewById(R.id.txt_group_action)
-        val cslConfirm: ConstraintLayout = mView.findViewById(R.id.layout_group_action)
-        val fabContextMenu: FloatingActionButton = mView.findViewById(R.id.fab_group_menu)
         var mItem: UserDto? = null
-
-        init {
-            mView.isLongClickable = false
-        }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             (mListener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)
@@ -68,7 +56,7 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
         }
 
         override fun toString(): String {
-            return "${super.toString()} '${txtContent.text}'"
+            return "${super.toString()} '${mView.txt_content.text}'"
         }
     }
 

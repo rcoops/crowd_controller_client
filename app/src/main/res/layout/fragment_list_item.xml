@@ -2,7 +2,7 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/friend_container"
+    android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
     <android.support.constraint.ConstraintLayout
@@ -12,7 +12,7 @@
         android:background="@drawable/item_border"
         android:padding="@dimen/list_item_padding">
         <TextView
-            android:id="@+id/txt_friend_content"
+            android:id="@+id/txt_content"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/text_margin"
@@ -23,7 +23,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab_friend_menu"
+            android:id="@+id/fab_menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/fab_margin"
@@ -35,7 +35,7 @@
     </android.support.constraint.ConstraintLayout>
 
     <View
-        android:id="@+id/vw_friend_overlay"
+        android:id="@+id/vw_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/shaded"
@@ -43,7 +43,7 @@
         android:visibility="gone" />
 
     <android.support.constraint.ConstraintLayout
-        android:id="@+id/layout_friend_action"
+        android:id="@+id/layout_action"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="end|center_vertical"
@@ -52,22 +52,21 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/txt_friend_action"
+            android:id="@+id/txt_action"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:textAlignment="center"
             android:minLines="3"
             android:scrollHorizontally="false"
-            android:text="@string/txt_accept_friend_request"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fab_accept_friend"
+            app:layout_constraintEnd_toStartOf="@id/fab_accept_invite"
             app:layout_constraintHorizontal_weight="0.4"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab_accept_friend"
+            android:id="@+id/fab_accept_invite"
             app:srcCompat="@drawable/ic_ok"
             app:backgroundTint="@color/ok"
             android:layout_width="wrap_content"
@@ -75,13 +74,13 @@
             android:layout_marginLeft="1dp"
             android:layout_marginStart="1dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/fab_refuse_friend"
+            app:layout_constraintEnd_toStartOf="@id/fab_refuse_invite"
             app:layout_constraintHorizontal_weight="0.3"
-            app:layout_constraintStart_toEndOf="@id/txt_friend_action"
+            app:layout_constraintStart_toEndOf="@id/txt_action"
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab_refuse_friend"
+            android:id="@+id/fab_refuse_invite"
             app:srcCompat="@drawable/ic_cancel"
             app:backgroundTint="@color/cancel"
             android:layout_width="wrap_content"
@@ -93,7 +92,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_weight="0.3"
-            app:layout_constraintStart_toEndOf="@id/fab_accept_friend"
+            app:layout_constraintStart_toEndOf="@id/fab_accept_invite"
             app:layout_constraintTop_toTopOf="parent" />
     </android.support.constraint.ConstraintLayout>
 
