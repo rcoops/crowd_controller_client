@@ -1,9 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.Manifest.permission.READ_CONTACTS
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.annotation.TargetApi
 import android.app.LoaderManager.LoaderCallbacks
 import android.content.CursorLoader
 import android.content.Loader
@@ -15,7 +12,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.support.design.widget.Snackbar
-import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -44,13 +40,10 @@ import java.util.*
 class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         RegistrationFragment.OnRegistrationListener {
 
-    private var mAuthTask: UserLoginTask? = null
-    private var mCheckTokenTask: CheckTokenTask? = null
-
     private val loginSuccess: (Any) -> Unit = { startActivity(MainActivity::class) }
 
     private val handleLoginError: (APIErrorDto) -> Unit = {
-        destroyTasks()
+        refresh()
         showProgress(false, login_form, login_progress)
         if (it.error == BAD_PASSWORD) password?.requestFocus()
         else username?.requestFocus()
@@ -58,7 +51,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mCheckTokenTask = CheckTokenTask().apply { execute() }
+        addTask(CheckTokenTask().apply { execute() })
         setContentView(R.layout.activity_login)
         // Set up the login form.
         populateAutoComplete()
@@ -120,7 +113,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      * errors are presented and no actual login attempt is made.
      */
     private fun attemptLogin() {
-        if (mAuthTask != null) return
+        if (isTaskOfTypeRunning(UserLoginTask::class)) return
 
         // Reset errors.
         username.error = null
@@ -149,7 +142,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             focusView?.requestFocus()
         } else {
             showProgress(true, login_form, login_progress)
-            mAuthTask = UserLoginTask(usernameStr, passwordStr).apply { execute() }
+            addTask(UserLoginTask(usernameStr, passwordStr).apply { execute() })
+
         }
     }
 
@@ -188,13 +182,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                 android.R.layout.simple_dropdown_item_1line, emailAddressCollection)
 
         username.setAdapter(adapter)
-    }
-
-    override fun destroyTasks() {
-        mAuthTask?.cancel(true)
-        mAuthTask = null
-        mCheckTokenTask?.cancel(true)
-        mCheckTokenTask = null
     }
 
     override fun onFragmentInteraction(userDto: Response<UserDto>) {

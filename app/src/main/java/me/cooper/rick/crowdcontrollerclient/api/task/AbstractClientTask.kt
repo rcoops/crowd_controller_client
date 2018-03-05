@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.api
+package me.cooper.rick.crowdcontrollerclient.api.task
 
 import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerclient.App
@@ -10,8 +10,8 @@ import retrofit2.Response
 import java.io.IOException
 import kotlin.reflect.KClass
 
-abstract class ClientTask<in S : Any, T>(private val consumer: (T) -> Unit,
-                                         private val clazz: KClass<S>) : AsyncTask<Void, Void, Response<T>>() {
+abstract class AbstractClientTask<in S : Any, T>(private val consumer: (T) -> Unit,
+                                                 private val clazz: KClass<S>) : AsyncTask<Void, Void, Response<T>>() {
 
     protected abstract fun buildCall(client: S, id: Long): Call<T>
 

@@ -27,9 +27,9 @@ interface UserClient {
     @GET(FRIENDS_BASE_PATH)
     fun friends(@Path("userId") userId: Long): Call<List<FriendDto>>
 
-    @PUT("$FRIENDS_BASE_PATH/{friendIdentifier}")
+    @POST(FRIENDS_BASE_PATH)
     fun addFriend(@Path("userId") userId: Long,
-                  @Path("friendIdentifier") friendIdentifier: String): Call<List<FriendDto>>
+                  @Body friendDto: FriendDto): Call<List<FriendDto>>
 
     @PUT("$FRIENDS_BASE_PATH/{friendId}")
     fun updateFriendship(@Path("userId") userId: Long,

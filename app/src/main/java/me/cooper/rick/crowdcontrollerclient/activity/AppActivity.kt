@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
@@ -14,6 +15,7 @@ import android.view.View
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
+import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
 import retrofit2.Response
@@ -22,6 +24,9 @@ import kotlin.reflect.KClass
 abstract class AppActivity : AppCompatActivity() {
 
     protected var app: App? = null
+
+    private val dialogs = mutableListOf<AlertDialog>()
+    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
 
     protected val destroyTasksOnClickListener = DialogInterface.OnClickListener { _, _ -> destroyTasks() }
 
@@ -100,7 +105,34 @@ abstract class AppActivity : AppCompatActivity() {
                 .show()
     }
 
-    protected abstract fun destroyTasks()
+    protected fun refresh() {
+        destroyTasks()
+        dismissDialogs()
+    }
+
+    protected fun isTaskOfTypeRunning(clazz: KClass<out Any>): Boolean {
+        return tasks.any { it::class == clazz }
+    }
+
+    private fun dismissDialogs() {
+        dialogs.forEach { if (it.isShowing) it.dismiss() }
+        dialogs.clear()
+    }
+
+    private fun destroyTasks() {
+        tasks.forEach { it.cancel(true) }
+        tasks.clear()
+    }
+
+    protected fun addDialog(dialog: AlertDialog): AlertDialog {
+        dialogs += dialog
+        return dialog
+    }
+
+    protected fun addTask(task: AsyncTask<Void, Void, out Any?>): AsyncTask<Void, Void, out Any?> {
+        tasks += task
+        return task
+    }
 
     private fun showAPIErrorPopup(apiErrorDto: APIErrorDto,
                                   errorConsumer: ((APIErrorDto) -> Unit)?) {

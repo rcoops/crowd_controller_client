@@ -15,7 +15,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
-import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
@@ -23,12 +22,14 @@ import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
-import me.cooper.rick.crowdcontrollerclient.api.ClientTask
-import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
+import me.cooper.rick.crowdcontrollerclient.api.task.friends.AddFriend
+import me.cooper.rick.crowdcontrollerclient.api.task.friends.GetFriends
+import me.cooper.rick.crowdcontrollerclient.api.task.friends.RemoveFriend
+import me.cooper.rick.crowdcontrollerclient.api.task.friends.UpdateFriendship
+import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
+import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
 import me.cooper.rick.crowdcontrollerclient.auth.DestroyTokenTask
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
-import retrofit2.Call
 
 class MainActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -44,25 +45,14 @@ class MainActivity : AppActivity(),
     it to the backstack, you won’t be able to find it.
      */
 
-    val friends: MutableList<FriendDto> = mutableListOf()
-    val group: MutableList<UserDto> = mutableListOf()
-    private var groupId: Long = -1L
+    val friends = mutableListOf<FriendDto>()
+    val group = mutableListOf<UserDto>()
+
+    private var groupId: Long = -1L // TODO - should be persisted in user?
 
     private lateinit var friendFragment: FriendFragment
     private lateinit var groupFragment: GroupFragment
-    private var addFriendDialog: AlertDialog? = null
-    lateinit var swipeView: SwipeRefreshLayout
-
-    private var getFriendsTask: GetFriendsTask? = null
-    private var addFriendTask: AddFriendTask? = null
-    private var removeFriendTask: RemoveFriendTask? = null
-    private var destroyTokenTask: DestroyTokenTask? = null
-    private var getGroupTask: GetGroupTask? = null
-    private var createGroupTask: CreateGroupTask? = null
-    private var updateFriendshipTask: UpdateFriendshipTask? = null
-
-    private val tasks = listOf(getFriendsTask, addFriendTask, removeFriendTask,
-            destroyTokenTask, updateFriendshipTask, getGroupTask, createGroupTask)
+    private lateinit var swipeView: SwipeRefreshLayout
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
         refresh()
@@ -84,11 +74,6 @@ class MainActivity : AppActivity(),
         group.addAll(it.members)
         swipeView.apply { isRefreshing = false }
         groupFragment.updateView()
-    }
-
-    private fun refresh() {
-        destroyTasks()
-        dismissDialogs()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,9 +104,6 @@ class MainActivity : AppActivity(),
                 .commit()
     }
 
-    /**
-     * Add a fragment on top of the current tab
-     */
     private fun addFragmentOnTop(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
                 .replace(R.id.content_main, fragment)
@@ -129,28 +111,19 @@ class MainActivity : AppActivity(),
                 .commit()
     }
 
-    private fun dismissDialogs() {
-        dismissDialog(addFriendDialog)
-        addFriendDialog = null
-    }
-
-    private fun dismissDialog(alertDialog: AlertDialog?) {
-        alertDialog?.let {
-            if (alertDialog.isShowing) alertDialog.dismiss()
-        }
-    }
-
     private fun addFriend() {
-        addFriendDialog = AlertDialog.Builder(this)
+        addDialog(AlertDialog.Builder(this)
                 .setTitle(R.string.header_add_friend)
-                .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main, false).apply {
-                    btn_add_friend.setOnClickListener {
-                        addFriendTask = AddFriendTask(actv_user_detail.text.toString())
-                                .apply { execute() }
-                    }
-                    btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
-                })
-                .show()
+                .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main,
+                        false)
+                        .apply {
+                            btn_add_friend.setOnClickListener {
+                                val dto = FriendDto(username = actv_user_detail.text.toString())
+                                addTask(AddFriend(dto, refreshFriends).apply { execute() })
+                            }
+                            btn_cancel_add_friend.setOnClickListener { refresh() }
+                        })
+                .show())
     }
 
     override fun onBackPressed() {
@@ -168,8 +141,8 @@ class MainActivity : AppActivity(),
 
     override fun onSwipe(swipeView: SwipeRefreshLayout?) {
         if (R.id.group_swipe_container == swipeView?.id) {
-            if (groupId != -1L) getGroupTask = GetGroupTask(groupId).apply { execute() }
-        } else getFriendsTask = GetFriendsTask().apply { execute() }
+            if (groupId != -1L) addTask(GetGroup(groupId, refreshGroup).apply { execute() })
+        } else addTask(GetFriends(refreshFriends).apply { execute() })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -190,30 +163,11 @@ class MainActivity : AppActivity(),
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        // Handle navigation view item clicks here.
         when (item.itemId) {
-            R.id.navCreateGroup -> {
-                val unGroupedFriendNames = friends
-                        .filter(FriendDto::canJoinGroup)
-                        .map { it.username }
-                        .toTypedArray()
-                val selectedFriends = mutableListOf<Long>()
-                AlertDialog.Builder(this)
-                        .setTitle(title)
-                        .setMultiChoiceItems(unGroupedFriendNames, null, { _, index, isChecked ->
-                            val friendId = friends
-                                    .find { it.username == unGroupedFriendNames[index] }!!
-                                    .id
-                            if (isChecked) selectedFriends += friendId
-                            else selectedFriends -= friendId
-                        })
-                        .setPositiveButton(android.R.string.ok, { _, _ ->
-                            createGroupTask = CreateGroupTask(selectedFriends).apply { execute() }
-                        })
-                        .show()
-            }
+            R.id.navCreateGroup -> showFriendSelectorPopup(getUnGroupedFriendNames())
             R.id.navNewFriend -> addFriend()
-            R.id.navSettings -> {}
+            R.id.navSettings -> {
+            }
             R.id.navSignOut -> DestroyTokenTask({ startActivity(LoginActivity::class) }).execute()
         }
 
@@ -221,35 +175,60 @@ class MainActivity : AppActivity(),
         return true
     }
 
+    private fun getUnGroupedFriendNames(): Array<String> {
+        return friends
+                .filter(FriendDto::canJoinGroup)
+                .map { it.username }
+                .toTypedArray()
+    }
+
+    private fun showFriendSelectorPopup(unGroupedNames: Array<String>) {
+        val selectedIds = mutableListOf<Long>()
+        addDialog(AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMultiChoiceItems(unGroupedNames, null,
+                        selectFriends(unGroupedNames, selectedIds))
+                .setPositiveButton(android.R.string.ok, { _, _ -> createGroup(selectedIds) })
+                .show())
+    }
+
+    private fun selectFriends(unGroupedNames: Array<String>,
+                              selectedIds: MutableList<Long>): (DialogInterface, Int, Boolean) -> Unit {
+        return { _, i, checked ->
+            val id = friends.find { it.username == unGroupedNames[i] }!!.id
+            selectedIds.apply { if (checked) add(id) else remove(id) }
+        }
+    }
 
     override fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.action_remove_friend -> {
-                showAlterFriendDialog(friend, R.string.txt_confirm_remove_friend,
+                showUpdateFriendDialog(friend, R.string.txt_confirm_remove_friend,
                         removeFriend(friend.id))
             }
             R.id.action_add_to_group -> {
-                if (friend.isGrouped()) {
-                    showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
-                } else {
-                    createGroupTask = CreateGroupTask(mutableListOf(friend.id)).apply { execute() }
-                }
+                if (friend.isGrouped()) showGroupedPopup(friend) else createGroup(listOf(friend.id))
             }
             else -> throw NotImplementedError("Not Implemented!!")
         }
     }
 
+    private fun showGroupedPopup(friend: FriendDto) {
+        showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
+    }
+
     override fun onListItemFriendUpdate(friend: FriendDto) {
         when (friend.status) {
             FriendDto.Status.CONFIRMED -> {
-                showAlterFriendDialog(friend, R.string.txt_confirm_accept_friend,
+                showUpdateFriendDialog(friend, R.string.txt_confirm_accept_friend,
                         updateFriendship(friend))
             }
             FriendDto.Status.INACTIVE -> {
-                showAlterFriendDialog(friend, R.string.txt_confirm_remove_friend,
+                showUpdateFriendDialog(friend, R.string.txt_confirm_remove_friend,
                         removeFriend(friend.id))
             }
-            else -> {} // No action required
+            else -> {
+            } // No action required
         }
     }
 
@@ -261,81 +240,30 @@ class MainActivity : AppActivity(),
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun destroyTasks() = tasks.forEach { it?.cancel(true) }
-
-    private fun showAlterFriendDialog(item: FriendDto, stringId: Int, onOkListener: DialogInterface.OnClickListener) {
-        AlertDialog.Builder(this)
+    private fun showUpdateFriendDialog(item: FriendDto, stringId: Int,
+                                       onOkListener: DialogInterface.OnClickListener) {
+        addDialog(AlertDialog.Builder(this)
                 .setTitle(getString(R.string.header_confirm))
                 .setMessage(getString(stringId, item.username))
                 .setPositiveButton(getString(android.R.string.ok), onOkListener)
                 .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
-                .show()
+                .show())
+    }
+
+    private fun createGroup(friendIds: List<Long>) {
+        addTask(CreateGroup(friendIds, createGroup).apply { execute() })
     }
 
     private fun removeFriend(id: Long): DialogInterface.OnClickListener {
         return DialogInterface.OnClickListener { _, _ ->
-            removeFriendTask = RemoveFriendTask(id).apply { execute() }
+            addTask(RemoveFriend(id, refreshFriends).apply { execute() })
         }
     }
 
     private fun updateFriendship(friend: FriendDto): DialogInterface.OnClickListener {
         return DialogInterface.OnClickListener { _, _ ->
-            updateFriendshipTask = UpdateFriendshipTask(friend).apply { execute() }
+            addTask(UpdateFriendship(friend, refreshFriends).apply { execute() })
         }
-    }
-
-    inner class GetFriendsTask internal constructor()
-        : ClientTask<UserClient, List<FriendDto>>(refreshFriends, UserClient::class) {
-
-        override fun buildCall(client: UserClient, id: Long): Call<List<FriendDto>> {
-            return client.friends(id)
-        }
-
-    }
-
-    inner class AddFriendTask internal constructor(private val friendIdentifier: String)
-        : ClientTask<UserClient, List<FriendDto>>(refreshFriends, UserClient::class) {
-
-        override fun buildCall(client: UserClient, id: Long): Call<List<FriendDto>> {
-            return client.addFriend(id, friendIdentifier)
-        }
-
-    }
-
-    inner class RemoveFriendTask internal constructor(private val friendId: Long)
-        : ClientTask<UserClient, List<FriendDto>>(refreshFriends, UserClient::class) {
-
-        override fun buildCall(client: UserClient, id: Long): Call<List<FriendDto>> {
-            return client.removeFriend(id, friendId)
-        }
-
-    }
-
-    inner class UpdateFriendshipTask internal constructor(private val friendDto: FriendDto)
-        : ClientTask<UserClient, List<FriendDto>>(refreshFriends, UserClient::class) {
-
-        override fun buildCall(client: UserClient, id: Long): Call<List<FriendDto>> {
-            return client.updateFriendship(id, friendDto.id, friendDto)
-        }
-
-    }
-
-    inner class CreateGroupTask internal constructor(private val friendIds: List<Long>)
-        : ClientTask<GroupClient, GroupDto>(createGroup, GroupClient::class) {
-
-        override fun buildCall(client: GroupClient, id: Long): Call<GroupDto> {
-            return client.create(CreateGroupDto(id, friendIds))
-        }
-
-    }
-
-    inner class GetGroupTask internal constructor(private val groupId: Long)
-        : ClientTask<GroupClient, GroupDto>(refreshGroup, GroupClient::class) {
-
-        override fun buildCall(client: GroupClient, id: Long): Call<GroupDto> {
-            return client.group(groupId)
-        }
-
     }
 
     companion object {
