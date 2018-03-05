@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.app.Fragment
@@ -10,9 +11,7 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
@@ -60,10 +59,10 @@ class MainActivity : AppActivity(),
     private var destroyTokenTask: DestroyTokenTask? = null
     private var getGroupTask: GetGroupTask? = null
     private var createGroupTask: CreateGroupTask? = null
-    private var friendRequestResponseTask: FriendRequestResponseTask? = null
+    private var updateFriendshipTask: UpdateFriendshipTask? = null
 
     private val tasks = listOf(getFriendsTask, addFriendTask, removeFriendTask,
-            destroyTokenTask, friendRequestResponseTask, getGroupTask, createGroupTask)
+            destroyTokenTask, updateFriendshipTask, getGroupTask, createGroupTask)
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
         refresh()
@@ -225,22 +224,33 @@ class MainActivity : AppActivity(),
 
     override fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
-            R.id.action_remove_friend -> showRemoveFriendDialog(friend)
+            R.id.action_remove_friend -> {
+                showAlterFriendDialog(friend, R.string.txt_confirm_remove_friend,
+                        removeFriend(friend.id))
+            }
             R.id.action_add_to_group -> {
                 if (friend.isGrouped()) {
                     showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
                 } else {
-                    TODO("create group")
-                    addFragmentOnTop(GroupFragment())
+                    createGroupTask = CreateGroupTask(mutableListOf(friend.id)).apply { execute() }
                 }
             }
             else -> throw NotImplementedError("Not Implemented!!")
         }
     }
 
-    override fun onListItemFriendInviteResponse(friend: FriendDto, isAccepting: Boolean) {
-        friendRequestResponseTask = FriendRequestResponseTask(friend.id, isAccepting)
-                .apply { execute() }
+    override fun onListItemFriendUpdate(friend: FriendDto) {
+        when (friend.status) {
+            FriendDto.Status.CONFIRMED -> {
+                showAlterFriendDialog(friend, R.string.txt_confirm_accept_friend,
+                        updateFriendship(friend))
+            }
+            FriendDto.Status.INACTIVE -> {
+                showAlterFriendDialog(friend, R.string.txt_confirm_remove_friend,
+                        removeFriend(friend.id))
+            }
+            else -> {} // No action required
+        }
     }
 
     override fun onListItemContextMenuSelection(friend: UserDto, menuItem: MenuItem) {
@@ -253,17 +263,25 @@ class MainActivity : AppActivity(),
 
     override fun destroyTasks() = tasks.forEach { it?.cancel(true) }
 
-    private fun showRemoveFriendDialog(item: FriendDto) {
+    private fun showAlterFriendDialog(item: FriendDto, stringId: Int, onOkListener: DialogInterface.OnClickListener) {
         AlertDialog.Builder(this)
                 .setTitle(getString(R.string.header_confirm))
-                .setMessage(getString(R.string.txt_confirm_remove_friend, item.username))
-                .setPositiveButton(getString(android.R.string.ok), { _, _ -> removeFriend(item.id) })
+                .setMessage(getString(stringId, item.username))
+                .setPositiveButton(getString(android.R.string.ok), onOkListener)
                 .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
                 .show()
     }
 
-    private fun removeFriend(id: Long) {
-        removeFriendTask = RemoveFriendTask(id).apply { execute() }
+    private fun removeFriend(id: Long): DialogInterface.OnClickListener {
+        return DialogInterface.OnClickListener { _, _ ->
+            removeFriendTask = RemoveFriendTask(id).apply { execute() }
+        }
+    }
+
+    private fun updateFriendship(friend: FriendDto): DialogInterface.OnClickListener {
+        return DialogInterface.OnClickListener { _, _ ->
+            updateFriendshipTask = UpdateFriendshipTask(friend).apply { execute() }
+        }
     }
 
     inner class GetFriendsTask internal constructor()
@@ -293,12 +311,11 @@ class MainActivity : AppActivity(),
 
     }
 
-    inner class FriendRequestResponseTask internal constructor(private val friendId: Long,
-                                                               private val response: Boolean)
+    inner class UpdateFriendshipTask internal constructor(private val friendDto: FriendDto)
         : ClientTask<UserClient, List<FriendDto>>(refreshFriends, UserClient::class) {
 
         override fun buildCall(client: UserClient, id: Long): Call<List<FriendDto>> {
-            return client.respondToFriendRequest(id, friendId, response)
+            return client.updateFriendship(id, friendDto.id, friendDto)
         }
 
     }

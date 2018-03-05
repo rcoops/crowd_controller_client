@@ -24,17 +24,17 @@ interface UserClient {
 
     /* FRIENDS */
 
-    @GET("$FRIENDS_BASE_PATH")
+    @GET(FRIENDS_BASE_PATH)
     fun friends(@Path("userId") userId: Long): Call<List<FriendDto>>
 
     @PUT("$FRIENDS_BASE_PATH/{friendIdentifier}")
     fun addFriend(@Path("userId") userId: Long,
                   @Path("friendIdentifier") friendIdentifier: String): Call<List<FriendDto>>
 
-    @PUT("$FRIENDS_BASE_PATH/{friendId}/{isAccepting}")
-    fun respondToFriendRequest(@Path("userId") userId: Long,
+    @PUT("$FRIENDS_BASE_PATH/{friendId}")
+    fun updateFriendship(@Path("userId") userId: Long,
                                @Path("friendId") friendId: Long,
-                               @Path("isAccepting") isAccepting: Boolean): Call<List<FriendDto>>
+                               @Body friendDto: FriendDto): Call<List<FriendDto>>
 
     @DELETE("$FRIENDS_BASE_PATH/{friendId}")
     fun removeFriend(@Path("userId") userId: Long,

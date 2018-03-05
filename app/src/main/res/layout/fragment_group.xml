@@ -23,7 +23,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab_menu"
+            android:id="@+id/fab_group_menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/fab_margin"
@@ -34,18 +34,16 @@
             app:srcCompat="@drawable/ic_menu" />
     </android.support.constraint.ConstraintLayout>
 
-    <TextView
-        android:id="@+id/overlay_awaiting_confirm"
+    <View
+        android:id="@+id/vw_group_overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/shaded"
-        android:layout_margin="6dp"
-        android:gravity="center"
-        android:text="@string/txt_awaiting_group_accept"
+        android:layout_margin="@dimen/margin_overlay"
         android:visibility="gone" />
 
     <android.support.constraint.ConstraintLayout
-        android:id="@+id/layout_confirm_group"
+        android:id="@+id/layout_group_action"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="end|center_vertical"
@@ -54,14 +52,14 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/txt_accept_group_invite"
+            android:id="@+id/txt_group_action"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:textAlignment="center"
             android:minLines="3"
             android:scrollHorizontally="false"
-            android:text="Accept\nGroup\nInvite?"
+            android:text="@string/txt_accept_group_invite"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fab_accept_group_invite"
             app:layout_constraintHorizontal_weight="0.4"
@@ -71,7 +69,7 @@
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab_accept_group_invite"
             app:srcCompat="@drawable/ic_ok"
-            app:backgroundTint="#42f459"
+            app:backgroundTint="@color/ok"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="1dp"
@@ -79,13 +77,13 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fab_refuse_group_invite"
             app:layout_constraintHorizontal_weight="0.3"
-            app:layout_constraintStart_toEndOf="@id/txt_accept_group_invite"
+            app:layout_constraintStart_toEndOf="@id/txt_group_action"
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab_refuse_group_invite"
             app:srcCompat="@drawable/ic_cancel"
-            app:backgroundTint="#F44141"
+            app:backgroundTint="@color/cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="1dp"

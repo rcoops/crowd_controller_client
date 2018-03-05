@@ -25,10 +25,11 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.mItem = mValues[position]
-        holder.txtContentView.text = mValues[position].username
+        holder.txtContent.text = mValues[position].username
 
         setStatusView(holder, holder.mItem!!)
     }
+
     private fun setStatusView(holder: ViewHolder, friendDto: UserDto) {
 
     }
@@ -40,13 +41,16 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
             MenuItem.OnMenuItemClickListener {
         val fabAccept: FloatingActionButton = mView.findViewById(R.id.fab_accept_group_invite)
         val fabRefuse: FloatingActionButton = mView.findViewById(R.id.fab_refuse_group_invite)
-        val txtContentView: TextView = mView.findViewById(R.id.txt_group_content)
-        val txtOverlayView: TextView = mView.findViewById(R.id.overlay_awaiting_confirm)
-        val cslConfirmView: ConstraintLayout = mView.findViewById(R.id.layout_confirm_group)
-        val fabContextMenu: FloatingActionButton = mView.findViewById(R.id.fab_menu)
+        val txtContent: TextView = mView.findViewById(R.id.txt_group_content)
+        val vwOverlay: View = mView.findViewById(R.id.vw_group_overlay)
+        val txtAction: TextView = mView.findViewById(R.id.txt_group_action)
+        val cslConfirm: ConstraintLayout = mView.findViewById(R.id.layout_group_action)
+        val fabContextMenu: FloatingActionButton = mView.findViewById(R.id.fab_group_menu)
         var mItem: UserDto? = null
 
-        init { mView.isLongClickable = false }
+        init {
+            mView.isLongClickable = false
+        }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             (mListener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)
@@ -64,7 +68,7 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
         }
 
         override fun toString(): String {
-            return "${super.toString()} '${txtContentView.text}'"
+            return "${super.toString()} '${txtContent.text}'"
         }
     }
 

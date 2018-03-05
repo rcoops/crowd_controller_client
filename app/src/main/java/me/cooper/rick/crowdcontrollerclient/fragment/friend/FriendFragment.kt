@@ -65,7 +65,7 @@ class FriendFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
 
         fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem)
 
-        fun onListItemFriendInviteResponse(friend: FriendDto, isAccepting: Boolean)
+        fun onListItemFriendUpdate(friend: FriendDto)
 
     }
 
