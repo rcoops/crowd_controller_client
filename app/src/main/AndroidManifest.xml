@@ -40,6 +40,8 @@
             android:name=".activity.LocationActivity"
             android:label="@string/title_activity_location"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <service android:name=".api.UpdateService" />
     </application>
 
 </manifest>

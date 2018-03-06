@@ -260,8 +260,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
     }
-
-
+    
     companion object {
 
         private const val REQUEST_READ_CONTACTS = 1

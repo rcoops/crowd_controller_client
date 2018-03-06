@@ -1,7 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
-import android.content.DialogInterface
+import android.content.*
+import android.database.Observable
 import android.os.Bundle
+import android.os.IBinder
 import android.support.design.widget.NavigationView
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
@@ -11,6 +13,9 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
+import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
@@ -19,6 +24,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.UpdateService
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
@@ -34,7 +40,8 @@ import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 class MainActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
         OnFriendFragmentInteractionListener,
-        OnGroupFragmentInteractionListener {
+        OnGroupFragmentInteractionListener,
+        UpdateService.UpdateServiceListener {
     /*
     https://medium.com/@bherbst/managing-the-fragment-back-stack-373e87e4ff62
     Fragment transactions can involve two different types of tags. The one that most Android
@@ -50,9 +57,26 @@ class MainActivity : AppActivity(),
 
     private var groupId: Long = -1L // TODO - should be persisted in user?
 
+    private var mBound = false
+
+    private var updateService: UpdateService? = null
+
     private lateinit var friendFragment: FriendFragment
     private lateinit var groupFragment: GroupFragment
     private lateinit var swipeView: SwipeRefreshLayout
+
+    private val serviceConnection = object: ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, iBinder: IBinder?) {
+            updateService = (iBinder as UpdateService.LocalBinder).service
+            updateService?.registerListener(this@MainActivity)
+            mBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            updateService = null
+            mBound = false
+        }
+    }
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
         refresh()
@@ -93,6 +117,35 @@ class MainActivity : AppActivity(),
         groupFragment = GroupFragment()
         onTabSelected()
         fab.setOnClickListener { addFriend() }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        bindService(Intent(this, UpdateService::class.java), serviceConnection,
+                BIND_AUTO_CREATE)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unbindService(serviceConnection)
+    }
+
+    override fun bindService(service: Intent?, conn: ServiceConnection?, flags: Int): Boolean {
+        mBound = super.bindService(service, conn, flags)
+        return mBound
+    }
+
+    override fun unbindService(conn: ServiceConnection?) {
+        if (mBound) {
+            updateService?.unregisterListener(this)
+            super.unbindService(conn)
+            mBound = false
+        }
+    }
+
+    override fun onDestroy() {
+        unbindService(serviceConnection)
+        super.onDestroy()
     }
 
     private fun onTabSelected() {
@@ -173,6 +226,14 @@ class MainActivity : AppActivity(),
 
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    override fun onUpdate(userDto: UserDto) {
+        runOnUiThread { makeText(this, "$userDto", LENGTH_SHORT).show() }
+    }
+
+    override fun onUpdate(groupDto: GroupDto) {
+        refreshGroup(groupDto)
     }
 
     private fun getUnGroupedFriendNames(): Array<String> {

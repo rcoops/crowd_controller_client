@@ -1,20 +1,25 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
+import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import retrofit2.Call
 import retrofit2.http.*
 
+
 interface UserClient {
 
     /* USER */
 
     @GET(BASE_PATH)
-    fun users(): Call<List<UserDto>?>
+    fun users(): Observable<List<UserDto>>
 
-    @GET("/{userId}")
+    @GET("$BASE_PATH/{userId}")
     fun user(@Path("userId") userId: Long): Call<UserDto>
+
+    @GET("$BASE_PATH/{userId}")
+    fun userO(@Path("userId") userId: Long): Observable<UserDto>
 
     @POST(BASE_PATH)
     fun create(@Body registrationDto: RegistrationDto): Call<UserDto>
