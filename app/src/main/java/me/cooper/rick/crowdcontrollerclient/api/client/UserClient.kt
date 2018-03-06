@@ -16,10 +16,7 @@ interface UserClient {
     fun users(): Observable<List<UserDto>>
 
     @GET("$BASE_PATH/{userId}")
-    fun user(@Path("userId") userId: Long): Call<UserDto>
-
-    @GET("$BASE_PATH/{userId}")
-    fun userO(@Path("userId") userId: Long): Observable<UserDto>
+    fun user(@Path("userId") userId: Long): Observable<UserDto>
 
     @POST(BASE_PATH)
     fun create(@Body registrationDto: RegistrationDto): Call<UserDto>

@@ -1,7 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.content.*
-import android.database.Observable
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
@@ -13,7 +12,6 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_main.*
@@ -34,7 +32,6 @@ import me.cooper.rick.crowdcontrollerclient.api.task.friends.RemoveFriend
 import me.cooper.rick.crowdcontrollerclient.api.task.friends.UpdateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
-import me.cooper.rick.crowdcontrollerclient.auth.DestroyTokenTask
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 
 class MainActivity : AppActivity(),
@@ -221,7 +218,13 @@ class MainActivity : AppActivity(),
             R.id.navNewFriend -> addFriend()
             R.id.navSettings -> {
             }
-            R.id.navSignOut -> DestroyTokenTask({ startActivity(LoginActivity::class) }).execute()
+            R.id.navSignOut -> {
+                getSharedPreferences("details", Context.MODE_PRIVATE).edit().apply {
+                    clear()
+                    commit()
+                }
+                startActivity(LoginActivity::class)
+            }
         }
 
         drawer_layout.closeDrawer(GravityCompat.START)

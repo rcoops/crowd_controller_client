@@ -79,4 +79,5 @@
     <string name="txt_accept_friend_request">Accept\nFriend\nRequest?</string>
     <string name="txt_accept_group_invite">Accept\nGroup\nInvite?</string>
     <string name="txt_cancel_friend_request">Cancel\nFriend\nRequest?</string>
+    <string name="details">details</string>
 </resources>

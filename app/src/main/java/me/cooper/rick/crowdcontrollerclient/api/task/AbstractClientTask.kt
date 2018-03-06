@@ -1,9 +1,10 @@
 package me.cooper.rick.crowdcontrollerclient.api.task
 
+import android.content.Context
 import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerclient.App
+import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
-import me.cooper.rick.crowdcontrollerclient.persistence.AppDatabase
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Call
 import retrofit2.Response
@@ -16,12 +17,14 @@ abstract class AbstractClientTask<in S : Any, T>(private val consumer: (T) -> Un
     protected abstract fun buildCall(client: S, id: Long): Call<T>
 
     override fun doInBackground(vararg params: Void): Response<T> {
-        val db = AppDatabase.getInstance(App.currentActivity!!)
-        val user = db.userDao().select()!!
-        val client = ServiceGenerator.createService(clazz, user.token)
+        val pref = App.context!!.getSharedPreferences("details", Context.MODE_PRIVATE)
+
+        val tokenKey = App.context!!.getString(R.string.token)
+        val token = pref.getString(tokenKey, null)
+        val client = ServiceGenerator.createService(clazz, token)
 
         return try {
-            buildCall(client, user.id!!).execute()
+            buildCall(client, pref.getLong(App.context!!.getString(R.string.user), -1L)).execute()
         } catch (e: IOException) {
             handleConnectionException(e)
         }

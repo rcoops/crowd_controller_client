@@ -2,6 +2,7 @@ package me.cooper.rick.crowdcontrollerclient.activity
 
 import android.Manifest.permission.READ_CONTACTS
 import android.app.LoaderManager.LoaderCallbacks
+import android.content.Context
 import android.content.CursorLoader
 import android.content.Loader
 import android.content.pm.PackageManager
@@ -25,14 +26,11 @@ import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
-import me.cooper.rick.crowdcontrollerclient.persistence.AppDatabase
-import me.cooper.rick.crowdcontrollerclient.persistence.model.UserEntity
 import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import retrofit2.Response
 import java.io.IOException
-import java.util.*
 
 /**
  * A login screen that offers login via email/password.
@@ -51,7 +49,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        addTask(CheckTokenTask().apply { execute() })
+        getSharedPreferences("details", Context.MODE_PRIVATE)
+                .getString(getString(R.string.token), null)
+                ?.let { startActivity(MainActivity::class) }
         setContentView(R.layout.activity_login)
         // Set up the login form.
         populateAutoComplete()
@@ -143,7 +143,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         } else {
             showProgress(true, login_form, login_progress)
             addTask(UserLoginTask(usernameStr, passwordStr).apply { execute() })
-
         }
     }
 
@@ -224,7 +223,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             )
 
             return try {
-                val response = loginClient.getToken(getString(R.string.jwt_grant_type), username, password).execute()
+                val response = loginClient
+                        .getToken(getString(R.string.jwt_grant_type), username, password)
+                        .execute()
                 val body = response.body()
                 if (body is Token) save(body)
                 response
@@ -234,11 +235,13 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         private fun save(token: Token) {
-            val db = AppDatabase.getInstance(this@LoginActivity)
-            val userDao = db.userDao()
-            userDao.clear()
-
-            userDao.insert(UserEntity.fromDto(token))
+            getSharedPreferences(getString(R.string.details), Context.MODE_PRIVATE)
+                    .edit()
+                    .apply {
+                        putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
+                        putLong(getString(R.string.user), token.user!!.id)
+                        commit()
+                    }
         }
 
         override fun onPostExecute(response: Response<Token>) {
@@ -247,20 +250,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     }
 
-    inner class CheckTokenTask : AsyncTask<Void, Void, String?>() {
-
-        override fun doInBackground(vararg params: Void): String? {
-            val db = AppDatabase.getInstance(this@LoginActivity)
-            val userDao = db.userDao()
-            return userDao.select()?.token
-        }
-
-        override fun onPostExecute(result: String?) {
-            result?.let { loginSuccess(result) }
-        }
-
-    }
-    
     companion object {
 
         private const val REQUEST_READ_CONTACTS = 1
