@@ -1,9 +1,15 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.app.Activity
 import android.content.*
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
+import android.support.design.widget.Snackbar
+import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import android.support.v4.view.GravityCompat
@@ -12,6 +18,9 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast.LENGTH_SHORT
+import android.widget.Toast.makeText
+import com.google.android.gms.common.api.ResolvableApiException
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
@@ -31,6 +40,7 @@ import me.cooper.rick.crowdcontrollerclient.api.task.friends.UpdateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.UpdateGroup
+import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 
@@ -191,6 +201,19 @@ class MainActivity : AppActivity(),
         }
     }
 
+    override fun handleApiException(e: ResolvableApiException) {
+        e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            REQUEST_CHECK_SETTINGS -> {
+                if (resultCode == Activity.RESULT_OK) updateService?.startTracking()
+            }
+            else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.navCreateGroup -> {
@@ -200,7 +223,7 @@ class MainActivity : AppActivity(),
             R.id.navSettings -> {
             }
             R.id.navSignOut -> {
-                editUserDetails { clear() }
+                editAppDetails { clear() }
                 startActivity(LoginActivity::class)
             }
         }
@@ -210,7 +233,7 @@ class MainActivity : AppActivity(),
     }
 
     override fun onUpdate(userDto: UserDto) {
-        editUserDetails { putLong(getString(R.string.user_id), userDto.id) }
+        editAppDetails { putLong(getString(R.string.user_id), userDto.id) }
         refreshFriendsBackground(userDto.friends)
     }
 
@@ -363,6 +386,7 @@ class MainActivity : AppActivity(),
 
     companion object {
         const val BACK_STACK_ROOT_TAG = "root"
+        const val REQUEST_CHECK_SETTINGS = 1
     }
 
 }

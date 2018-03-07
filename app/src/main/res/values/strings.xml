@@ -18,8 +18,11 @@
     <string name="error_invalid_password">This password is too short</string>
     <string name="error_incorrect_password">This password is incorrect</string>
     <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
+    <string name="permission_rationale">
+        "Contacts permissions are needed for providing email completions."
+    </string>
+    <string name="location_permission_rationale">
+        "Location permissions are needed to continue."
     </string>
     <string name="title_activity_friends">Friends</string>
 
@@ -80,4 +83,5 @@
     <string name="txt_accept_group_invite">Accept\nGroup\nInvite?</string>
     <string name="txt_cancel_friend_request">Cancel\nFriend\nRequest?</string>
     <string name="user_details">details</string>
+    <string name="location_permissions_granted">Location Permissions Granted</string>
 </resources>

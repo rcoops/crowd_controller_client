@@ -8,7 +8,7 @@ class GetGroup(private val groupId: Long, consumer: (GroupDto) -> Unit)
     : AbstractGroupTask(consumer) {
 
     override fun buildCall(client: GroupClient, id: Long): Call<GroupDto> {
-        return client.group(groupId)
+        return client.find(groupId)
     }
 
 }

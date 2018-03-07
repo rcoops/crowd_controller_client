@@ -2,6 +2,7 @@ package me.cooper.rick.crowdcontrollerclient.api.client
 
 import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import retrofit2.Call
@@ -21,8 +22,9 @@ interface UserClient {
     @POST(BASE_PATH)
     fun create(@Body registrationDto: RegistrationDto): Call<UserDto>
 
-    @PUT("$BASE_PATH/{userId}")
-    fun update(@Path("userId") userId: Long, @Body userDto: UserDto): Call<UserDto>
+    @PATCH("$BASE_PATH/{userId}/location")
+    fun updateLocation(@Path("userId") userId: Long,
+                       @Body locationDto: LocationDto): Call<UserDto>
 
     /* FRIENDS */
 
@@ -33,10 +35,10 @@ interface UserClient {
     fun addFriend(@Path("userId") userId: Long,
                   @Body friendDto: FriendDto): Call<List<FriendDto>>
 
-    @PUT("$FRIENDS_BASE_PATH/{friendId}")
+    @PATCH("$FRIENDS_BASE_PATH/{friendId}")
     fun updateFriendship(@Path("userId") userId: Long,
-                               @Path("friendId") friendId: Long,
-                               @Body friendDto: FriendDto): Call<List<FriendDto>>
+                         @Path("friendId") friendId: Long,
+                         @Body friendDto: FriendDto): Call<List<FriendDto>>
 
     @DELETE("$FRIENDS_BASE_PATH/{friendId}")
     fun removeFriend(@Path("userId") userId: Long,
@@ -46,5 +48,5 @@ interface UserClient {
         const val BASE_PATH = "/users"
         const val FRIENDS_BASE_PATH = "$BASE_PATH/{userId}/friends"
     }
-    
+
 }

@@ -8,7 +8,7 @@ class UpdateGroup(private val groupDto: GroupDto, consumer: (GroupDto) -> Unit)
     : AbstractGroupTask(consumer) {
 
     override fun buildCall(client: GroupClient, id: Long): Call<GroupDto> {
-        return client.updateGroup(groupDto.id, groupDto)
+        return client.update(groupDto.id, groupDto)
     }
 
 }

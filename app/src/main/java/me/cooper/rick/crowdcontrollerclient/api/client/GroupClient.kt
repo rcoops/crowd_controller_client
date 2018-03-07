@@ -10,10 +10,10 @@ import retrofit2.http.*
 interface GroupClient {
 
     @GET(BASE_PATH)
-    fun groups(): Call<List<GroupDto>>
+    fun findAll(): Call<List<GroupDto>>
 
     @GET("$BASE_PATH/{groupId}")
-    fun group(@Path("groupId") groupId: Long): Call<GroupDto>
+    fun find(@Path("groupId") groupId: Long): Call<GroupDto>
 
     @GET("$BASE_PATH/{groupId}")
     fun groupObservable(@Path("groupId") groupId: Long): Observable<GroupDto>
@@ -22,19 +22,15 @@ interface GroupClient {
     fun create(@Body groupDto: CreateGroupDto): Call<GroupDto>
 
     @PUT("$BASE_PATH/{groupId}")
-    fun updateGroup(@Path("groupId") groupId: Long,
-                    @Body groupDto: GroupDto): Call<GroupDto>
+    fun update(@Path("groupId") groupId: Long,
+               @Body groupDto: GroupDto): Call<GroupDto>
 
-    @PUT("$BASE_PATH/{groupId}/members/{userId}")
-    fun addToGroup(@Path("groupId") groupId: Long,
-                   @Path("userId") userId: Long): Call<GroupDto>
-
-    @DELETE("$BASE_PATH/{groupId}/members/{userId}")
-    fun removeFromGroup(@Path("groupId") groupId: Long,
-                        @Path("userId") userId: Long): Call<GroupDto>
+    @PATCH("$BASE_PATH/{groupId}/members/{userId}")
+    fun acceptInvite(@Path("groupId") groupId: Long,
+                     @Path("userId") userId: Long)
 
     @DELETE("$BASE_PATH/{groupId}")
-    fun removeGroup(@Path("groupId") groupId: Long): Call<Boolean>
+    fun remove(@Path("groupId") groupId: Long): Call<Boolean>
 
     companion object {
         const val BASE_PATH = "/groups"

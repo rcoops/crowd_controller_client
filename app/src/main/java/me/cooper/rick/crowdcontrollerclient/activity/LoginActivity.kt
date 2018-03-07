@@ -1,11 +1,12 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.READ_CONTACTS
 import android.app.LoaderManager.LoaderCallbacks
-import android.content.Context
 import android.content.CursorLoader
 import android.content.Loader
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.database.Cursor
 import android.net.Uri
 import android.os.AsyncTask
@@ -13,6 +14,9 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.support.design.widget.Snackbar
+import android.support.v4.app.ActivityCompat.requestPermissions
+import android.support.v4.app.ActivityCompat.shouldShowRequestPermissionRationale
+import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.text.TextUtils
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -49,6 +53,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mayUseLocationServices()
 
         startMainActivityIfLoggedIn()
 
@@ -101,14 +106,45 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         return false
     }
 
+    private fun mayUseLocationServices(): Boolean {
+        if (hasLocationPermission()) return true
+
+        if (shouldShowRequestPermissionRationale(this, ACCESS_FINE_LOCATION)) {
+            Snackbar.make(findViewById(R.id.content),
+                    R.string.location_permission_rationale, Snackbar.LENGTH_INDEFINITE)
+                    .setAction(android.R.string.ok, { makePermissionRequest() })
+                    .show()
+        } else {
+            makePermissionRequest()
+        }
+
+        return false
+    }
+
+    private fun makePermissionRequest() {
+        requestPermissions(this, arrayOf(ACCESS_FINE_LOCATION), REQUEST_FINE_LOCATION)
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        return checkSelfPermission(this, ACCESS_FINE_LOCATION) == PERMISSION_GRANTED
+    }
+
     /**
      * Callback received when a permissions request has been completed.
      */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
                                             grantResults: IntArray) {
-        if (requestCode == REQUEST_READ_CONTACTS
-                && grantResults.size == 1
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) populateAutoComplete()
+        fun isGranted(grantResults: IntArray): Boolean {
+            return grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+        }
+        when (requestCode) {
+            REQUEST_READ_CONTACTS -> {
+                if (isGranted(grantResults)) populateAutoComplete()
+            }
+            REQUEST_FINE_LOCATION -> editAppDetails {
+                putBoolean(getString(R.string.location_permissions_granted), isGranted(grantResults))
+            }
+        }
     }
 
     /**
@@ -239,8 +275,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         private fun save(token: Token) {
-            userDetailsEditor().apply { clear(); commit() }
-            editUserDetails {
+            editAppDetails {
                 putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
                 putLong(getString(R.string.user_id), token.user!!.id)
             }
@@ -255,6 +290,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     companion object {
 
         private const val REQUEST_READ_CONTACTS = 1
+        private const val REQUEST_FINE_LOCATION = 2
 
     }
 
