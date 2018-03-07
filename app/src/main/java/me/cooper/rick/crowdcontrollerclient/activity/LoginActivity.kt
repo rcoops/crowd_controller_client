@@ -49,16 +49,20 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        getSharedPreferences("details", Context.MODE_PRIVATE)
-                .getString(getString(R.string.token), null)
-                ?.let { startActivity(MainActivity::class) }
+
+        startMainActivityIfLoggedIn()
+
         setContentView(R.layout.activity_login)
-        // Set up the login form.
-        populateAutoComplete()
+
+        populateAutoComplete() // Set up the login form
 
         OrdinalSuperscriptFormatter.format(txt_header)
 
         setListeners()
+    }
+
+    private fun startMainActivityIfLoggedIn() {
+        if (getToken().isNotBlank()) startActivity(MainActivity::class)
     }
 
     private fun setListeners() {
@@ -235,13 +239,11 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         private fun save(token: Token) {
-            getSharedPreferences(getString(R.string.details), Context.MODE_PRIVATE)
-                    .edit()
-                    .apply {
-                        putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
-                        putLong(getString(R.string.user), token.user!!.id)
-                        commit()
-                    }
+            userDetailsEditor().apply { clear(); commit() }
+            editUserDetails {
+                putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
+                putLong(getString(R.string.user_id), token.user!!.id)
+            }
         }
 
         override fun onPostExecute(response: Response<Token>) {

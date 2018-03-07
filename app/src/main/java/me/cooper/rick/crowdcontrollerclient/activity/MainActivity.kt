@@ -12,8 +12,6 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast.LENGTH_SHORT
-import android.widget.Toast.makeText
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
@@ -32,6 +30,8 @@ import me.cooper.rick.crowdcontrollerclient.api.task.friends.RemoveFriend
 import me.cooper.rick.crowdcontrollerclient.api.task.friends.UpdateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
+import me.cooper.rick.crowdcontrollerclient.api.task.group.UpdateGroup
+import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 
 class MainActivity : AppActivity(),
@@ -50,9 +50,8 @@ class MainActivity : AppActivity(),
      */
 
     val friends = mutableListOf<FriendDto>()
-    val group = mutableListOf<UserDto>()
-
-    private var groupId: Long = -1L // TODO - should be persisted in user?
+    val groupMembers = mutableListOf<UserDto>()
+    private var group: GroupDto? = null
 
     private var mBound = false
 
@@ -60,7 +59,7 @@ class MainActivity : AppActivity(),
 
     private lateinit var friendFragment: FriendFragment
     private lateinit var groupFragment: GroupFragment
-    private lateinit var swipeView: SwipeRefreshLayout
+    private var swipeView: SwipeRefreshLayout? = null
 
     private val serviceConnection = object: ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, iBinder: IBinder?) {
@@ -77,25 +76,28 @@ class MainActivity : AppActivity(),
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
         refresh()
-        friends.clear()
-        friends.addAll(it)
-        swipeView.apply { isRefreshing = false }
-        friendFragment.updateView()
+        updateFriends(it)
     }
+
+    private val refreshFriendsBackground: (List<FriendDto>) -> Unit = { updateFriends(it) }
 
     private val createGroup: (GroupDto) -> Unit = {
         refreshGroup(it)
         addFragmentOnTop(groupFragment)
     }
 
+    private val executeNewGroupTask: (List<Long>) -> Unit = {
+        addTask(CreateGroup(it, createGroup).apply { execute() })
+    }
+
+    private val addGroupMembers: (List<Long>) -> Unit = { addGroupMembers(it) }
+
     private val refreshGroup: (GroupDto) -> Unit = {
         refresh()
-        groupId = it.id
-        group.clear()
-        group.addAll(it.members)
-        swipeView.apply { isRefreshing = false }
-        groupFragment.updateView()
+        refreshGroupDetails(it)
     }
+
+    private val refreshGroupBackground: (GroupDto) -> Unit = { refreshGroupDetails(it) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,6 +147,75 @@ class MainActivity : AppActivity(),
         super.onDestroy()
     }
 
+    override fun onBackPressed() {
+        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
+            drawer_layout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        onSwipe(null)
+    }
+
+    override fun onSwipe(swipeView: SwipeRefreshLayout?) {
+        if (R.id.group_swipe_container == swipeView?.id) {
+            group?.let { addTask(GetGroup(it.id, refreshGroup).apply { execute() }) }
+        } else addTask(GetFriends(refreshFriends).apply { execute() })
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.friend, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> true
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun setFragmentProperties(fragment: AbstractAppFragment) {
+        this.swipeView = fragment.getSwipeView()
+        supportActionBar?.title = fragment.getTitle()
+        fab.setOnClickListener {
+            when(fragment) {
+                is FriendFragment -> addFriend()
+                is GroupFragment -> showFriendSelectorPopup(getUnGroupedFriendNames(), addGroupMembers)
+            }
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.navCreateGroup -> {
+                showFriendSelectorPopup(getUnGroupedFriendNames(), executeNewGroupTask)
+            }
+            R.id.navNewFriend -> addFriend()
+            R.id.navSettings -> {
+            }
+            R.id.navSignOut -> {
+                editUserDetails { clear() }
+                startActivity(LoginActivity::class)
+            }
+        }
+
+        drawer_layout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    override fun onUpdate(userDto: UserDto) {
+        editUserDetails { putLong(getString(R.string.user_id), userDto.id) }
+        refreshFriendsBackground(userDto.friends)
+    }
+
+    override fun onUpdate(groupDto: GroupDto) {
+        refreshGroupBackground(groupDto)
+    }
+
     private fun onTabSelected() {
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, POP_BACK_STACK_INCLUSIVE)
 
@@ -176,67 +247,20 @@ class MainActivity : AppActivity(),
                 .show())
     }
 
-    override fun onBackPressed() {
-        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
-            drawer_layout.closeDrawer(GravityCompat.START)
-        } else {
-            super.onBackPressed()
-        }
+    private fun refreshGroupDetails(it: GroupDto) {
+        group = it
+        groupMembers.clear()
+        groupMembers.addAll(it.members)
+        swipeView?.apply { isRefreshing = false }
+        groupFragment.updateView()
     }
 
-    override fun onResume() {
-        super.onResume()
-        onSwipe(null)
-    }
-
-    override fun onSwipe(swipeView: SwipeRefreshLayout?) {
-        if (R.id.group_swipe_container == swipeView?.id) {
-            if (groupId != -1L) addTask(GetGroup(groupId, refreshGroup).apply { execute() })
-        } else addTask(GetFriends(refreshFriends).apply { execute() })
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.friend, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    override fun setFragmentProperties(swipeView: SwipeRefreshLayout, title: String) {
-        this.swipeView = swipeView
-        supportActionBar?.title = title
-    }
-
-    override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.navCreateGroup -> showFriendSelectorPopup(getUnGroupedFriendNames())
-            R.id.navNewFriend -> addFriend()
-            R.id.navSettings -> {
-            }
-            R.id.navSignOut -> {
-                getSharedPreferences("details", Context.MODE_PRIVATE).edit().apply {
-                    clear()
-                    commit()
-                }
-                startActivity(LoginActivity::class)
-            }
-        }
-
-        drawer_layout.closeDrawer(GravityCompat.START)
-        return true
-    }
-
-    override fun onUpdate(userDto: UserDto) {
-        runOnUiThread { makeText(this, "$userDto", LENGTH_SHORT).show() }
-    }
-
-    override fun onUpdate(groupDto: GroupDto) {
-        refreshGroup(groupDto)
+    private fun addGroupMembers(friendIds: List<Long>) {
+        val friendsToAdd = friends.filter { friendIds.contains(it.id) }
+        if (friendsToAdd.isEmpty()) return // TODO popup for friend not friend
+        if (group == null) return
+        val newMembers = (group!!.members + friendIds.map { UserDto(id = it) })
+        addTask(UpdateGroup(group!!.copy(members = newMembers), refreshGroup).apply { execute() })
     }
 
     private fun getUnGroupedFriendNames(): Array<String> {
@@ -246,13 +270,20 @@ class MainActivity : AppActivity(),
                 .toTypedArray()
     }
 
-    private fun showFriendSelectorPopup(unGroupedNames: Array<String>) {
+    private fun updateFriends(friends: List<FriendDto>) {
+        this.friends.clear()
+        this.friends.addAll(friends)
+        friendFragment.updateView()
+        swipeView?.apply { isRefreshing = false }
+    }
+
+    private fun showFriendSelectorPopup(unGroupedNames: Array<String>, consumer: (List<Long>) -> Unit) {
         val selectedIds = mutableListOf<Long>()
         addDialog(AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMultiChoiceItems(unGroupedNames, null,
                         selectFriends(unGroupedNames, selectedIds))
-                .setPositiveButton(android.R.string.ok, { _, _ -> createGroup(selectedIds) })
+                .setPositiveButton(android.R.string.ok, { _, _ -> consumer(selectedIds) })
                 .show())
     }
 
@@ -313,6 +344,7 @@ class MainActivity : AppActivity(),
                 .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
                 .show())
     }
+
 
     private fun createGroup(friendIds: List<Long>) {
         addTask(CreateGroup(friendIds, createGroup).apply { execute() })

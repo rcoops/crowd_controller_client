@@ -2,7 +2,6 @@ package me.cooper.rick.crowdcontrollerclient.fragment.group
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,12 +9,12 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
-import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
-
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
+import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
 
-class GroupFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener  {
+class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListener  {
 
     private var listener: OnGroupFragmentInteractionListener? = null
 
@@ -35,7 +34,7 @@ class GroupFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener  {
                 .apply { setOnRefreshListener(this@GroupFragment) }
 
         val view = swipeView.findViewById<RecyclerView>(R.id.list)
-        adapter = GroupRecyclerViewAdapter((activity as MainActivity).group, listener!!)
+        adapter = GroupRecyclerViewAdapter((activity as MainActivity).groupMembers, listener!!)
         view.adapter = adapter
 
         registerForContextMenu(view)
@@ -45,7 +44,7 @@ class GroupFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener  {
 
     override fun onResume() {
         super.onResume()
-        listener?.setFragmentProperties(swipeView, TITLE)
+        listener?.setFragmentProperties(this)
     }
 
     override fun onAttach(context: Context?) {
@@ -62,6 +61,10 @@ class GroupFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener  {
     fun updateView() = adapter?.notifyDataSetChanged()
 
     override fun onRefresh() = listener!!.onSwipe(swipeView)
+
+    override fun getTitle(): String = TITLE
+
+    override fun getSwipeView(): SwipeRefreshLayout = swipeView
 
     interface OnGroupFragmentInteractionListener: FragmentInteractionListener {
 

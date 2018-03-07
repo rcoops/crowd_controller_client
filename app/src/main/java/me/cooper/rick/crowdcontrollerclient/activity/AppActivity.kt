@@ -3,8 +3,10 @@ package me.cooper.rick.crowdcontrollerclient.activity
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.TargetApi
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +17,7 @@ import android.view.View
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
+import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
@@ -149,6 +152,24 @@ abstract class AppActivity : AppCompatActivity() {
 
     protected fun debug(message: String) {
         Log.d(getTag(this::class), message)
+    }
+
+    protected fun userDetailsEditor(): SharedPreferences.Editor = userDetails().edit()
+
+    protected fun editUserDetails(changes: SharedPreferences.Editor.() -> Unit) {
+        userDetailsEditor().apply { changes(); commit() }
+    }
+
+    protected fun userDetails(): SharedPreferences {
+        return getSharedPreferences(getString(R.string.user_details), Context.MODE_PRIVATE)
+    }
+
+    protected fun getToken(): String {
+        return userDetails().getString(getString(R.string.token), "")
+    }
+
+    protected fun getUserId(): Long {
+        return userDetails().getLong(getString(R.string.user_id), -1L)
     }
 
     private fun clearReferences() {

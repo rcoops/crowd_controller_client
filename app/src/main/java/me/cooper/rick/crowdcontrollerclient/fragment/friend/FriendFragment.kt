@@ -2,7 +2,6 @@ package me.cooper.rick.crowdcontrollerclient.fragment.friend
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,11 +9,12 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
-import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
+import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
 
-class FriendFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
+class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListener {
 
     private var listener: OnFriendFragmentInteractionListener? = null
 
@@ -49,7 +49,7 @@ class FriendFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
 
     override fun onResume() {
         super.onResume()
-        listener?.setFragmentProperties(swipeView, TITLE)
+        listener?.setFragmentProperties(this)
     }
 
     override fun onDetach() {
@@ -59,7 +59,11 @@ class FriendFragment : Fragment(), SwipeRefreshLayout.OnRefreshListener {
 
     fun updateView() = adapter.notifyDataSetChanged()
 
+    override fun getSwipeView(): SwipeRefreshLayout = swipeView
+
     override fun onRefresh(): Unit = listener!!.onSwipe(swipeView)
+
+    override fun getTitle(): String = TITLE
 
     interface OnFriendFragmentInteractionListener: FragmentInteractionListener {
 

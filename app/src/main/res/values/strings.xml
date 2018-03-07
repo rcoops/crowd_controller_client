@@ -44,7 +44,7 @@
     <string name="title_activity_group">GroupActivity</string>
     <string name="title_activity_location">Location</string>
     <string name="token">token</string>
-    <string name="user">user_id</string>
+    <string name="user_id">userId</string>
     <string name="dummy_address_header">The Oast House</string>
     <string name="dummy_address">The Avenue Courtyard, SpinningFields, Green Square, Manchester, M3 3AY</string>
 
@@ -79,5 +79,5 @@
     <string name="txt_accept_friend_request">Accept\nFriend\nRequest?</string>
     <string name="txt_accept_group_invite">Accept\nGroup\nInvite?</string>
     <string name="txt_cancel_friend_request">Cancel\nFriend\nRequest?</string>
-    <string name="details">details</string>
+    <string name="user_details">details</string>
 </resources>

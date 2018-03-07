@@ -29,7 +29,7 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
         setStatusView(holder, holder.mItem!!)
     }
 
-    private fun setStatusView(holder: ViewHolder, friendDto: UserDto) {
+    private fun setStatusView(holder: ViewHolder, user: UserDto) {
 
     }
 
