@@ -68,9 +68,9 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
 
     interface OnGroupFragmentInteractionListener: FragmentInteractionListener {
 
-        fun onListItemContextMenuSelection(friend: UserDto, menuItem: MenuItem)
+        fun onListItemContextMenuSelection(groupMember: UserDto, menuItem: MenuItem)
 
-        fun onListFragmentInteraction(item: UserDto)
+        fun onListFragmentInteraction(groupMember: UserDto)
 
     }
 

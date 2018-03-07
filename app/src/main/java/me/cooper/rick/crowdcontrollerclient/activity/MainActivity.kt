@@ -87,7 +87,7 @@ class MainActivity : AppActivity(),
     }
 
     private val executeNewGroupTask: (List<Long>) -> Unit = {
-        addTask(CreateGroup(it, createGroup).apply { execute() })
+        addTask(CreateGroup(it, createGroup))
     }
 
     private val addGroupMembers: (List<Long>) -> Unit = { addGroupMembers(it) }
@@ -162,8 +162,10 @@ class MainActivity : AppActivity(),
 
     override fun onSwipe(swipeView: SwipeRefreshLayout?) {
         if (R.id.group_swipe_container == swipeView?.id) {
-            group?.let { addTask(GetGroup(it.id, refreshGroup).apply { execute() }) }
-        } else addTask(GetFriends(refreshFriends).apply { execute() })
+            group?.let { addTask(GetGroup(it.id, refreshGroup)) }
+        } else {
+            addTask(GetFriends(refreshFriends))
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -240,7 +242,7 @@ class MainActivity : AppActivity(),
                         .apply {
                             btn_add_friend.setOnClickListener {
                                 val dto = FriendDto(username = actv_user_detail.text.toString())
-                                addTask(AddFriend(dto, refreshFriends).apply { execute() })
+                                addTask(AddFriend(dto, refreshFriends))
                             }
                             btn_cancel_add_friend.setOnClickListener { refresh() }
                         })
@@ -260,7 +262,7 @@ class MainActivity : AppActivity(),
         if (friendsToAdd.isEmpty()) return // TODO popup for friend not friend
         if (group == null) return
         val newMembers = (group!!.members + friendIds.map { UserDto(id = it) })
-        addTask(UpdateGroup(group!!.copy(members = newMembers), refreshGroup).apply { execute() })
+        addTask(UpdateGroup(group!!.copy(members = newMembers), refreshGroup))
     }
 
     private fun getUnGroupedFriendNames(): Array<String> {
@@ -327,11 +329,11 @@ class MainActivity : AppActivity(),
         }
     }
 
-    override fun onListItemContextMenuSelection(friend: UserDto, menuItem: MenuItem) {
+    override fun onListItemContextMenuSelection(groupMember: UserDto, menuItem: MenuItem) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onListFragmentInteraction(item: UserDto) {
+    override fun onListFragmentInteraction(groupMember: UserDto) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -345,20 +347,17 @@ class MainActivity : AppActivity(),
                 .show())
     }
 
-
-    private fun createGroup(friendIds: List<Long>) {
-        addTask(CreateGroup(friendIds, createGroup).apply { execute() })
-    }
+    private fun createGroup(friendIds: List<Long>) = addTask(CreateGroup(friendIds, createGroup))
 
     private fun removeFriend(id: Long): DialogInterface.OnClickListener {
         return DialogInterface.OnClickListener { _, _ ->
-            addTask(RemoveFriend(id, refreshFriends).apply { execute() })
+            addTask(RemoveFriend(id, refreshFriends))
         }
     }
 
     private fun updateFriendship(friend: FriendDto): DialogInterface.OnClickListener {
         return DialogInterface.OnClickListener { _, _ ->
-            addTask(UpdateFriendship(friend, refreshFriends).apply { execute() })
+            addTask(UpdateFriendship(friend, refreshFriends))
         }
     }
 

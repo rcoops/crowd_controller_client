@@ -14,9 +14,9 @@ import kotlin.reflect.KClass
 abstract class AbstractClientTask<in S : Any, T>(private val consumer: (T) -> Unit,
                                                  private val clazz: KClass<S>) : AsyncTask<Void, Void, Response<T>>() {
 
-//    init {
-//        execute()
-//    }
+    init {
+        execute()
+    }
 
     protected abstract fun buildCall(client: S, id: Long): Call<T>
 
