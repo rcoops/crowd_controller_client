@@ -68,7 +68,7 @@ class MainActivity : AppActivity(),
     private lateinit var groupFragment: GroupFragment
     private var swipeView: SwipeRefreshLayout? = null
 
-    private val serviceConnection = object: ServiceConnection {
+    private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, iBinder: IBinder?) {
             updateService = (iBinder as UpdateService.LocalBinder).service
             updateService?.registerListener(this@MainActivity)
@@ -86,25 +86,15 @@ class MainActivity : AppActivity(),
         updateFriends(it)
     }
 
-    private val refreshFriendsBackground: (List<FriendDto>) -> Unit = { updateFriends(it) }
-
     private val createGroup: (GroupDto) -> Unit = {
         refreshGroup(it)
         addFragmentOnTop(groupFragment)
     }
 
-    private val executeNewGroupTask: (List<Long>) -> Unit = {
-        addTask(CreateGroup(it, createGroup))
-    }
-
-    private val addGroupMembers: (List<Long>) -> Unit = { addGroupMembers(it) }
-
     private val refreshGroup: (GroupDto) -> Unit = {
         refresh()
         refreshGroupDetails(it)
     }
-
-    private val refreshGroupBackground: (GroupDto) -> Unit = { refreshGroupDetails(it) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,9 +182,10 @@ class MainActivity : AppActivity(),
         this.swipeView = fragment.getSwipeView()
         supportActionBar?.title = fragment.getTitle()
         fab.setOnClickListener {
-            when(fragment) {
+            when (fragment) {
                 is FriendFragment -> addFriend()
-                is GroupFragment -> showFriendSelectorPopup(getUnGroupedFriendNames(), addGroupMembers)
+                is GroupFragment -> showFriendSelectorPopup(getUnGroupedFriendNames(),
+                        { addGroupMembers(it) })
             }
         }
     }
@@ -220,9 +211,8 @@ class MainActivity : AppActivity(),
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.navCreateGroup -> {
-                showFriendSelectorPopup(getUnGroupedFriendNames(), executeNewGroupTask)
-            }
+            R.id.navCreateGroup -> showFriendSelectorPopup(getUnGroupedFriendNames(),
+                    { addTask(CreateGroup(it, createGroup)) })
             R.id.navNewFriend -> addFriend()
             R.id.navSettings -> {
             }
@@ -238,12 +228,10 @@ class MainActivity : AppActivity(),
 
     override fun onUpdate(userDto: UserDto) {
         editAppDetails { putLong(getString(R.string.user_id), userDto.id) }
-        refreshFriendsBackground(userDto.friends)
+        updateFriends(userDto.friends)
     }
 
-    override fun onUpdate(groupDto: GroupDto) {
-        refreshGroupBackground(groupDto)
-    }
+    override fun onUpdate(groupDto: GroupDto) = refreshGroupDetails(groupDto)
 
     private fun onTabSelected() {
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, POP_BACK_STACK_INCLUSIVE)
