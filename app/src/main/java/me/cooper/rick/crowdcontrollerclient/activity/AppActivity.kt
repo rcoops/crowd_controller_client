@@ -111,7 +111,9 @@ abstract class AppActivity : AppCompatActivity() {
     protected fun showDismissiblePopup(title: String, message: String, apiError: APIError? = null) {
         buildBasePopup(title, message)
                 .setNegativeButton(getString(android.R.string.ok),
-                        { _, _ -> apiError?.call() })
+                        { _, _ ->
+                            apiError?.call()
+                        })
                 .show()
     }
 
@@ -230,7 +232,11 @@ abstract class AppActivity : AppCompatActivity() {
     inner class APIError(private val apiErrorDto: APIErrorDto,
                          private val consumer: ((APIErrorDto) -> Unit)?) {
 
-        fun call() = consumer?.let { it(apiErrorDto) }
+        fun call() {
+            consumer?.let {
+                it(apiErrorDto)
+            }
+        }
 
     }
 

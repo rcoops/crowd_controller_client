@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+    <group
+        android:id="@+id/nav_group_friend"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_create_group"
+            android:icon="@drawable/ic_menu_create_group"
+            android:title="@string/action_create_group" />
+        <item
+            android:id="@+id/nav_add_friend"
+            android:icon="@drawable/ic_menu_new_friend"
+            android:title="@string/action_new_friend" />
+    </group>
+    <group
+        android:id="@+id/nav_group_group"
+        android:visible="false"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_location"
+            android:icon="@drawable/ic_location"
+            android:title="@string/action_location_view" />
+    </group>
+
+    <group
+        android:id="@+id/nav_group_group_admin"
+        android:visible="false"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_clustering_toggle"
+            android:icon="@drawable/ic_action_group_toggle"
+            android:title="@string/action_toggle_clustering" />
+        <item
+            android:id="@+id/nav_grp_close"
+            android:icon="@drawable/ic_action_grp_close"
+            android:title="@string/action_close_group" />
+    </group>
+
+    <item android:title="@string/header_app_menu">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_menu_settings"
+                android:title="@string/action_settings" />
+            <item
+                android:id="@+id/nav_sign_out"
+                android:icon="@drawable/ic_menu_sign_out"
+                android:title="@string/action_sign_out" />
+        </menu>
+    </item>
+
+</menu>

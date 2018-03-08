@@ -37,4 +37,5 @@ class LocationActivity : AppCompatActivity(), OnMapReadyCallback {
         map?.moveCamera(CameraUpdateFactory.newLatLng(here))
         map?.animateCamera(CameraUpdateFactory.zoomTo(17.0f))
     }
+
 }

@@ -55,7 +55,7 @@
     <string name="jwt_client_secret">IKUJENFiewf8124ensdcfwfSDF</string>
     <string name="jwt_grant_type">password</string>
 
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="txt_coordinates_default">Waiting for co-ordinates&#8230;</string>
     <string name="title_activity_test">TestActivity</string>
     <string name="title_activity_auth">AuthActivity</string>
     <string name="header_register">Register</string>
@@ -84,4 +84,7 @@
     <string name="txt_cancel_friend_request">Cancel\nFriend\nRequest?</string>
     <string name="user_details">details</string>
     <string name="location_permissions_granted">Location Permissions Granted</string>
+    <string name="action_location_view">Location View</string>
+    <string name="action_toggle_clustering">Toggle Group Share (On)</string>
+    <string name="action_close_group">Close Group</string>
 </resources>
