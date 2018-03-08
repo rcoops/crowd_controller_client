@@ -5,7 +5,7 @@ import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import retrofit2.Call
 import retrofit2.Response
 import java.io.IOException
@@ -27,7 +27,7 @@ abstract class AbstractClientTask<in S : Any, T>(private val consumer: (T) -> Un
 
         val token = pref.getString(context.getString(R.string.token), null)
 
-        val client = ServiceGenerator.createService(clazz, token)
+        val client = createService(clazz, token)
 
         return try {
             buildCall(client, pref.getLong(App.context!!.getString(R.string.user_id), -1L)).execute()

@@ -5,7 +5,6 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
@@ -15,7 +14,6 @@ import android.support.v4.view.GravityCompat
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
-import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import com.google.android.gms.common.api.ResolvableApiException
@@ -28,10 +26,9 @@ import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.UpdateService
-import me.cooper.rick.crowdcontrollerclient.api.task.friends.AddFriend
-import me.cooper.rick.crowdcontrollerclient.api.task.friends.GetFriends
-import me.cooper.rick.crowdcontrollerclient.api.task.friends.RemoveFriend
-import me.cooper.rick.crowdcontrollerclient.api.task.friends.UpdateFriendship
+import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
+import me.cooper.rick.crowdcontrollerclient.api.task.friends.*
+import me.cooper.rick.crowdcontrollerclient.api.task.group.AbstractGroupTask
 import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
 import me.cooper.rick.crowdcontrollerclient.api.task.group.UpdateGroup
@@ -78,7 +75,7 @@ class MainActivity : AppActivity(),
     }
 
     private val refreshFriends: (List<FriendDto>) -> Unit = {
-        refresh()
+        refresh(AbstractFriendTask::class)
         updateFriends(it)
     }
 
@@ -88,7 +85,7 @@ class MainActivity : AppActivity(),
     }
 
     private val refreshGroup: (GroupDto) -> Unit = {
-        refresh()
+        refresh(AbstractGroupTask::class)
         refreshGroupDetails(it)
     }
 
@@ -169,7 +166,7 @@ class MainActivity : AppActivity(),
             }
             R.id.nav_sign_out -> {
                 editAppDetails { clear() }
-                startActivity(LoginActivity::class)
+                startActivity(LoginActivity::class, AbstractClientTask::class)
             }
         }
 
@@ -323,7 +320,7 @@ class MainActivity : AppActivity(),
                                 val dto = FriendDto(username = actv_user_detail.text.toString())
                                 addTask(AddFriend(dto, refreshFriends))
                             }
-                            btn_cancel_add_friend.setOnClickListener { refresh() }
+                            btn_cancel_add_friend.setOnClickListener { refresh(null) }
                         })
                 .show())
     }

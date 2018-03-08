@@ -3,6 +3,7 @@ package me.cooper.rick.crowdcontrollerclient.activity
 import android.Manifest.permission.READ_CONTACTS
 import android.app.LoaderManager.LoaderCallbacks
 import android.content.CursorLoader
+import android.content.DialogInterface.OnClickListener
 import android.content.Loader
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -19,16 +20,18 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_login.*
+import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.Token
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
+import me.cooper.rick.crowdcontrollerclient.api.task.user.NewUser
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import retrofit2.Response
 import java.io.IOException
 
@@ -37,15 +40,6 @@ import java.io.IOException
  */
 class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         RegistrationFragment.OnRegistrationListener {
-
-    private val loginSuccess: (Any) -> Unit = { startActivity(MainActivity::class) }
-
-    private val handleLoginError: (APIErrorDto) -> Unit = {
-        refresh()
-        showProgress(false, login_form, login_progress)
-        if (it.error == BAD_PASSWORD) password?.requestFocus()
-        else username?.requestFocus()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,8 +57,58 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         requestLocationPermissions()
     }
 
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
+                                            grantResults: IntArray) {
+        fun isGranted(grantResults: IntArray): Boolean {
+            return grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED
+        }
+        when (requestCode) {
+            REQUEST_READ_CONTACTS -> if (isGranted(grantResults)) populateAutoComplete()
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
+    override fun onCreateLoader(i: Int, bundle: Bundle?): Loader<Cursor> {
+        return CursorLoader(this,
+                // Retrieve data rows for the device baseUserEntity's 'profile' contact.
+                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
+                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
+
+                ContactsContract.Contacts.Data.MIMETYPE + " = ?", arrayOf(ContactsContract.CommonDataKinds.Email
+                .CONTENT_ITEM_TYPE),
+
+                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC")
+    }
+
+    override fun onLoadFinished(cursorLoader: Loader<Cursor>, cursor: Cursor) {
+        val emails = ArrayList<String>()
+        cursor.moveToFirst()
+        while (!cursor.isAfterLast) {
+            emails.add(cursor.getString(ProfileQuery.ADDRESS))
+            cursor.moveToNext()
+        }
+
+        addEmailsToAutoComplete(emails)
+    }
+
+    override fun onLoaderReset(cursorLoader: Loader<Cursor>) {}
+
+    override fun register(dto: RegistrationDto) {
+        addTask(NewUser(dto, { successfulRegistration(it) }))
+    }
+
     private fun startMainActivityIfLoggedIn() {
-        if (getToken().isNotBlank()) startActivity(MainActivity::class)
+        if (getToken().isNotBlank()) startActivity(MainActivity::class, null)
+    }
+
+    private fun handleLoginError(it: APIErrorDto) {
+        refresh(UserLoginTask::class)
+        showProgress(false, login_form, login_progress)
+        if (it.error == BAD_PASSWORD) password?.requestFocus()
+        else username?.requestFocus()
     }
 
     private fun setListeners() {
@@ -101,20 +145,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             requestPermissions(arrayOf(READ_CONTACTS), REQUEST_READ_CONTACTS)
         }
         return false
-    }
-
-    /**
-     * Callback received when a permissions request has been completed.
-     */
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
-                                            grantResults: IntArray) {
-        fun isGranted(grantResults: IntArray): Boolean {
-            return grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED
-        }
-        when (requestCode) {
-            REQUEST_READ_CONTACTS -> if (isGranted(grantResults)) populateAutoComplete()
-            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        }
     }
 
     /**
@@ -160,31 +190,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         return password.length > 4
     }
 
-    override fun onCreateLoader(i: Int, bundle: Bundle?): Loader<Cursor> {
-        return CursorLoader(this,
-                // Retrieve data rows for the device baseUserEntity's 'profile' contact.
-                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
-                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
-
-                ContactsContract.Contacts.Data.MIMETYPE + " = ?", arrayOf(ContactsContract.CommonDataKinds.Email
-                .CONTENT_ITEM_TYPE),
-
-                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC")
-    }
-
-    override fun onLoadFinished(cursorLoader: Loader<Cursor>, cursor: Cursor) {
-        val emails = ArrayList<String>()
-        cursor.moveToFirst()
-        while (!cursor.isAfterLast) {
-            emails.add(cursor.getString(ProfileQuery.ADDRESS))
-            cursor.moveToNext()
-        }
-
-        addEmailsToAutoComplete(emails)
-    }
-
-    override fun onLoaderReset(cursorLoader: Loader<Cursor>) {}
-
     private fun addEmailsToAutoComplete(emailAddressCollection: List<String>) {
         //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
         val adapter = ArrayAdapter(this@LoginActivity,
@@ -193,16 +198,17 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    override fun onFragmentInteraction(userDto: Response<UserDto>) {
+    private fun successfulRegistration(dto: UserDto) {
         supportFragmentManager.popBackStackImmediate()
-        handleResponse(userDto, { registrationSuccessful(it) })
+        destroyTasksOfType(NewUser::class)
+        updateLoginForm(dto)
     }
 
-    private fun registrationSuccessful(dto: UserDto) {
+    private fun updateLoginForm(dto: UserDto) {
         showDismissiblePopup(
                 getString(R.string.hdr_registration_successful),
                 getString(R.string.txt_registration_successful),
-                destroyTasksOnClickListener
+                OnClickListener { _, _ -> destroyTasksOfType(UserLoginTask::class) }
         )
         username.setText(dto.username)
         password.text.clear()
@@ -226,7 +232,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             private val password: String) : AsyncTask<Void, Void, Response<Token>>() {
 
         override fun doInBackground(vararg params: Void): Response<Token> {
-            val loginClient = ServiceGenerator.createService(
+            val loginClient = createService(
                     LoginClient::class,
                     getString(R.string.jwt_client_id),
                     getString(R.string.jwt_client_secret)
@@ -252,7 +258,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(response: Response<Token>) {
-            handleResponse(response, loginSuccess, handleLoginError)
+            handleResponse(response, { startActivity(MainActivity::class, UserLoginTask::class) },
+                    { handleLoginError(it) })
         }
 
     }

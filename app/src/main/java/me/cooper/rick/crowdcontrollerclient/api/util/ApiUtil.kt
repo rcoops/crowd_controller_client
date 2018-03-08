@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.api.util
 
+import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_DESCRIPTION
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_ERROR
@@ -13,6 +14,7 @@ import retrofit2.Response
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import kotlin.reflect.KClass
 
 const val BAD_PASSWORD = "Password Incorrect"
 const val BAD_USERNAME = "Username Incorrect"
@@ -51,4 +53,10 @@ fun <Any> handleConnectionException(e: IOException): Response<Any> {
         }
         else -> throw e
     }
+}
+
+fun destroyTaskType(tasks: MutableList<AsyncTask<Void, Void, out Any?>>, taskClass: KClass<out Any>) {
+    val tasksToDestroy = tasks.filter { it::class == taskClass}
+    tasksToDestroy.forEach { it.cancel(true) }
+    tasks.removeAll(tasksToDestroy)
 }

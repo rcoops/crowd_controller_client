@@ -26,6 +26,8 @@ import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
+import me.cooper.rick.crowdcontrollerclient.api.util.destroyTaskType
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
 import retrofit2.Response
@@ -37,8 +39,6 @@ abstract class AppActivity : AppCompatActivity() {
 
     private val dialogs = mutableListOf<AlertDialog>()
     private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
-
-    protected val destroyTasksOnClickListener = DialogInterface.OnClickListener { _, _ -> destroyTasks() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,9 +96,11 @@ abstract class AppActivity : AppCompatActivity() {
         }
     }
 
-    protected fun startActivity(clazz: KClass<out Any>, vararg extras: Pair<String, Long>) {
-        destroyTasks()
-        startActivity(Intent(this, clazz.java)
+    protected fun startActivity(activityClass: KClass<out AppActivity>,
+                                taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?,
+                                vararg extras: Pair<String, Long>) {
+        destroyTasksOfType(taskClass)
+        startActivity(Intent(this, activityClass.java)
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
@@ -117,12 +119,12 @@ abstract class AppActivity : AppCompatActivity() {
                 .show()
     }
 
-    protected fun refresh() {
-        destroyTasks()
+    protected fun refresh(taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?) {
+        destroyTasksOfType(taskClass)
         dismissDialogs()
     }
 
-    protected fun isTaskOfTypeRunning(clazz: KClass<out Any>): Boolean {
+    protected fun isTaskOfTypeRunning(clazz: KClass<out AsyncTask<Void, Void, out Any?>>): Boolean {
         return tasks.any { it::class == clazz }
     }
 
@@ -175,10 +177,11 @@ abstract class AppActivity : AppCompatActivity() {
         dialogs.clear()
     }
 
-    private fun destroyTasks() {
-        tasks.forEach { it.cancel(true) }
-        tasks.clear()
+    protected fun destroyTasksOfType(taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?) {
+        taskClass?.let { destroyTaskType(tasks, taskClass) }
     }
+
+    private fun destroyAllTasks() = destroyTasksOfType(AbstractClientTask::class)
 
     protected fun addDialog(dialog: AlertDialog): AlertDialog {
         dialogs += dialog
@@ -225,7 +228,7 @@ abstract class AppActivity : AppCompatActivity() {
     }
 
     private fun clearReferences() {
-        destroyTasks()
+        destroyAllTasks()
         if (this == App.currentActivity) App.currentActivity = null
     }
 

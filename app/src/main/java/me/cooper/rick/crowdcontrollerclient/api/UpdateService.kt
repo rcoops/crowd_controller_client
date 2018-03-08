@@ -6,26 +6,29 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.os.AsyncTask
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
+import me.cooper.rick.crowdcontrollerclient.api.task.user.GetUser
 import me.cooper.rick.crowdcontrollerclient.api.task.user.UpdateLocation
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
+import me.cooper.rick.crowdcontrollerclient.api.util.destroyTaskType
+import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
+import kotlin.reflect.KClass
 
-class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListener {
+class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private val binder = LocalBinder()
     private var listener: UpdateServiceListener? = null
@@ -56,11 +59,7 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
         }
     }
 
-    private val destroyTasks: (UserDto) -> Unit = {
-        tasks.forEach { it.cancel(true) }
-        tasks.clear()
-    }
-
+//    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
     private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
 
     fun startTracking() {
@@ -76,27 +75,6 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
                 }
     }
 
-    private fun handleFailure(it: Throwable) {
-        try {
-            listener?.handleApiException(it)
-        } catch (e: IntentSender.SendIntentException) {
-            Log.d("", "Intent exception thrown", e) // wont happen
-        }
-    }
-
-    override fun onBind(intent: Intent?): IBinder {
-        pref = getSharedPreferences(getString(R.string.user_details), Context.MODE_PRIVATE)
-        pref.registerOnSharedPreferenceChangeListener(this)
-        token = pref.getString(getString(R.string.token), null)
-        userId = pref.getLong(getString(R.string.user_id), -1)
-
-        userClient = ServiceGenerator.createService(UserClient::class, token)
-
-        userTimer.schedule({ getUser() }, 0L, SECONDS.toMillis(5))
-
-        return binder
-    }
-
     fun registerListener(listener: UpdateServiceListener) {
         this.listener = listener
     }
@@ -105,18 +83,48 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
         if (this.listener == listener) this.listener = null
     }
 
+    override fun onBind(intent: Intent?): IBinder {
+        pref = getSharedPreferences(getString(R.string.user_details), Context.MODE_PRIVATE)
+        pref.registerOnSharedPreferenceChangeListener(this)
+        token = pref.getString(getString(R.string.token), null)
+        userId = pref.getLong(getString(R.string.user_id), -1)
+
+        userClient = createService(UserClient::class, token)
+
+        userTimer.schedule({ getUser() }, 0L, SECONDS.toMillis(5))
+
+        return binder
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        sharedPreferences?.let {
+            when (key) {
+                getString(R.string.token) -> {
+                    token = it.getString(getString(R.string.token), null)
+
+                    userClient = createService(UserClient::class, token)
+
+                    groupClient?.let { resetGroupSchedule() }
+                }
+                else -> userId = it.getLong(getString(R.string.user_id), -1)
+            }
+        }
+    }
+
+    private fun handleFailure(it: Throwable) {
+        try {
+            listener?.handleApiException(it)
+        } catch (e: IntentSender.SendIntentException) {
+            Log.d("", "Intent exception thrown", e) // wont happen
+        }
+    }
+
     private fun getUser() {
         if (userId == -1L) return
-
-        userClient?.user(userId)
-                ?.subscribeOn(Schedulers.io())
-                ?.observeOn(AndroidSchedulers.mainThread())
-                ?.doOnError { handleFailure(it) }
-                ?.subscribe {
-                    updateListeners(it)
-                    adjustGroup(it)
-                } // TODO error handling ??
+        tasks += GetUser({ updateListeners(it); adjustGroup(it); destroyTaskType(tasks, GetUser::class) })
     }
+
+    private fun destroyTaskType(taskClass: KClass<out Any>) = destroyTaskType(tasks, taskClass)
 
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
@@ -129,16 +137,12 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
     }
 
     private fun sendLocation(dto: LocationDto) {
-        tasks += UpdateLocation(dto, destroyTasks)
+        tasks += UpdateLocation(dto, { destroyTaskType(UpdateLocation::class) })
     }
 
     private fun getGroup() {
         groupId?.let {
-            groupClient?.groupObservable(it)
-                    ?.subscribeOn(Schedulers.io())
-                    ?.observeOn(AndroidSchedulers.mainThread())
-                    ?.doOnError { handleFailure(it) }
-                    ?.subscribe({ updateListeners(it) }) // TODO error handling
+            tasks += GetGroup(it, { updateListeners(it); destroyTaskType(GetGroup::class) })
         }
     }
 
@@ -157,7 +161,7 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
 
     private fun scheduleGroupRequest() {
         groupTimer = Timer(true)
-        groupClient = ServiceGenerator.createService(GroupClient::class, token)
+        groupClient = createService(GroupClient::class, token)
         groupTimer!!.schedule({ getGroup() }, 0L, SECONDS.toMillis(5))
         startTracking()
     }
@@ -177,21 +181,6 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
 
     private fun updateListeners(groupDto: GroupDto) {
         listener?.onUpdate(groupDto)
-    }
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        sharedPreferences?.let {
-            when (key) {
-                getString(R.string.token) -> {
-                    token = it.getString(getString(R.string.token), null)
-
-                    userClient = ServiceGenerator.createService(UserClient::class, token)
-
-                    groupClient?.let { resetGroupSchedule() }
-                }
-                else -> userId = it.getLong(getString(R.string.user_id), -1)
-            }
-        }
     }
 
     inner class LocalBinder : Binder() {

@@ -1,7 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.fragment
 
 import android.content.Context
-import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -9,23 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_registration.*
 import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
-import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
-import retrofit2.Response
-import java.io.IOException
 
-/**
- * A simple [Fragment] subclass.
- * Activities that contain this fragment must implement the
- * [RegistrationFragment.OnRegistrationListener] interface
- * to handle interaction events.
- * Use the [RegistrationFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class RegistrationFragment : Fragment() {
 
     private var mListener: OnRegistrationListener? = null
@@ -38,7 +23,7 @@ class RegistrationFragment : Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        btnRegisterAccount.setOnClickListener { RegisterTask(createDto()).execute() }
+        btnRegisterAccount.setOnClickListener { mListener?.register(createDto()) }
     }
 
     override fun onAttach(context: Context?) {
@@ -63,24 +48,7 @@ class RegistrationFragment : Fragment() {
     )
 
     interface OnRegistrationListener {
-        fun onFragmentInteraction(userDto: Response<UserDto>)
+        fun register(dto: RegistrationDto)
     }
 
-    inner class RegisterTask internal constructor(
-            private val registrationDto: RegistrationDto) : AsyncTask<Void, Void, Response<UserDto>>() {
-
-        override fun doInBackground(vararg params: Void): Response<UserDto> {
-            val userClient = ServiceGenerator.createService(UserClient::class)
-            return try {
-                userClient.create(registrationDto).execute()
-            } catch (e: IOException) {
-                handleConnectionException(e)
-            }
-        }
-
-        override fun onPostExecute(result: Response<UserDto>) {
-            mListener!!.onFragmentInteraction(result)
-        }
-
-    }
 }
