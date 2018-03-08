@@ -10,7 +10,6 @@ import android.os.AsyncTask
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
-import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -23,7 +22,6 @@ import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.task.user.UpdateLocation
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
-import java.lang.Exception
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -78,8 +76,7 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
                 }
     }
 
-    private fun handleFailure(it: Exception) {
-        if (it !is ResolvableApiException) throw it
+    private fun handleFailure(it: Throwable) {
         try {
             listener?.handleApiException(it)
         } catch (e: IntentSender.SendIntentException) {
@@ -114,6 +111,7 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
         userClient?.user(userId)
                 ?.subscribeOn(Schedulers.io())
                 ?.observeOn(AndroidSchedulers.mainThread())
+                ?.doOnError { handleFailure(it) }
                 ?.subscribe {
                     updateListeners(it)
                     adjustGroup(it)
@@ -125,6 +123,8 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
         if (pref.getBoolean(getString(R.string.location_permissions_granted), false)) {
             fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
             fusedLocationProviderClient?.requestLocationUpdates(locationRequest, locationCallback, null)
+        } else {
+            listener?.requestPermissions()
         }
     }
 
@@ -137,7 +137,8 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
             groupClient?.groupObservable(it)
                     ?.subscribeOn(Schedulers.io())
                     ?.observeOn(AndroidSchedulers.mainThread())
-                    ?.subscribe { updateListeners(it) } // TODO error handling
+                    ?.doOnError { handleFailure(it) }
+                    ?.subscribe({ updateListeners(it) }) // TODO error handling
         }
     }
 
@@ -200,7 +201,8 @@ class UpdateService : Service(), SharedPreferences.OnSharedPreferenceChangeListe
     interface UpdateServiceListener {
         fun onUpdate(userDto: UserDto)
         fun onUpdate(groupDto: GroupDto)
-        fun handleApiException(e: ResolvableApiException)
+        fun requestPermissions()
+        fun handleApiException(e: Throwable)
     }
 
     private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {

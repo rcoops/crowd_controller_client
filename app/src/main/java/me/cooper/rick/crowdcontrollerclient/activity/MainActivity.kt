@@ -1,15 +1,13 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
-import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.app.Activity
-import android.content.*
-import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.content.ComponentName
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
-import android.support.design.widget.Snackbar
-import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
-import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import android.support.v4.view.GravityCompat
@@ -18,8 +16,6 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast.LENGTH_SHORT
-import android.widget.Toast.makeText
 import com.google.android.gms.common.api.ResolvableApiException
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
@@ -30,9 +26,6 @@ import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.UpdateService
-import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
-import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.api.task.friends.AddFriend
 import me.cooper.rick.crowdcontrollerclient.api.task.friends.GetFriends
 import me.cooper.rick.crowdcontrollerclient.api.task.friends.RemoveFriend
@@ -43,6 +36,10 @@ import me.cooper.rick.crowdcontrollerclient.api.task.group.UpdateGroup
 import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
+import java.io.IOException
 
 class MainActivity : AppActivity(),
         NavigationView.OnNavigationItemSelectedListener,
@@ -112,6 +109,7 @@ class MainActivity : AppActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         setSupportActionBar(toolbar)
 
         drawer_layout.addDrawerListener(
@@ -201,9 +199,15 @@ class MainActivity : AppActivity(),
         }
     }
 
-    override fun handleApiException(e: ResolvableApiException) {
-        e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
+    override fun handleApiException(e: Throwable) {
+        when (e) {
+            is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
+            is IOException -> handleResponse(handleConnectionException<IOException>(e), {})// TODO - some response to lost connection?
+            else -> throw e
+        }
     }
+
+    override fun requestPermissions() = requestLocationPermissions()
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {

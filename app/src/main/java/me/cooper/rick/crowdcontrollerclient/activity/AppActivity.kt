@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
@@ -8,9 +9,15 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
+import android.support.design.widget.Snackbar
+import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
+import android.support.v4.app.ActivityCompat.requestPermissions
+import android.support.v4.app.ActivityCompat.shouldShowRequestPermissionRationale
+import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -117,6 +124,50 @@ abstract class AppActivity : AppCompatActivity() {
         return tasks.any { it::class == clazz }
     }
 
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
+                                            grantResults: IntArray) {
+        fun isGranted(grantResults: IntArray): Boolean {
+            return grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED
+        }
+        when (requestCode) {
+            REQUEST_FINE_LOCATION -> editAppDetails {
+                putBoolean(getString(R.string.location_permissions_granted), isGranted(grantResults))
+            }
+        }
+    }
+
+    private fun mayUseLocationServices(): Boolean {
+        if (hasLocationPermission()) return true
+
+        if (shouldShowRequestPermissionRationale(this, ACCESS_FINE_LOCATION)) {
+            Snackbar.make(findViewById(R.id.content),
+                    R.string.location_permission_rationale, LENGTH_INDEFINITE)
+                    .setAction(android.R.string.ok, { makePermissionRequest() })
+                    .show()
+        } else {
+            makePermissionRequest()
+        }
+
+        return false
+    }
+
+    protected fun requestLocationPermissions() {
+        editAppDetails {
+            putBoolean(getString(R.string.location_permissions_granted), mayUseLocationServices())
+        }
+    }
+
+    private fun makePermissionRequest() {
+        requestPermissions(this, arrayOf(ACCESS_FINE_LOCATION), REQUEST_FINE_LOCATION)
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        return checkSelfPermission(this, ACCESS_FINE_LOCATION) == PERMISSION_GRANTED
+    }
+
     private fun dismissDialogs() {
         dialogs.forEach { if (it.isShowing) it.dismiss() }
         dialogs.clear()
@@ -181,6 +232,10 @@ abstract class AppActivity : AppCompatActivity() {
 
         fun call() = consumer?.let { it(apiErrorDto) }
 
+    }
+
+    companion object {
+        private const val REQUEST_FINE_LOCATION = 2
     }
 
 }
