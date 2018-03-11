@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 
 object ServiceGenerator {
 
-    private val API_BASE_URL = App.context!!.getString(R.string.base_uri)!!
+    private val API_BASE_URL = "http://${App.context!!.getString(R.string.base_uri)!!}"
     private val httpClient = OkHttpClient.Builder()
             .addInterceptor(HttpLoggingInterceptor().setLevel(BODY))
 

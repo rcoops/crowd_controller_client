@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--<string name="base_uri">http://stb098.edu.csesalford.com</string>-->
-    <string name="base_uri">http://rickcooper.ddns.net</string>
+    <string name="salford_uri">stb098.edu.csesalford.com</string>
+    <string name="home_uri">rickcooper.ddns.net</string>
+    <string name="base_uri">@string/home_uri</string>
 </resources>

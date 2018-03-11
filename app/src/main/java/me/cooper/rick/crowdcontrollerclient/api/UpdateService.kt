@@ -2,6 +2,7 @@ package me.cooper.rick.crowdcontrollerclient.api
 
 import android.annotation.SuppressLint
 import android.app.Service
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
@@ -11,8 +12,11 @@ import android.os.AsyncTask
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
@@ -24,9 +28,15 @@ import me.cooper.rick.crowdcontrollerclient.api.task.user.GetUser
 import me.cooper.rick.crowdcontrollerclient.api.task.user.UpdateLocation
 import me.cooper.rick.crowdcontrollerclient.api.util.destroyTaskType
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
+import okhttp3.WebSocket
+import ua.naiksoftware.stomp.LifecycleEvent.Type.*
+import ua.naiksoftware.stomp.Stomp
+import ua.naiksoftware.stomp.client.StompClient
+import ua.naiksoftware.stomp.client.StompMessage
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.reflect.KClass
+
 
 class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
@@ -39,12 +49,15 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private var userClient: UserClient? = null
     private var groupClient: GroupClient? = null
+    private lateinit var mStompClient: StompClient
 
     private var token: String? = null
     private var userId: Long = -1
     private var groupId: Long? = null
 
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
+
+    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
 
     private val locationRequest = LocationRequest.create().apply {
         interval = SECONDS.toMillis(10)
@@ -58,9 +71,6 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
             sendLocation(LocationDto(userId, lastLocation.latitude, lastLocation.longitude))
         }
     }
-
-//    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
-    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
 
     fun startTracking() {
         LocationServices.getSettingsClient(this)
@@ -90,6 +100,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         userId = pref.getLong(getString(R.string.user_id), -1)
 
         userClient = createService(UserClient::class, token)
+        mStompClient = Stomp.over(WebSocket::class.java,
+                "ws://${getString(R.string.base_uri)}/chat/websocket")
 
         userTimer.schedule({ getUser() }, 0L, SECONDS.toMillis(5))
 
@@ -103,8 +115,6 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                     token = it.getString(getString(R.string.token), null)
 
                     userClient = createService(UserClient::class, token)
-
-                    groupClient?.let { resetGroupSchedule() }
                 }
                 else -> userId = it.getLong(getString(R.string.user_id), -1)
             }
@@ -154,30 +164,44 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (userDto.group == null) {
             unScheduleGroupRequest()
         } else if (groupId == null) {
-            scheduleGroupRequest()
+            scheduleGroupRequest(userDto.group!!)
         }
         groupId = userDto.group
     }
 
-    private fun scheduleGroupRequest() {
-        groupTimer = Timer(true)
-        groupClient = createService(GroupClient::class, token)
-        groupTimer!!.schedule({ getGroup() }, 0L, SECONDS.toMillis(5))
+    private fun scheduleGroupRequest(groupId: Long) {
+        if (mStompClient.isConnected) return
+        mStompClient.connect()
+
+        mStompClient.lifecycle()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { lifecycleEvent ->
+                    when (lifecycleEvent.type!!) {
+                        OPENED -> Log.d("opened", "Stomp connection opened")
+                        ERROR -> Log.e(TAG, "Stomp connection error", lifecycleEvent.exception) // TODO - error handling?
+                        CLOSED -> Log.d("closed", "Stomp connection closed")
+                    }
+                }
+        mStompClient.topic("/topic/greetings/$groupId")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { topicMessage ->
+                    Log.d(TAG, "Received " + topicMessage.payload)
+                    updateListeners(jackson.readValue(topicMessage, GroupDto::class))
+                }
         startTracking()
     }
 
     private fun unScheduleGroupRequest() {
-        groupTimer?.cancel()
-        groupTimer?.purge()
-        groupTimer = null
-        groupClient = null
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
+        mStompClient.disconnect()
     }
-
-    private fun resetGroupSchedule() {
-        unScheduleGroupRequest()
-        scheduleGroupRequest()
-    }
+//TODO if groupId != userDto.group reset
+//    private fun resetGroupSchedule() {
+//        unScheduleGroupRequest()
+//        scheduleGroupRequest()
+//    }
 
     private fun updateListeners(groupDto: GroupDto) {
         listener?.onUpdate(groupDto)
@@ -196,6 +220,14 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
         schedule(object : TimerTask() { override fun run() = task() }, delay, period)
+    }
+
+    companion object {
+        val jackson = ObjectMapper()
+    }
+
+    fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
+        return readValue<T>(value.payload, clazz.java)
     }
 
 }
