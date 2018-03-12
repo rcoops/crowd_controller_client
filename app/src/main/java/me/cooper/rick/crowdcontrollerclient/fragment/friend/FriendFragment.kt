@@ -12,7 +12,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
-import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.listener.SwipeFragmentInteractionListener
 
 class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListener {
 
@@ -47,11 +47,6 @@ class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListen
         else throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
     }
 
-    override fun onResume() {
-        super.onResume()
-        listener?.setFragmentProperties(this)
-    }
-
     override fun onDetach() {
         super.onDetach()
         listener = null
@@ -65,7 +60,7 @@ class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListen
 
     override fun getTitle(): String = TITLE
 
-    interface OnFriendFragmentInteractionListener: FragmentInteractionListener {
+    interface OnFriendFragmentInteractionListener: SwipeFragmentInteractionListener {
 
         fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem)
 

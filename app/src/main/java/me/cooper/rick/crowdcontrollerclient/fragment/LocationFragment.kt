@@ -15,7 +15,6 @@ import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
 
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
@@ -49,7 +48,6 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         root.map.layoutParams = mapParams
         super.onResume()
         root.map.onResume()
-        listener?.setFragmentProperties(this)
     }
 
     override fun onDestroy() {
@@ -101,7 +99,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(here, 17.0f))
     }
 
-    interface OnFragmentInteractionListener : FragmentInteractionListener
+    interface OnFragmentInteractionListener
 
     companion object {
         private const val TITLE = "Location"

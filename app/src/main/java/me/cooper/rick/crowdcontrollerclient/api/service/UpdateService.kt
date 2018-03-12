@@ -44,7 +44,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private val reconnectTimer = Timer(true)
 
     private var userClient: UserClient? = null
-    private lateinit var mStompClient: StompClient
+    private lateinit var stompClient: StompClient
 
     private var groupId: Long? = null
 
@@ -68,7 +68,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         pref.registerOnSharedPreferenceChangeListener(this)
 
         userClient = createService(UserClient::class, getToken())
-        mStompClient = Stomp.over(WebSocket::class.java,
+        stompClient = Stomp.over(WebSocket::class.java,
                 "ws://${getString(R.string.base_uri)}/chat/websocket")
         openUserSocket()
 
@@ -124,7 +124,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
         getUser(userId)
 
-        if (!mStompClient.isConnected) connectStompClient()
+        if (!stompClient.isConnected) connectStompClient()
 
         subscribeToUserUpdates(userId)
     }
@@ -138,7 +138,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun subscribeToGroupUpdates(groupId: Long) {
-        mStompClient.topic("/topic/group/$groupId")
+        stompClient.topic("/topic/group/$groupId")
                 .subscribeToService({
                     Log.d(TAG, "Received " + it.payload)
                     listener?.onUpdate(jackson.readValue(it, GroupDto::class))
@@ -146,7 +146,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun subscribeToUserUpdates(userId: Long) {
-        mStompClient.topic("/topic/user/$userId")
+        stompClient.topic("/topic/user/$userId")
                 .subscribeToService({
                     Log.d(TAG, "Received " + it.payload)
                     val userDto = jackson.readValue(it, UserDto::class)
@@ -156,9 +156,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun connectStompClient() {
-        mStompClient.connect()
+        stompClient.connect()
 
-        mStompClient.lifecycle()
+        stompClient.lifecycle()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { lifecycleEvent ->
@@ -202,7 +202,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun scheduleGroupRequest(groupId: Long) {
-        if (!mStompClient.isConnected) mStompClient.connect()
+        if (!stompClient.isConnected) stompClient.connect()
         subscribeToGroupUpdates(groupId)
         startTracking()
     }
@@ -210,7 +210,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private fun unScheduleGroupRequest() {
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
         fusedLocationProviderClient = null
-        mStompClient.disconnect()
+        stompClient.disconnect()
     }
 
     inner class LocalBinder : Binder() {

@@ -12,7 +12,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
-import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.listener.SwipeFragmentInteractionListener
 
 class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListener  {
 
@@ -42,11 +42,6 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
         return swipeView
     }
 
-    override fun onResume() {
-        super.onResume()
-        listener?.setFragmentProperties(this)
-    }
-
     override fun onAttach(context: Context?) {
         super.onAttach(context)
         listener = if (context is OnGroupFragmentInteractionListener) context
@@ -66,7 +61,7 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
 
     override fun getSwipeView(): SwipeRefreshLayout = swipeView
 
-    interface OnGroupFragmentInteractionListener: FragmentInteractionListener {
+    interface OnGroupFragmentInteractionListener: SwipeFragmentInteractionListener {
 
         fun onListItemContextMenuSelection(groupMember: UserDto, menuItem: MenuItem)
 

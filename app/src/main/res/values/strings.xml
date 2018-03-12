@@ -88,4 +88,5 @@
     <string name="action_group_view">Group</string>
     <string name="action_toggle_clustering">Toggle Group Share (On)</string>
     <string name="action_close_group">Close Group</string>
+    <string name="action_leave_group">Leave Group</string>
 </resources>

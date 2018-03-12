@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
 import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import android.support.v4.app.FragmentManager
 import android.support.v4.view.GravityCompat
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.ActionBarDrawerToggle
@@ -44,7 +44,8 @@ class MainActivity : AppActivity(),
         OnFriendFragmentInteractionListener,
         OnGroupFragmentInteractionListener,
         UpdateService.UpdateServiceListener,
-        LocationFragment.OnFragmentInteractionListener {
+        LocationFragment.OnFragmentInteractionListener,
+        FragmentManager.OnBackStackChangedListener {
 
     val friends = mutableListOf<FriendDto>()
     val groupMembers = mutableListOf<UserDto>()
@@ -85,7 +86,7 @@ class MainActivity : AppActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-                setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main)
 
         setSupportActionBar(toolbar)
 
@@ -97,11 +98,8 @@ class MainActivity : AppActivity(),
 
         nav_view.setNavigationItemSelectedListener(this)
 
-        friendFragment = FriendFragment()
-        groupFragment = GroupFragment()
-        locationFragment = LocationFragment()
-        onTabSelected()
-        fab.setOnClickListener { addFriend() }
+        initFragments()
+        showProgress(true, content_main, progress)
     }
 
     override fun onStart() {
@@ -121,12 +119,17 @@ class MainActivity : AppActivity(),
     }
 
     override fun onBackPressed() {
-        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
-            drawer_layout.closeDrawer(GravityCompat.START)
-        } else {
-            // TODO check friend fragment still visible
-            super.onBackPressed()
+        when {
+            drawer_layout.isDrawerOpen(GravityCompat.START) -> {
+                drawer_layout.closeDrawer(GravityCompat.START)
+            }
+            isRootFragment() -> {}
+            else -> super.onBackPressed()
         }
+    }
+
+    private fun isRootFragment(): Boolean {
+        return supportFragmentManager.findFragmentById(R.id.content_main) is FriendFragment
     }
 
     override fun onResume() {
@@ -145,10 +148,18 @@ class MainActivity : AppActivity(),
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.nav_add_friend -> addFriend()
             R.id.nav_create_group -> showFriendSelectorPopup(getUnGroupedFriendNames(),
                     { createGroup(it) })
-            R.id.nav_add_friend -> addFriend()
-            R.id.nav_location -> addFragmentOnTop(locationFragment)
+            R.id.nav_group -> {
+                addFragmentOnTop(groupFragment)
+            }
+            R.id.nav_location -> {
+                showProgress(true, content_main, progress)
+                addFragmentOnTop(locationFragment)
+            }
+            R.id.nav_group_leave -> {
+            }
             R.id.nav_clustering_toggle -> {
 
             }
@@ -165,6 +176,14 @@ class MainActivity : AppActivity(),
 
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    /* BACK STACK LISTENER */
+
+    override fun onBackStackChanged() {
+        val fragment = supportFragmentManager
+                .findFragmentById(R.id.content_main) as? AbstractAppFragment ?: return
+        setFragmentProperties(fragment)
     }
 
     /* SERVICE BINDING */
@@ -184,23 +203,33 @@ class MainActivity : AppActivity(),
 
     /* API CALLS */
 
-    private fun getFriends() = userClient!!.findFriends(getUserId()).call(refreshFriends)
+    private fun getFriends() {
+        showProgress(true, content_main, progress)
+        userClient!!.findFriends(getUserId()).call(refreshFriends)
+    }
 
-    private fun getGroup(groupId: Long) = groupClient!!.find(groupId).call(refreshGroup)
+    private fun getGroup(groupId: Long) {
+        showProgress(true, content_main, progress)
+        groupClient!!.find(groupId).call(refreshGroup)
+    }
 
     private fun addFriend(dto: FriendDto) {
+        showProgress(true, content_main, progress)
         userClient!!.addFriend(getUserId(), dto).call(refreshFriends)
     }
 
     private fun removeFriend(dto: FriendDto) {
+        showProgress(true, content_main, progress)
         userClient!!.removeFriend(getUserId(), dto.id).call(refreshFriends)
     }
 
     private fun updateFriendship(dto: FriendDto) {
+        showProgress(true, content_main, progress)
         userClient!!.updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
     }
 
     private fun createGroup(friendIds: List<Long>) {
+        showProgress(true, content_main, progress)
         groupClient!!.create(CreateGroupDto(getUserId(), friendIds)).call(createGroup)
     }
 
@@ -214,33 +243,7 @@ class MainActivity : AppActivity(),
         when (swipeView?.id) {
             R.id.group_swipe_container -> group?.let { getGroup(it.id) }
             R.id.friend_swipe_container -> getFriends()
-            else -> {}
-        }
-    }
-
-    override fun setFragmentProperties(fragment: AbstractAppFragment) {
-        this.swipeView = fragment.getSwipeView()
-        supportActionBar?.title = fragment.getTitle()
-        when (fragment) {
-            is FriendFragment -> {
-                fab.setOnClickListener { addFriend() }
-                fab.visibility = View.VISIBLE
-                nav_view.menu.setGroupVisible(R.id.nav_group_friend, true)
-                nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
-            }
-            is GroupFragment -> {
-                fab.setOnClickListener {
-                    showFriendSelectorPopup(getUnGroupedFriendNames(), { addGroupMembers(it) })
-                }
-                fab.visibility = View.VISIBLE
-                nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
-                nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, true)
-            }
-            is LocationFragment -> {
-                fab.setOnClickListener(null)
-                fab.visibility = View.GONE
-                nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
-                nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
+            else -> {
             }
         }
     }
@@ -288,7 +291,6 @@ class MainActivity : AppActivity(),
     /* LOCATION FRAGMENT LISTENER */
 
 
-
     /* SERVICE LISTENER */
 
     override fun onUpdate(userDto: UserDto) {
@@ -315,8 +317,11 @@ class MainActivity : AppActivity(),
 
     /* PRIVATE STUFF */
 
-    private fun onTabSelected() {
-        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, POP_BACK_STACK_INCLUSIVE)
+    private fun initFragments() {
+        friendFragment = FriendFragment()
+        groupFragment = GroupFragment()
+        locationFragment = LocationFragment()
+        supportFragmentManager.addOnBackStackChangedListener(this)
 
         supportFragmentManager.beginTransaction()
                 .replace(R.id.content_main, friendFragment)
@@ -324,11 +329,37 @@ class MainActivity : AppActivity(),
                 .commit()
     }
 
+    private fun setFragmentProperties(fragment: AbstractAppFragment) {
+        this.swipeView = fragment.getSwipeView()
+        supportActionBar?.title = fragment.getTitle()
+        when (fragment) {
+            is FriendFragment -> {
+                fab.setOnClickListener { addFriend() }
+                fab.visibility = View.VISIBLE
+                nav_view.menu.setGroupVisible(R.id.nav_group_friend, true)
+            }
+            is GroupFragment -> {
+                fab.setOnClickListener {
+                    showFriendSelectorPopup(getUnGroupedFriendNames(), { addGroupMembers(it) })
+                }
+                fab.visibility = View.VISIBLE
+                nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
+            }
+            is LocationFragment -> {
+                fab.setOnClickListener(null)
+                fab.visibility = View.GONE
+                nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
+            }
+        }
+    }
+
     private fun addFragmentOnTop(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
                 .replace(R.id.content_main, fragment)
                 .addToBackStack(null)
                 .commit()
+
+        showProgress(false, content_main, progress)
     }
 
     private fun addFriend() {
@@ -350,9 +381,11 @@ class MainActivity : AppActivity(),
         group = it
         groupMembers.clear()
         groupMembers.addAll(it.members)
-        swipeView?.apply { isRefreshing = false }
         groupFragment.updateView()
         locationFragment.updateView(it.locationDto)
+        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, getUserId() == group?.adminId)
+        swipeView?.apply { isRefreshing = false }
+        showProgress(false, content_main, progress)
     }
 
     private fun addGroupMembers(friendIds: List<Long>) {
@@ -374,6 +407,7 @@ class MainActivity : AppActivity(),
         this.friends.clear()
         this.friends.addAll(friends)
         friendFragment.updateView()
+        showProgress(false, content_main, progress)
         swipeView?.apply { isRefreshing = false }
     }
 
