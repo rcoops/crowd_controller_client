@@ -1,33 +1,30 @@
-package me.cooper.rick.crowdcontrollerclient.api
+package me.cooper.rick.crowdcontrollerclient.api.service
 
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.ContentValues.TAG
-import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
-import android.os.AsyncTask
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
+import io.reactivex.Flowable
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
-import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
-import me.cooper.rick.crowdcontrollerclient.api.task.user.GetUser
-import me.cooper.rick.crowdcontrollerclient.api.task.user.UpdateLocation
-import me.cooper.rick.crowdcontrollerclient.api.util.destroyTaskType
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
+import me.cooper.rick.crowdcontrollerclient.util.call
+import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
 import okhttp3.WebSocket
 import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
@@ -44,20 +41,14 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private var listener: UpdateServiceListener? = null
     private lateinit var pref: SharedPreferences
 
-    private val userTimer = Timer(true)
-    private var groupTimer: Timer? = null
+    private val reconnectTimer = Timer(true)
 
     private var userClient: UserClient? = null
-    private var groupClient: GroupClient? = null
     private lateinit var mStompClient: StompClient
 
-    private var token: String? = null
-    private var userId: Long = -1
     private var groupId: Long? = null
 
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
-
-    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
 
     private val locationRequest = LocationRequest.create().apply {
         interval = SECONDS.toMillis(10)
@@ -68,11 +59,32 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private val locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val lastLocation = locationResult.lastLocation
-            sendLocation(LocationDto(userId, lastLocation.latitude, lastLocation.longitude))
+            sendLocation(LocationDto(getUserId(), lastLocation.latitude, lastLocation.longitude))
+        }
+    }
+
+    override fun onBind(intent: Intent?): IBinder {
+        pref = getSharedPreferences(getString(R.string.user_details), MODE_PRIVATE)
+        pref.registerOnSharedPreferenceChangeListener(this)
+
+        userClient = createService(UserClient::class, getToken())
+        mStompClient = Stomp.over(WebSocket::class.java,
+                "ws://${getString(R.string.base_uri)}/chat/websocket")
+        openUserSocket()
+
+        return binder
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        sharedPreferences?.let {
+            when (key) {
+                getString(R.string.token) -> userClient = createService(UserClient::class, getToken())
+            }
         }
     }
 
     fun startTracking() {
+        if (fusedLocationProviderClient != null) return
         LocationServices.getSettingsClient(this)
                 .checkLocationSettings(
                         LocationSettingsRequest.Builder()
@@ -93,33 +105,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (this.listener == listener) this.listener = null
     }
 
-    override fun onBind(intent: Intent?): IBinder {
-        pref = getSharedPreferences(getString(R.string.user_details), Context.MODE_PRIVATE)
-        pref.registerOnSharedPreferenceChangeListener(this)
-        token = pref.getString(getString(R.string.token), null)
-        userId = pref.getLong(getString(R.string.user_id), -1)
+    private fun getUserId() = pref.getLong(getString(R.string.user_id), -1)
 
-        userClient = createService(UserClient::class, token)
-        mStompClient = Stomp.over(WebSocket::class.java,
-                "ws://${getString(R.string.base_uri)}/chat/websocket")
-
-        userTimer.schedule({ getUser() }, 0L, SECONDS.toMillis(5))
-
-        return binder
-    }
-
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        sharedPreferences?.let {
-            when (key) {
-                getString(R.string.token) -> {
-                    token = it.getString(getString(R.string.token), null)
-
-                    userClient = createService(UserClient::class, token)
-                }
-                else -> userId = it.getLong(getString(R.string.user_id), -1)
-            }
-        }
-    }
+    private fun getToken() = pref.getString(getString(R.string.token), null)
 
     private fun handleFailure(it: Throwable) {
         try {
@@ -129,12 +117,65 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         }
     }
 
-    private fun getUser() {
+    private fun openUserSocket() {
+        val userId = getUserId()
+
         if (userId == -1L) return
-        tasks += GetUser({ updateListeners(it); adjustGroup(it); destroyTaskType(tasks, GetUser::class) })
+
+        getUser(userId)
+
+        if (!mStompClient.isConnected) connectStompClient()
+
+        subscribeToUserUpdates(userId)
     }
 
-    private fun destroyTaskType(taskClass: KClass<out Any>) = destroyTaskType(tasks, taskClass)
+    private fun getUser(userId: Long) {
+        userClient!!.find(userId).call({
+            Log.d("GET USER", it.toString())
+            listener?.onUpdate(it)
+            adjustGroup(it)
+        })
+    }
+
+    private fun subscribeToGroupUpdates(groupId: Long) {
+        mStompClient.topic("/topic/group/$groupId")
+                .subscribeToService({
+                    Log.d(TAG, "Received " + it.payload)
+                    listener?.onUpdate(jackson.readValue(it, GroupDto::class))
+                })
+    }
+
+    private fun subscribeToUserUpdates(userId: Long) {
+        mStompClient.topic("/topic/user/$userId")
+                .subscribeToService({
+                    Log.d(TAG, "Received " + it.payload)
+                    val userDto = jackson.readValue(it, UserDto::class)
+                    listener?.onUpdate(userDto)
+                    adjustGroup(userDto)
+                })
+    }
+
+    private fun connectStompClient() {
+        mStompClient.connect()
+
+        mStompClient.lifecycle()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { lifecycleEvent ->
+                    when (lifecycleEvent.type!!) {
+                        OPENED -> Log.d("opened", "Stomp connection opened")
+                        ERROR -> Log.e(TAG, "Stomp connection error", lifecycleEvent.exception) // TODO - error handling?
+                        CLOSED -> {
+                            Log.d("closed", "Stomp connection closed")
+                            resubscribe()
+                        }
+                    }
+                }
+    }
+
+    private fun resubscribe() {
+        reconnectTimer.schedule({ openUserSocket() }, SECONDS.toMillis(10), SECONDS.toMillis(5))
+    }
 
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
@@ -147,64 +188,29 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun sendLocation(dto: LocationDto) {
-        tasks += UpdateLocation(dto, { destroyTaskType(UpdateLocation::class) })
-    }
-
-    private fun getGroup() {
-        groupId?.let {
-            tasks += GetGroup(it, { updateListeners(it); destroyTaskType(GetGroup::class) })
-        }
-    }
-
-    private fun updateListeners(userDto: UserDto) {
-        listener?.onUpdate(userDto)
+        userClient!!.updateLocation(dto.id!!, dto).call({ Log.d("POST LOC", it.toString()) })
     }
 
     private fun adjustGroup(userDto: UserDto) {
         if (userDto.group == null) {
             unScheduleGroupRequest()
-        } else if (groupId == null) {
+        } else if (groupId != userDto.group) {
             scheduleGroupRequest(userDto.group!!)
+            getUser(userDto.id)
         }
         groupId = userDto.group
     }
 
     private fun scheduleGroupRequest(groupId: Long) {
-        if (mStompClient.isConnected) return
-        mStompClient.connect()
-
-        mStompClient.lifecycle()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { lifecycleEvent ->
-                    when (lifecycleEvent.type!!) {
-                        OPENED -> Log.d("opened", "Stomp connection opened")
-                        ERROR -> Log.e(TAG, "Stomp connection error", lifecycleEvent.exception) // TODO - error handling?
-                        CLOSED -> Log.d("closed", "Stomp connection closed")
-                    }
-                }
-        mStompClient.topic("/topic/greetings/$groupId")
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { topicMessage ->
-                    Log.d(TAG, "Received " + topicMessage.payload)
-                    updateListeners(jackson.readValue(topicMessage, GroupDto::class))
-                }
+        if (!mStompClient.isConnected) mStompClient.connect()
+        subscribeToGroupUpdates(groupId)
         startTracking()
     }
 
     private fun unScheduleGroupRequest() {
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
+        fusedLocationProviderClient = null
         mStompClient.disconnect()
-    }
-//TODO if groupId != userDto.group reset
-//    private fun resetGroupSchedule() {
-//        unScheduleGroupRequest()
-//        scheduleGroupRequest()
-//    }
-
-    private fun updateListeners(groupDto: GroupDto) {
-        listener?.onUpdate(groupDto)
     }
 
     inner class LocalBinder : Binder() {
@@ -218,16 +224,26 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         fun handleApiException(e: Throwable)
     }
 
-    private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
-        schedule(object : TimerTask() { override fun run() = task() }, delay, period)
-    }
-
     companion object {
         val jackson = ObjectMapper()
     }
 
-    fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
+    private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
+        schedule(object : TimerTask() {
+            override fun run() = task()
+        }, delay, period)
+    }
+
+    private fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
         return readValue<T>(value.payload, clazz.java)
+    }
+
+    private fun <T> Flowable<T>.subscribeToService(successConsumer: (T) -> Unit) {
+        subscribeWithConsumers(successConsumer, { handleFailure(it) })
+    }
+
+    private fun <T> Observable<T>.call(successConsumer: (T) -> Unit) {
+        call(successConsumer, { handleFailure(it) })
     }
 
 }

@@ -2,8 +2,8 @@ package me.cooper.rick.crowdcontrollerclient.fragment.friend
 
 import android.support.v7.widget.RecyclerView
 import android.view.*
-import android.view.View.VISIBLE
 import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_list_item.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto

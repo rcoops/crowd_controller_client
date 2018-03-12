@@ -1,4 +1,4 @@
-package me.cooper.rick.crowdcontrollerclient.auth
+package me.cooper.rick.crowdcontrollerclient.api.auth
 
 import okhttp3.Interceptor
 import okhttp3.Response

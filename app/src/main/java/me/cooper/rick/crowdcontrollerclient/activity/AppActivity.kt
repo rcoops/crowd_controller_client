@@ -10,7 +10,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.Snackbar
@@ -26,23 +25,27 @@ import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
-import me.cooper.rick.crowdcontrollerclient.api.util.destroyTaskType
+import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
+import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
+import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import retrofit2.Response
 import kotlin.reflect.KClass
 
-abstract class AppActivity : AppCompatActivity() {
+abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     protected var app: App? = null
 
     private val dialogs = mutableListOf<AlertDialog>()
-    private val tasks = mutableListOf<AsyncTask<Void, Void, out Any?>>()
+
+    protected var userClient: UserClient? = null
+    protected var groupClient: GroupClient? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         app = applicationContext as App
+        initClients()
     }
 
     override fun onResume() {
@@ -97,9 +100,7 @@ abstract class AppActivity : AppCompatActivity() {
     }
 
     protected fun startActivity(activityClass: KClass<out AppActivity>,
-                                taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?,
                                 vararg extras: Pair<String, Long>) {
-        destroyTasksOfType(taskClass)
         startActivity(Intent(this, activityClass.java)
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
@@ -112,20 +113,21 @@ abstract class AppActivity : AppCompatActivity() {
 
     protected fun showDismissiblePopup(title: String, message: String, apiError: APIError? = null) {
         buildBasePopup(title, message)
-                .setNegativeButton(getString(android.R.string.ok),
-                        { _, _ ->
-                            apiError?.call()
-                        })
+                .setNegativeButton(getString(android.R.string.ok), { _, _ -> apiError?.call() })
                 .show()
     }
 
-    protected fun refresh(taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?) {
-        destroyTasksOfType(taskClass)
-        dismissDialogs()
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        sharedPreferences?.let {
+            when (key) {
+                getString(R.string.token) -> initClients()
+            }
+        }
     }
 
-    protected fun isTaskOfTypeRunning(clazz: KClass<out AsyncTask<Void, Void, out Any?>>): Boolean {
-        return tasks.any { it::class == clazz }
+    private fun initClients() {
+        userClient = createService(UserClient::class, getToken())
+        groupClient = createService(GroupClient::class, getToken())
     }
 
     /**
@@ -172,25 +174,14 @@ abstract class AppActivity : AppCompatActivity() {
         return checkSelfPermission(this, ACCESS_FINE_LOCATION) == PERMISSION_GRANTED
     }
 
-    private fun dismissDialogs() {
+    protected fun dismissDialogs() {
         dialogs.forEach { if (it.isShowing) it.dismiss() }
         dialogs.clear()
     }
 
-    protected fun destroyTasksOfType(taskClass: KClass<out AsyncTask<Void, Void, out Any?>>?) {
-        taskClass?.let { destroyTaskType(tasks, taskClass) }
-    }
-
-    private fun destroyAllTasks() = destroyTasksOfType(AbstractClientTask::class)
-
     protected fun addDialog(dialog: AlertDialog): AlertDialog {
         dialogs += dialog
         return dialog
-    }
-
-    protected fun addTask(task: AsyncTask<Void, Void, out Any?>): AsyncTask<Void, Void, out Any?> {
-        tasks += task
-        return task
     }
 
     private fun showAPIErrorPopup(apiErrorDto: APIErrorDto,
@@ -228,18 +219,13 @@ abstract class AppActivity : AppCompatActivity() {
     }
 
     private fun clearReferences() {
-        destroyAllTasks()
         if (this == App.currentActivity) App.currentActivity = null
     }
 
     inner class APIError(private val apiErrorDto: APIErrorDto,
                          private val consumer: ((APIErrorDto) -> Unit)?) {
 
-        fun call() {
-            consumer?.let {
-                it(apiErrorDto)
-            }
-        }
+        fun call() = consumer?.let { it(apiErrorDto) }
 
     }
 

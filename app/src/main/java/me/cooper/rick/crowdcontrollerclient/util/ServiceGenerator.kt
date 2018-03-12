@@ -3,7 +3,7 @@ package me.cooper.rick.crowdcontrollerclient.util
 import android.text.TextUtils
 import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.auth.AuthenticationInterceptor
+import me.cooper.rick.crowdcontrollerclient.api.auth.AuthenticationInterceptor
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor

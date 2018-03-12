@@ -17,28 +17,26 @@ import android.support.v7.app.AlertDialog
 import android.view.MenuItem
 import android.view.View
 import com.google.android.gms.common.api.ResolvableApiException
+import io.reactivex.Observable
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.UpdateService
-import me.cooper.rick.crowdcontrollerclient.api.task.AbstractClientTask
-import me.cooper.rick.crowdcontrollerclient.api.task.friends.*
-import me.cooper.rick.crowdcontrollerclient.api.task.group.AbstractGroupTask
-import me.cooper.rick.crowdcontrollerclient.api.task.group.CreateGroup
-import me.cooper.rick.crowdcontrollerclient.api.task.group.GetGroup
-import me.cooper.rick.crowdcontrollerclient.api.task.group.UpdateGroup
-import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
+import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
+import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.util.call
+import retrofit2.HttpException
 import java.io.IOException
 
 class MainActivity : AppActivity(),
@@ -74,26 +72,20 @@ class MainActivity : AppActivity(),
         }
     }
 
-    private val refreshFriends: (List<FriendDto>) -> Unit = {
-        refresh(AbstractFriendTask::class)
-        updateFriends(it)
-    }
+    private val refreshFriends: (List<FriendDto>) -> Unit = { updateFriends(it) }
 
     private val createGroup: (GroupDto) -> Unit = {
-        refreshGroup(it)
+        refreshGroupDetails(it)
         addFragmentOnTop(groupFragment)
     }
 
-    private val refreshGroup: (GroupDto) -> Unit = {
-        refresh(AbstractGroupTask::class)
-        refreshGroupDetails(it)
-    }
+    private val refreshGroup: (GroupDto) -> Unit = { refreshGroupDetails(it) }
 
     /* ACTIVITY OVERRIDES */
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+                setContentView(R.layout.activity_main)
 
         setSupportActionBar(toolbar)
 
@@ -132,6 +124,7 @@ class MainActivity : AppActivity(),
         if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
             drawer_layout.closeDrawer(GravityCompat.START)
         } else {
+            // TODO check friend fragment still visible
             super.onBackPressed()
         }
     }
@@ -153,20 +146,20 @@ class MainActivity : AppActivity(),
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_create_group -> showFriendSelectorPopup(getUnGroupedFriendNames(),
-                    { addTask(CreateGroup(it, createGroup)) })
+                    { createGroup(it) })
             R.id.nav_add_friend -> addFriend()
             R.id.nav_location -> addFragmentOnTop(locationFragment)
             R.id.nav_clustering_toggle -> {
 
             }
-            R.id.nav_grp_close -> {
+            R.id.nav_group_close -> {
 
             }
             R.id.nav_settings -> {
             }
             R.id.nav_sign_out -> {
                 editAppDetails { clear() }
-                startActivity(LoginActivity::class, AbstractClientTask::class)
+                startActivity(LoginActivity::class)
             }
         }
 
@@ -189,12 +182,38 @@ class MainActivity : AppActivity(),
         }
     }
 
+    /* API CALLS */
+
+    private fun getFriends() = userClient!!.findFriends(getUserId()).call(refreshFriends)
+
+    private fun getGroup(groupId: Long) = groupClient!!.find(groupId).call(refreshGroup)
+
+    private fun addFriend(dto: FriendDto) {
+        userClient!!.addFriend(getUserId(), dto).call(refreshFriends)
+    }
+
+    private fun removeFriend(dto: FriendDto) {
+        userClient!!.removeFriend(getUserId(), dto.id).call(refreshFriends)
+    }
+
+    private fun updateFriendship(dto: FriendDto) {
+        userClient!!.updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
+    }
+
+    private fun createGroup(friendIds: List<Long>) {
+        groupClient!!.create(CreateGroupDto(getUserId(), friendIds)).call(createGroup)
+    }
+
+    private fun updateGroup(group: GroupDto) {
+        groupClient?.update(group.id, group)?.call(refreshGroup)
+    }
+
     /* FRAGMENT LISTENER */
 
     override fun onSwipe(swipeView: SwipeRefreshLayout?) {
         when (swipeView?.id) {
-            R.id.group_swipe_container -> group?.let { addTask(GetGroup(it.id, refreshGroup)) }
-            R.id.friend_swipe_container -> addTask(GetFriends(refreshFriends))
+            R.id.group_swipe_container -> group?.let { getGroup(it.id) }
+            R.id.friend_swipe_container -> getFriends()
             else -> {}
         }
     }
@@ -232,7 +251,7 @@ class MainActivity : AppActivity(),
         when (menuItem.itemId) {
             R.id.action_remove_friend -> {
                 showUpdateFriendDialog(friend, R.string.txt_confirm_remove_friend,
-                        removeFriend(friend.id))
+                        removeFriendListener(friend))
             }
             R.id.action_add_to_group -> {
                 if (friend.isGrouped()) showGroupedPopup(friend) else createGroup(listOf(friend.id))
@@ -241,15 +260,15 @@ class MainActivity : AppActivity(),
         }
     }
 
-    override fun onListItemFriendUpdate(friend: FriendDto) {
-        when (friend.status) {
+    override fun onListItemFriendUpdate(dto: FriendDto) {
+        when (dto.status) {
             FriendDto.Status.CONFIRMED -> {
-                showUpdateFriendDialog(friend, R.string.txt_confirm_accept_friend,
-                        updateFriendship(friend))
+                showUpdateFriendDialog(dto, R.string.txt_confirm_accept_friend,
+                        DialogInterface.OnClickListener { _, _ -> updateFriendship(dto) })
             }
             FriendDto.Status.INACTIVE -> {
-                showUpdateFriendDialog(friend, R.string.txt_confirm_remove_friend,
-                        removeFriend(friend.id))
+                showUpdateFriendDialog(dto, R.string.txt_confirm_remove_friend,
+                        removeFriendListener(dto))
             }
             else -> {
             } // No action required
@@ -276,8 +295,8 @@ class MainActivity : AppActivity(),
         editAppDetails { putLong(getString(R.string.user_id), userDto.id) }
         updateFriends(userDto.friends)
         val grouped = userDto.group != null
-        nav_view.menu.setGroupVisible(R.id.nav_group_group, grouped)
-        nav_view.menu.findItem(R.id.nav_create_group).isVisible = !grouped
+        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, grouped)
+        nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !grouped)
     }
 
     override fun onUpdate(groupDto: GroupDto) = refreshGroupDetails(groupDto)
@@ -285,9 +304,11 @@ class MainActivity : AppActivity(),
     override fun handleApiException(e: Throwable) {
         when (e) {
             is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
-            is IOException -> handleResponse(handleConnectionException<IOException>(e), {})// TODO - some response to lost connection?
+            is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {})
+            is HttpException -> handleResponse(e.response(), {}, { dismissDialogs() })
             else -> throw e
         }
+        swipeView?.apply { isRefreshing = false }
     }
 
     override fun requestPermissions() = requestLocationPermissions()
@@ -317,10 +338,10 @@ class MainActivity : AppActivity(),
                         false)
                         .apply {
                             btn_add_friend.setOnClickListener {
-                                val dto = FriendDto(username = actv_user_detail.text.toString())
-                                addTask(AddFriend(dto, refreshFriends))
+                                addFriend(FriendDto(username = actv_user_detail.text.toString()))
+                                dismissDialogs()
                             }
-                            btn_cancel_add_friend.setOnClickListener { refresh(null) }
+                            btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
                         })
                 .show())
     }
@@ -339,7 +360,7 @@ class MainActivity : AppActivity(),
         if (friendsToAdd.isEmpty()) return // TODO popup for friend not friend
         if (group == null) return
         val newMembers = (group!!.members + friendIds.map { UserDto(id = it) })
-        addTask(UpdateGroup(group!!.copy(members = newMembers), refreshGroup))
+        updateGroup(group!!.copy(members = newMembers))
     }
 
     private fun getUnGroupedFriendNames(): Array<String> {
@@ -388,23 +409,19 @@ class MainActivity : AppActivity(),
                 .show())
     }
 
-    private fun createGroup(friendIds: List<Long>) = addTask(CreateGroup(friendIds, createGroup))
-
-    private fun removeFriend(id: Long): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ ->
-            addTask(RemoveFriend(id, refreshFriends))
-        }
-    }
-
-    private fun updateFriendship(friend: FriendDto): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ ->
-            addTask(UpdateFriendship(friend, refreshFriends))
-        }
-    }
-
     companion object {
         const val BACK_STACK_ROOT_TAG = "root"
         const val REQUEST_CHECK_SETTINGS = 1
+    }
+
+    /* Convenience */
+
+    private fun removeFriendListener(dto: FriendDto): DialogInterface.OnClickListener {
+        return DialogInterface.OnClickListener { _, _ -> removeFriend(dto) }
+    }
+
+    private fun <T> Observable<T>.call(consumer: (T) -> Unit) {
+        call(consumer, { handleApiException(it) })
     }
 
 }

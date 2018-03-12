@@ -38,12 +38,8 @@
             android:name=".activity.MainActivity"
             android:label="@string/title_activity_friend"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".activity.LocationActivity"
-            android:label="@string/title_activity_location"
-            android:theme="@style/AppTheme.NoActionBar" />
 
-        <service android:name=".api.UpdateService" />
+        <service android:name=".api.service.UpdateService" />
     </application>
 
 </manifest>

@@ -6,16 +6,15 @@ import android.support.v4.widget.SwipeRefreshLayout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
-
 import me.cooper.rick.crowdcontrollerclient.R
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException
-import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.Marker
 import me.cooper.rick.crowdcontrollerclient.fragment.listener.FragmentInteractionListener
 
 

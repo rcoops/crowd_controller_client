@@ -26,12 +26,12 @@ import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
-import me.cooper.rick.crowdcontrollerclient.api.task.user.NewUser
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
-import me.cooper.rick.crowdcontrollerclient.api.util.handleConnectionException
+import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
 import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
+import me.cooper.rick.crowdcontrollerclient.util.call
 import retrofit2.Response
 import java.io.IOException
 
@@ -40,6 +40,8 @@ import java.io.IOException
  */
 class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         RegistrationFragment.OnRegistrationListener {
+
+    private var userLoginTask: UserLoginTask? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,15 +99,15 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     override fun onLoaderReset(cursorLoader: Loader<Cursor>) {}
 
     override fun register(dto: RegistrationDto) {
-        addTask(NewUser(dto, { successfulRegistration(it) }))
+        userClient!!.create(dto).call(successfulRegistration, {})
     }
 
     private fun startMainActivityIfLoggedIn() {
-        if (getToken().isNotBlank()) startActivity(MainActivity::class, null)
+        if (getToken().isNotBlank()) startActivity(MainActivity::class)
     }
 
     private fun handleLoginError(it: APIErrorDto) {
-        refresh(UserLoginTask::class)
+        dismissDialogs()
         showProgress(false, login_form, login_progress)
         if (it.error == BAD_PASSWORD) password?.requestFocus()
         else username?.requestFocus()
@@ -153,7 +155,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      * errors are presented and no actual login attempt is made.
      */
     private fun attemptLogin() {
-        if (isTaskOfTypeRunning(UserLoginTask::class)) return
+        if (userLoginTask != null) return
 
         // Reset errors.
         username.error = null
@@ -182,7 +184,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             focusView?.requestFocus()
         } else {
             showProgress(true, login_form, login_progress)
-            addTask(UserLoginTask(usernameStr, passwordStr).apply { execute() })
+            userLoginTask = UserLoginTask(usernameStr, passwordStr).apply { execute() }
         }
     }
 
@@ -198,21 +200,27 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         username.setAdapter(adapter)
     }
 
-    private fun successfulRegistration(dto: UserDto) {
+    private val successfulRegistration: (dto: UserDto) -> Unit = {
         supportFragmentManager.popBackStackImmediate()
-        destroyTasksOfType(NewUser::class)
-        updateLoginForm(dto)
+        updateLoginForm(it)
     }
 
     private fun updateLoginForm(dto: UserDto) {
         showDismissiblePopup(
                 getString(R.string.hdr_registration_successful),
                 getString(R.string.txt_registration_successful),
-                OnClickListener { _, _ -> destroyTasksOfType(UserLoginTask::class) }
+                OnClickListener { _, _ -> }
         )
         username.setText(dto.username)
         password.text.clear()
         password.requestFocus()
+    }
+
+    private fun handleLoginResponse(response: Response<Token>) {
+        userLoginTask?.cancel(true)
+        userLoginTask = null
+        handleResponse(response, { startActivity(MainActivity::class) },
+                { handleLoginError(it) })
     }
 
     object ProfileQuery {
@@ -227,6 +235,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      * Represents an asynchronous login/registration task used to authenticate
      * the baseUserEntity.
      */
+    // TODO CONVERT TO Observable OR DESTROY TASK
     inner class UserLoginTask internal constructor(
             private val username: String,
             private val password: String) : AsyncTask<Void, Void, Response<Token>>() {
@@ -246,7 +255,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                 if (body is Token) save(body)
                 response
             } catch (e: IOException) {
-                handleConnectionException(e)
+                buildConnectionExceptionResponse(e)
             }
         }
 
@@ -258,8 +267,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         }
 
         override fun onPostExecute(response: Response<Token>) {
-            handleResponse(response, { startActivity(MainActivity::class, UserLoginTask::class) },
-                    { handleLoginError(it) })
+            handleLoginResponse(response)
         }
 
     }

@@ -85,6 +85,7 @@
     <string name="user_details">details</string>
     <string name="location_permissions_granted">Location Permissions Granted</string>
     <string name="action_location_view">Location View</string>
+    <string name="action_group_view">Group</string>
     <string name="action_toggle_clustering">Toggle Group Share (On)</string>
     <string name="action_close_group">Close Group</string>
 </resources>

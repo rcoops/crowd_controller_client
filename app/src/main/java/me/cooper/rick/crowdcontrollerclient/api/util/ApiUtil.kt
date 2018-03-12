@@ -1,20 +1,20 @@
 package me.cooper.rick.crowdcontrollerclient.api.util
 
-import android.os.AsyncTask
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_DESCRIPTION
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_ERROR
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.BAD_REQUEST
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
-import okhttp3.MediaType
+import okhttp3.MediaType.parse
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.create
 import retrofit2.Converter
 import retrofit2.Response
+import retrofit2.Response.error
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
-import kotlin.reflect.KClass
 
 const val BAD_PASSWORD = "Password Incorrect"
 const val BAD_USERNAME = "Username Incorrect"
@@ -41,22 +41,12 @@ fun <Any> parseError(response: Response<Any>): APIErrorDto {
     }
 }
 
-fun <Any> handleConnectionException(e: IOException): Response<Any> {
+fun <T : Any> buildConnectionExceptionResponse(e: IOException): Response<T> {
     return when (e) {
         is ConnectException, is SocketTimeoutException -> {
-            Response.error<Any>(
-                    SERVICE_UNAVAILABLE,
-                    ResponseBody.create(
-                            MediaType.parse("application/json"), CONNECTION_ERROR_BODY
-                    )
-            )
+            error<T>(SERVICE_UNAVAILABLE,
+                    create(parse("application/json"), CONNECTION_ERROR_BODY))
         }
         else -> throw e
     }
-}
-
-fun destroyTaskType(tasks: MutableList<AsyncTask<Void, Void, out Any?>>, taskClass: KClass<out Any>) {
-    val tasksToDestroy = tasks.filter { it::class == taskClass}
-    tasksToDestroy.forEach { it.cancel(true) }
-    tasks.removeAll(tasksToDestroy)
 }
