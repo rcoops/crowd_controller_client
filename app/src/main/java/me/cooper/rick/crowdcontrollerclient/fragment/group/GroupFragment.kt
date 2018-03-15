@@ -8,7 +8,8 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
@@ -34,7 +35,7 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
                 .apply { setOnRefreshListener(this@GroupFragment) }
 
         val view = swipeView.findViewById<RecyclerView>(R.id.list)
-        adapter = GroupRecyclerViewAdapter((activity as MainActivity).groupMembers, listener!!)
+        adapter = GroupRecyclerViewAdapter((activity as MainActivity).group!!, listener!!)
         view.adapter = adapter
 
         registerForContextMenu(view)
@@ -53,7 +54,9 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
         listener = null
     }
 
-    fun updateView() = adapter?.notifyDataSetChanged()
+    fun updateGroup(group: GroupDto) {
+        adapter?.group = group
+    }
 
     override fun onRefresh() = listener!!.onSwipe(swipeView)
 
@@ -63,9 +66,11 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
 
     interface OnGroupFragmentInteractionListener: SwipeFragmentInteractionListener {
 
-        fun onListItemContextMenuSelection(groupMember: UserDto, menuItem: MenuItem)
+        fun onListItemContextMenuSelection(groupMember: GroupMemberDto, menuItem: MenuItem)
 
-        fun onListFragmentInteraction(groupMember: UserDto)
+        fun onListFragmentInteraction(groupMember: GroupMemberDto)
+
+        fun isAdmin(): Boolean
 
     }
 

@@ -8,7 +8,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
@@ -62,9 +62,9 @@ class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListen
 
     interface OnFriendFragmentInteractionListener: SwipeFragmentInteractionListener {
 
-        fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem)
+        fun onListItemContextMenuSelection(dto: FriendDto, menuItem: MenuItem)
 
-        fun onListItemFriendUpdate(friend: FriendDto)
+        fun onListItemFriendUpdate(dto: FriendDto)
 
     }
 

@@ -1,11 +1,9 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
 import io.reactivex.Observable
-import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
-import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
-import retrofit2.Call
+import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import retrofit2.http.*
-
 
 interface GroupClient {
 
@@ -28,6 +26,10 @@ interface GroupClient {
 
     @DELETE("$BASE_PATH/{groupId}")
     fun remove(@Path("groupId") groupId: Long): Observable<Boolean>
+
+    @DELETE("$BASE_PATH/{groupId}/members/{userId}")
+    fun removeMember(@Path("groupId") groupId: Long,
+                     @Path("userId") userId: Long): Observable<GroupDto>
 
     companion object {
         const val BASE_PATH = "/groups"

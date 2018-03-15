@@ -22,10 +22,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
-import me.cooper.rick.crowdcontrollerapi.dto.CreateGroupDto
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
-import me.cooper.rick.crowdcontrollerapi.dto.GroupDto
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
@@ -48,8 +49,8 @@ class MainActivity : AppActivity(),
         FragmentManager.OnBackStackChangedListener {
 
     val friends = mutableListOf<FriendDto>()
-    val groupMembers = mutableListOf<UserDto>()
-    private var group: GroupDto? = null
+//    val groupMembers = mutableListOf<UserDto>()
+    var group: GroupDto? = null
 
     private var mBound = false
 
@@ -150,7 +151,7 @@ class MainActivity : AppActivity(),
         when (item.itemId) {
             R.id.nav_add_friend -> addFriend()
             R.id.nav_create_group -> showFriendSelectorPopup(getUnGroupedFriendNames(),
-                    { createGroup(it) })
+                    { friends -> createGroup(friends) })
             R.id.nav_group -> {
                 addFragmentOnTop(groupFragment)
             }
@@ -158,14 +159,11 @@ class MainActivity : AppActivity(),
                 showProgress(true, content_main, progress)
                 addFragmentOnTop(locationFragment)
             }
-            R.id.nav_group_leave -> {
-            }
+            R.id.nav_group_leave -> group?.let { removeGroupMember(group!!.id, getUserId()) }
             R.id.nav_clustering_toggle -> {
 
             }
-            R.id.nav_group_close -> {
-
-            }
+            R.id.nav_group_close -> group?.let { removeGroup(group!!.id) }
             R.id.nav_settings -> {
             }
             R.id.nav_sign_out -> {
@@ -228,9 +226,22 @@ class MainActivity : AppActivity(),
         userClient!!.updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
     }
 
-    private fun createGroup(friendIds: List<Long>) {
+    private fun createGroup(friends: List<FriendDto>) {
         showProgress(true, content_main, progress)
-        groupClient!!.create(CreateGroupDto(getUserId(), friendIds)).call(createGroup)
+        groupClient!!.create(CreateGroupDto(getUserId(), mapToGroupMembers(friends))).call(createGroup)
+    }
+
+    private fun removeGroup(groupId: Long) {
+        showProgress(true, content_main, progress)
+        groupClient!!.remove(groupId).call({
+            setNoGroup()
+            nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
+        })
+    }
+
+    private fun removeGroupMember(groupId: Long, userId: Long) {
+        showProgress(true, content_main, progress)
+        groupClient!!.removeMember(groupId, userId).call(refreshGroup)
     }
 
     private fun updateGroup(group: GroupDto) {
@@ -250,14 +261,14 @@ class MainActivity : AppActivity(),
 
     /* FRIEND FRAGMENT LISTENER */
 
-    override fun onListItemContextMenuSelection(friend: FriendDto, menuItem: MenuItem) {
+    override fun onListItemContextMenuSelection(dto: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.action_remove_friend -> {
-                showUpdateFriendDialog(friend, R.string.txt_confirm_remove_friend,
-                        removeFriendListener(friend))
+                showUpdateFriendDialog(dto, R.string.txt_confirm_remove_friend,
+                        removeFriendListener(dto))
             }
             R.id.action_add_to_group -> {
-                if (friend.isGrouped()) showGroupedPopup(friend) else createGroup(listOf(friend.id))
+                if (dto.isGrouped()) showGroupedPopup(dto) else createGroup(listOf(dto))
             }
             else -> throw NotImplementedError("Not Implemented!!")
         }
@@ -280,12 +291,16 @@ class MainActivity : AppActivity(),
 
     /* GROUP FRAGMENT LISTENER */
 
-    override fun onListItemContextMenuSelection(groupMember: UserDto, menuItem: MenuItem) {
+    override fun onListItemContextMenuSelection(groupMember: GroupMemberDto, menuItem: MenuItem) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onListFragmentInteraction(groupMember: UserDto) {
+    override fun onListFragmentInteraction(groupMember: GroupMemberDto) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun isAdmin(): Boolean {
+        return group?.members?.first()?.id == getUserId()
     }
 
     /* LOCATION FRAGMENT LISTENER */
@@ -296,7 +311,9 @@ class MainActivity : AppActivity(),
     override fun onUpdate(userDto: UserDto) {
         editAppDetails { putLong(getString(R.string.user_id), userDto.id) }
         updateFriends(userDto.friends)
+        if (userDto.group != null && userDto.group != group?.id) userDto.group?.let { getGroup(it) }
         val grouped = userDto.group != null
+
         nav_view.menu.setGroupVisible(R.id.nav_group_grouped, grouped)
         nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !grouped)
     }
@@ -342,7 +359,7 @@ class MainActivity : AppActivity(),
                 fab.setOnClickListener {
                     showFriendSelectorPopup(getUnGroupedFriendNames(), { addGroupMembers(it) })
                 }
-                fab.visibility = View.VISIBLE
+                fab.visibility = if (isAdmin()) View.VISIBLE else View.GONE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
             is LocationFragment -> {
@@ -351,6 +368,10 @@ class MainActivity : AppActivity(),
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
         }
+    }
+
+    private fun popToRoot() {
+        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
     }
 
     private fun addFragmentOnTop(fragment: Fragment) {
@@ -377,23 +398,36 @@ class MainActivity : AppActivity(),
                 .show())
     }
 
-    private fun refreshGroupDetails(it: GroupDto) {
-        group = it
-        groupMembers.clear()
-        groupMembers.addAll(it.members)
-        groupFragment.updateView()
-        locationFragment.updateView(it.locationDto)
+    private fun refreshGroupDetails(dto: GroupDto) {
+//        groupMembers.clear()
+        if (getUserId() in dto.members.map { it.id }) {
+            group = dto
+//            groupMembers.addAll(dto.members)
+            groupFragment.updateGroup(dto)
+            locationFragment.updateView(dto.location)
+        } else {
+            setNoGroup()
+        }
         nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, getUserId() == group?.adminId)
+
         swipeView?.apply { isRefreshing = false }
         showProgress(false, content_main, progress)
     }
 
-    private fun addGroupMembers(friendIds: List<Long>) {
-        val friendsToAdd = friends.filter { friendIds.contains(it.id) }
+    private fun setNoGroup() {
+        group = null
+        popToRoot()
+    }
+
+    private fun addGroupMembers(friendsToAdd: List<FriendDto>) {
         if (friendsToAdd.isEmpty()) return // TODO popup for friend not friend
         if (group == null) return
-        val newMembers = (group!!.members + friendIds.map { UserDto(id = it) })
+        val newMembers = (group!!.members + mapToGroupMembers(friendsToAdd))
         updateGroup(group!!.copy(members = newMembers))
+    }
+
+    private fun mapToGroupMembers(friends: List<FriendDto>): List<GroupMemberDto> {
+        return friends.map { GroupMemberDto.fromFriendDto(it) }
     }
 
     private fun getUnGroupedFriendNames(): Array<String> {
@@ -411,8 +445,8 @@ class MainActivity : AppActivity(),
         swipeView?.apply { isRefreshing = false }
     }
 
-    private fun showFriendSelectorPopup(unGroupedNames: Array<String>, consumer: (List<Long>) -> Unit) {
-        val selectedIds = mutableListOf<Long>()
+    private fun showFriendSelectorPopup(unGroupedNames: Array<String>, consumer: (List<FriendDto>) -> Unit) {
+        val selectedIds = mutableListOf<FriendDto>()
         addDialog(AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMultiChoiceItems(unGroupedNames, null,
@@ -422,10 +456,10 @@ class MainActivity : AppActivity(),
     }
 
     private fun selectFriends(unGroupedNames: Array<String>,
-                              selectedIds: MutableList<Long>): (DialogInterface, Int, Boolean) -> Unit {
+                              selectedFriends: MutableList<FriendDto>): (DialogInterface, Int, Boolean) -> Unit {
         return { _, i, checked ->
-            val id = friends.find { it.username == unGroupedNames[i] }!!.id
-            selectedIds.apply { if (checked) add(id) else remove(id) }
+            val friend = friends.find { it.username == unGroupedNames[i] }!!
+            selectedFriends.apply { if (checked) add(friend) else remove(friend) }
         }
     }
 

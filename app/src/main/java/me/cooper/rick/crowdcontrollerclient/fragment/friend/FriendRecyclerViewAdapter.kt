@@ -6,9 +6,9 @@ import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_list_item.view.*
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto.Status
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto.Status.*
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto.Status
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto.Status.*
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener

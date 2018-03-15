@@ -20,10 +20,10 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_login.*
-import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
-import me.cooper.rick.crowdcontrollerapi.dto.Token
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.Token
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD

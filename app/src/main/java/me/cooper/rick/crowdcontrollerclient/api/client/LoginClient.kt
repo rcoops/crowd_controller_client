@@ -1,6 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
-import me.cooper.rick.crowdcontrollerapi.dto.Token
+import me.cooper.rick.crowdcontrollerapi.dto.user.Token
 import retrofit2.Call
 import retrofit2.http.POST
 import retrofit2.http.Query

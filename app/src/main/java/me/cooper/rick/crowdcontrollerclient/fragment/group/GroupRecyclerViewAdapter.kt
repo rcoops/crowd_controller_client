@@ -4,14 +4,24 @@ import android.support.v7.widget.RecyclerView
 import android.view.*
 import android.widget.TextView
 import kotlinx.android.synthetic.main.fragment_list_item.view.*
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
 
-class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
+class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
                                private val mListener: OnGroupFragmentInteractionListener) :
         RecyclerView.Adapter<GroupRecyclerViewAdapter.ViewHolder>() {
+
+    var group: GroupDto
+        get() = privateGroup
+        set(group) {
+            privateGroup = group.copy(members = group.members
+                    .sortedWith(compareBy({ it.id == group.adminId }, { it.username}))
+            )
+            notifyDataSetChanged()
+        }
 
     lateinit var parent: ViewGroup
 
@@ -23,22 +33,25 @@ class GroupRecyclerViewAdapter(private val mValues: List<UserDto>,
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.mItem = mValues[position]
-        holder.mView.txt_content.text = mValues[position].username
+        holder.mItem = privateGroup.members[position]
+        holder.mView.txt_content.text = privateGroup.members[position].username
 
         setStatusView(holder, holder.mItem!!)
     }
 
-    private fun setStatusView(holder: ViewHolder, user: UserDto) {
-
+    private fun setStatusView(holder: ViewHolder, groupMember: GroupMemberDto) {
     }
 
-    override fun getItemCount(): Int = mValues.size
+    override fun getItemCount(): Int = privateGroup.members.size
 
     inner class ViewHolder(val mView: View) : RecyclerView.ViewHolder(mView),
             View.OnCreateContextMenuListener,
             MenuItem.OnMenuItemClickListener {
-        var mItem: UserDto? = null
+        var mItem: GroupMemberDto? = null
+
+        init {
+            mView.fab_menu.visibility = if (mListener.isAdmin()) View.VISIBLE else View.GONE
+        }
 
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             (mListener as AppActivity).menuInflater.inflate(R.menu.menu_context_friend, menu)

@@ -1,10 +1,10 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
 import io.reactivex.Observable
-import me.cooper.rick.crowdcontrollerapi.dto.FriendDto
-import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
-import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
-import me.cooper.rick.crowdcontrollerapi.dto.UserDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import retrofit2.http.*
 
 

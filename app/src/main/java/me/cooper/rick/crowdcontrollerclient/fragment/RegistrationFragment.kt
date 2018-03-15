@@ -7,8 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_registration.*
-import me.cooper.rick.crowdcontrollerapi.dto.RegistrationDto
-
+import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerclient.R
 
 class RegistrationFragment : Fragment() {

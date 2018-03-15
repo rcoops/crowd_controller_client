@@ -13,9 +13,8 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
-import me.cooper.rick.crowdcontrollerapi.dto.LocationDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
-
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
