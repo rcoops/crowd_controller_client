@@ -295,13 +295,11 @@ class MainActivity : AppActivity(),
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun onListFragmentInteraction(groupMember: GroupMemberDto) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onInviteCancellation(groupMember: GroupMemberDto) {
+        group?.let { groupClient!!.removeMember(it.id, groupMember.id).call(refreshGroup) }
     }
 
-    override fun isAdmin(): Boolean {
-        return group?.members?.first()?.id == getUserId()
-    }
+    override fun userId(): Long = getUserId()
 
     /* LOCATION FRAGMENT LISTENER */
 
@@ -359,7 +357,7 @@ class MainActivity : AppActivity(),
                 fab.setOnClickListener {
                     showFriendSelectorPopup(getUnGroupedFriendNames(), { addGroupMembers(it) })
                 }
-                fab.visibility = if (isAdmin()) View.VISIBLE else View.GONE
+                fab.visibility = if (getUserId() == group?.adminId) View.VISIBLE else View.GONE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
             is LocationFragment -> {

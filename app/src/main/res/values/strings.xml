@@ -27,6 +27,7 @@
     <string name="title_activity_friends">Friends</string>
 
     <string name="action_add_to_group">Add to Group</string>
+    <string name="action_group_promote_admin">Promote To Group Admin</string>
     <string name="action_reset_password">Forgot Password</string>
 
     <string name="txt_register">Not signed up?</string>
@@ -82,6 +83,7 @@
     <string name="txt_accept_friend_request">Accept\nFriend\nRequest?</string>
     <string name="txt_accept_group_invite">Accept\nGroup\nInvite?</string>
     <string name="txt_cancel_friend_request">Cancel\nFriend\nRequest?</string>
+    <string name="txt_cancel_group_invite">Cancel\nGroup\nInvite?</string>
     <string name="user_details">details</string>
     <string name="location_permissions_granted">Location Permissions Granted</string>
     <string name="action_location_view">Location View</string>

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
@@ -67,10 +68,8 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
     interface OnGroupFragmentInteractionListener: SwipeFragmentInteractionListener {
 
         fun onListItemContextMenuSelection(groupMember: GroupMemberDto, menuItem: MenuItem)
-
-        fun onListFragmentInteraction(groupMember: GroupMemberDto)
-
-        fun isAdmin(): Boolean
+        fun onInviteCancellation(groupMember: GroupMemberDto)
+        fun userId(): Long
 
     }
 
