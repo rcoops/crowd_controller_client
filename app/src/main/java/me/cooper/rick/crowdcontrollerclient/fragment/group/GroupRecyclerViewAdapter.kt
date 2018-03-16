@@ -16,6 +16,8 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
                                private val mListener: OnGroupFragmentInteractionListener) :
         RecyclerView.Adapter<GroupRecyclerViewAdapter.ViewHolder>() {
 
+    lateinit var me: String
+
     var group: GroupDto
         get() = privateGroup
         set(group) {
@@ -32,6 +34,7 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         this.parent = parent
+        me = parent.context.getString(R.string.txt_me)
         val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.fragment_list_item, parent, false)
         return ViewHolder(view)
@@ -40,18 +43,20 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val userId = mListener.userId()
         holder.groupMemberDto = privateGroup.members[position]
-        setName(holder, userId)
+        holder.vwRoot.txt_content.text = privateGroup.members[position].username
         setStatusView(holder, holder.groupMemberDto, userId)
-    }
-
-    private fun setName(holder: ViewHolder, userId: Long) {
-        val dto = holder.groupMemberDto
-        holder.vwRoot.txt_content.text = if (userId == dto.id) "Me" else dto.username
     }
 
     private fun setStatusView(holder: ViewHolder, groupMember: GroupMemberDto, userId: Long) {
         when {
-            group.adminId != userId || groupMember.id == userId -> setReadOnly(holder)
+            group.adminId == groupMember.id -> {
+                setReadOnly(holder)
+                holder.vwRoot.leader_icon.visibility = VISIBLE
+            }
+            groupMember.id == userId -> {
+                holder.vwRoot.txt_content.text = me
+                setReadOnly(holder)
+            }
             groupMember.groupAccepted -> setView(holder, GONE, GONE, holder,
                     { holder.vwRoot.showContextMenu() })
             else -> setView(holder, VISIBLE, VISIBLE,
@@ -69,7 +74,7 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
     private fun setView(holder: ViewHolder, overlayVisibility: Int, actionPanelVisibility: Int,
                         contextMenuListener: View.OnCreateContextMenuListener?,
                         menuOnClickListener: (() -> Unit)?, action: String? = "",
-                        refuseListener: (() -> Unit)? = null, isAdmin: Boolean = false) {
+                        refuseListener: (() -> Unit)? = null) {
         val vwRoot = holder.vwRoot
         vwRoot.vw_overlay.visibility = overlayVisibility
         vwRoot.layout_action.visibility = actionPanelVisibility
@@ -82,6 +87,8 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
         vwRoot.txt_action.text = action
 
         vwRoot.fab_refuse_invite.setOnClickListener { refuseListener?.let { refuseListener() } }
+
+        vwRoot.leader_icon.visibility = GONE
     }
 
     override fun getItemCount(): Int = privateGroup.members.size

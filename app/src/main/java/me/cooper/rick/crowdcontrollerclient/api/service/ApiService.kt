@@ -77,6 +77,10 @@ object ApiService {
         group?.let { groupClient().update(it.id, dto).call(refreshGroup!!, errorConsumer!!) }
     }
 
+    fun promoteToAdmin(dto: GroupMemberDto) {
+        group?.let { updateGroup(it.copy(adminId = dto.id)) }
+    }
+
     private fun updateGroupMembers(groupMembers: List<GroupMemberDto>) {
         group?.let { updateGroup(it.copy(members = groupMembers)) }
     }
