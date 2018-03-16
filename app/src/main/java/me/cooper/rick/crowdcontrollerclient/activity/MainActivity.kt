@@ -314,9 +314,7 @@ class MainActivity : AppActivity(),
     override fun handleApiException(e: Throwable) {
         when (e) {
             is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
-            is JsonMappingException -> {
-                Log.d("EXCEPTION", e.message, e)
-            }
+            is JsonMappingException -> Log.d("EXCEPTION", e.message, e)
             is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {})
             is HttpException -> handleResponse(e.response(), {}, { dismissDialogs() })
             else -> throw e
