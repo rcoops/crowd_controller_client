@@ -79,8 +79,6 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     override fun getTitle(): String = TITLE
 
-    override fun getSwipeView(): SwipeRefreshLayout? = null
-
     fun updateView(locationDto: LocationDto?) {
         locationDto?.let {
             if (locationDto.hasLocation()) {

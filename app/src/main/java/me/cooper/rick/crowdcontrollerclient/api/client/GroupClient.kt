@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.api.client
 
+import io.reactivex.Completable
 import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
@@ -25,7 +26,7 @@ interface GroupClient {
                      @Path("userId") userId: Long): Observable<GroupDto>
 
     @DELETE("$BASE_PATH/{groupId}")
-    fun remove(@Path("groupId") groupId: Long): Observable<Boolean>
+    fun remove(@Path("groupId") groupId: Long): Completable
 
     @DELETE("$BASE_PATH/{groupId}/members/{userId}")
     fun removeMember(@Path("groupId") groupId: Long,

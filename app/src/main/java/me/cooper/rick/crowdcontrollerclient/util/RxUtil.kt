@@ -1,5 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.util
 
+import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -13,6 +14,13 @@ fun <T> Flowable<T>.subscribeWithConsumers(successConsumer: (T) -> Unit,
 }
 
 fun <T> Observable<T>.call(successConsumer: (T) -> Unit,
+                           failureConsumer: (Throwable) -> Unit) {
+    subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(successConsumer , failureConsumer)
+}
+
+fun Completable.call(successConsumer: () -> Unit,
                            failureConsumer: (Throwable) -> Unit) {
     subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())

@@ -10,9 +10,9 @@ import android.view.View
 import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
-import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.listener.SwipeFragmentInteractionListener
 
@@ -36,11 +36,12 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
                 .apply { setOnRefreshListener(this@GroupFragment) }
 
         val view = swipeView.findViewById<RecyclerView>(R.id.list)
-        adapter = GroupRecyclerViewAdapter((activity as MainActivity).group!!, listener!!)
+        adapter = GroupRecyclerViewAdapter(group!!, listener!!)
         view.adapter = adapter
 
         registerForContextMenu(view)
         onRefresh()
+        listener?.pushView(swipeView)
         return swipeView
     }
 
@@ -52,6 +53,7 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
 
     override fun onDetach() {
         super.onDetach()
+        listener?.popView(swipeView)
         listener = null
     }
 
@@ -62,8 +64,6 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
     override fun onRefresh() = listener!!.onSwipe(swipeView)
 
     override fun getTitle(): String = TITLE
-
-    override fun getSwipeView(): SwipeRefreshLayout = swipeView
 
     interface OnGroupFragmentInteractionListener: SwipeFragmentInteractionListener {
 

@@ -5,6 +5,8 @@ import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 
 interface SwipeFragmentInteractionListener {
 
-    fun onSwipe(swipeView: SwipeRefreshLayout?)
+    fun onSwipe(swipeView: SwipeRefreshLayout)
+    fun pushView(swipeView: SwipeRefreshLayout)
+    fun popView(swipeView: SwipeRefreshLayout)
 
 }
