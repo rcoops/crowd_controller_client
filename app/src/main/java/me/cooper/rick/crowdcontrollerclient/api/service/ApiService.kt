@@ -13,6 +13,7 @@ import me.cooper.rick.crowdcontrollerclient.App.Companion.currentActivity
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.R.id.nav_view
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
+import me.cooper.rick.crowdcontrollerclient.activity.MainActivity.Companion.BACK_STACK_ROOT_TAG
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
@@ -40,11 +41,11 @@ object ApiService {
     fun updateFriends(friendDtos: List<FriendDto>) {
         friends.clear()
         friends.addAll(friendDtos)
-        (currentActivity
-                ?.supportFragmentManager
-                ?.findFragmentById(R.id.content_main) as? FriendFragment)?.updateView()
-
-        (currentActivity as? MainActivity)?.dismissAfterTask()
+        (currentActivity as? MainActivity)?.apply {
+            (supportFragmentManager
+                    ?.findFragmentById(R.id.content_main) as? FriendFragment)?.updateView()
+            dismissAfterTask()
+        }
     }
 
 
@@ -85,7 +86,7 @@ object ApiService {
         }
     }
 
-    fun updateGroup(dto: GroupDto) {
+    private fun updateGroup(dto: GroupDto) {
         group?.let { groupClient().update(it.id, dto).call(refreshGroup, errorConsumer!!) }
     }
 
@@ -133,17 +134,21 @@ object ApiService {
         group = dto
         val currentActivity = App.currentActivity
         val currentFragment = currentActivity?.supportFragmentManager?.findFragmentById(R.id.content_main)
-        (currentFragment as? GroupFragment)?.updateGroup(dto)
-        (currentFragment as? LocationFragment)?.updateView(dto.location)
-        (currentActivity  as? MainActivity)?.setAdminVisibility(getUserId() == group?.adminId)
+        when (currentFragment) {
+            is GroupFragment -> currentFragment.updateGroup(dto)
+            is LocationFragment -> currentFragment.updateView(dto.location)
+        }
+        (currentActivity as? MainActivity)?.setAdminVisibility(getUserId() == group?.adminId)
         getFriends()
     }
 
     private fun setNoGroup() {
         group = null
-        currentActivity?.supportFragmentManager?.popBackStack(MainActivity.BACK_STACK_ROOT_TAG, 0)
-        getFriends()
-        (currentActivity as? MainActivity)?.setAdminVisibility(false)
+        (currentActivity as? MainActivity)?.apply {
+            supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
+            getFriends()
+            setAdminVisibility(false)
+        }
     }
 
     private fun updateGroupMembers(groupMembers: List<GroupMemberDto>) {
