@@ -74,6 +74,8 @@
     <string name="txt_friend_not_found">No user exists with the details: %1$s. Please try again.</string>
     <string name="header_confirm">Confirm</string>
     <string name="txt_confirm_remove_friend">Are you sure you want to remove %1$s from your friends?</string>
+    <string name="txt_confirm_remove_group_member">Are you sure you want to remove %1$s from your group?</string>
+    <string name="txt_confirm_promote_group_member">Are you sure you want to promote %1$s to admin?</string>
     <string name="txt_confirm_accept_friend">Accept friend request from %1$s?</string>
     <string name="hdr_registration_successful">Registration Successful!</string>
     <string name="txt_registration_successful">Please log in to continue.</string>
@@ -91,4 +93,7 @@
     <string name="action_toggle_clustering">Toggle Group Share (On)</string>
     <string name="action_close_group">Close Group</string>
     <string name="action_leave_group">Leave Group</string>
+    <string name="image_leader_icon">Group Admin</string>
+    <string name="txt_me">Me</string>
+    <string name="hdr_fragment_registration">Registration</string>
 </resources>

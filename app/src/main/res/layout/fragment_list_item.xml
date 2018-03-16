@@ -1,37 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/container"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@drawable/item_border"
+    android:padding="@dimen/list_item_padding">
     <android.support.constraint.ConstraintLayout
         android:id="@+id/content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/item_border"
-        android:padding="@dimen/list_item_padding">
+        android:layout_height="wrap_content">
+        <ImageView
+            android:id="@+id/leader_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/margin_overlay"
+            android:layout_marginStart="@dimen/margin_overlay"
+            android:visibility="gone"
+            android:contentDescription="@string/image_leader_icon"
+            app:srcCompat="@drawable/ic_leader"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
         <TextView
             android:id="@+id/txt_content"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/text_margin"
             android:textAppearance="?attr/textAppearanceListItem"
             android:textSize="@dimen/text_list_size"
+            android:layout_marginLeft="@dimen/margin_overlay"
+            android:layout_marginStart="@dimen/margin_overlay"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/leader_icon"
             app:layout_constraintTop_toTopOf="parent" />
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab_menu"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/fab_margin"
+            android:layout_margin="@dimen/margin_overlay"
             app:backgroundTint="@color/primary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_menu" />
+
     </android.support.constraint.ConstraintLayout>
 
     <View
@@ -39,18 +52,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/shaded"
-        android:layout_margin="@dimen/margin_overlay"
+        android:padding="@dimen/overlay_padding"
         android:visibility="gone" />
 
     <android.support.constraint.ConstraintLayout
         android:id="@+id/layout_action"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="end|center_vertical"
+        android:layout_gravity="end"
         android:background="@android:color/white"
-        android:layout_margin="@dimen/list_item_padding"
         android:visibility="gone">
-
         <TextView
             android:id="@+id/txt_action"
             android:layout_width="wrap_content"
@@ -71,8 +82,6 @@
             app:backgroundTint="@color/ok"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="1dp"
-            android:layout_marginStart="1dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/fab_refuse_invite"
             app:layout_constraintHorizontal_weight="0.3"
@@ -81,19 +90,15 @@
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/fab_refuse_invite"
-            app:srcCompat="@drawable/ic_cancel"
-            app:backgroundTint="@color/cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="1dp"
-            android:layout_marginStart="1dp"
-            android:layout_marginRight="1dp"
-            android:layout_marginEnd="1dp"
+            android:layout_margin="@dimen/margin_action"
+            app:backgroundTint="@color/cancel"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_weight="0.3"
             app:layout_constraintStart_toEndOf="@id/fab_accept_invite"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_cancel" />
     </android.support.constraint.ConstraintLayout>
-
 </FrameLayout>

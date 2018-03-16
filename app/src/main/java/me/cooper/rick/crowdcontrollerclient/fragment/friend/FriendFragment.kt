@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.friends
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.listener.SwipeFragmentInteractionListener
 
@@ -33,28 +34,28 @@ class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListen
                 .apply { setOnRefreshListener(this@FriendFragment) }
 
         val view = swipeView.findViewById<RecyclerView>(R.id.list)
-        adapter = FriendRecyclerViewAdapter((activity as MainActivity).friends, listener!!)
+        adapter = FriendRecyclerViewAdapter(friends, listener!!)
         view.adapter = adapter
 
         registerForContextMenu(view)
 
+        listener?.pushView(swipeView)
         return swipeView
     }
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = if (context is OnFriendFragmentInteractionListener) context
-        else throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
+        listener = (context as? OnFriendFragmentInteractionListener) ?:
+        throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
     }
 
     override fun onDetach() {
         super.onDetach()
+        listener?.popView(swipeView)
         listener = null
     }
 
     fun updateView() = adapter.notifyDataSetChanged()
-
-    override fun getSwipeView(): SwipeRefreshLayout = swipeView
 
     override fun onRefresh(): Unit = listener!!.onSwipe(swipeView)
 

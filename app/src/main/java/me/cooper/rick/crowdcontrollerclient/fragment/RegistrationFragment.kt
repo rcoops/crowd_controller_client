@@ -2,7 +2,6 @@ package me.cooper.rick.crowdcontrollerclient.fragment
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,9 +9,9 @@ import kotlinx.android.synthetic.main.fragment_registration.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerclient.R
 
-class RegistrationFragment : Fragment() {
+class RegistrationFragment : AbstractAppFragment() {
 
-    private var mListener: OnRegistrationListener? = null
+    private var listener: OnRegistrationListener? = null
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -22,22 +21,21 @@ class RegistrationFragment : Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        btnRegisterAccount.setOnClickListener { mListener?.register(createDto()) }
+        btnRegisterAccount.setOnClickListener { listener?.register(createDto()) }
     }
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        if (context is OnRegistrationListener) {
-            mListener = context
-        } else {
+        listener = (context as? OnRegistrationListener) ?:
             throw RuntimeException(context!!.toString() + " must implement OnRegistrationListener")
-        }
     }
 
     override fun onDetach() {
         super.onDetach()
-        mListener = null
+        listener = null
     }
+
+    override fun getTitle(): String = TITLE
 
     private fun createDto(): RegistrationDto = RegistrationDto(
             username.text.toString(),
@@ -48,6 +46,10 @@ class RegistrationFragment : Fragment() {
 
     interface OnRegistrationListener {
         fun register(dto: RegistrationDto)
+    }
+
+    companion object {
+        private const val TITLE = "Registration"
     }
 
 }

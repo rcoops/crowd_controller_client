@@ -14,20 +14,34 @@ import android.support.v4.view.GravityCompat
 import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.android.gms.common.api.ResolvableApiException
-import io.reactivex.Observable
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
-import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
-import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.createGroup
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.errorConsumer
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getFriends
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getUnGroupedFriendNames
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.promoteToAdmin
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.refreshGroupDetails
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeFriend
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroup
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroupMember
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
@@ -36,7 +50,6 @@ import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
-import me.cooper.rick.crowdcontrollerclient.util.call
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -48,18 +61,11 @@ class MainActivity : AppActivity(),
         LocationFragment.OnFragmentInteractionListener,
         FragmentManager.OnBackStackChangedListener {
 
-    val friends = mutableListOf<FriendDto>()
-//    val groupMembers = mutableListOf<UserDto>()
-    var group: GroupDto? = null
-
     private var mBound = false
 
     private var updateService: UpdateService? = null
 
-    private lateinit var friendFragment: FriendFragment
-    private lateinit var groupFragment: GroupFragment
-    private lateinit var locationFragment: LocationFragment
-    private var swipeView: SwipeRefreshLayout? = null
+    private val swipeRefreshLayouts = mutableSetOf<SwipeRefreshLayout>()
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, iBinder: IBinder?) {
@@ -73,15 +79,6 @@ class MainActivity : AppActivity(),
             mBound = false
         }
     }
-
-    private val refreshFriends: (List<FriendDto>) -> Unit = { updateFriends(it) }
-
-    private val createGroup: (GroupDto) -> Unit = {
-        refreshGroupDetails(it)
-        addFragmentOnTop(groupFragment)
-    }
-
-    private val refreshGroup: (GroupDto) -> Unit = { refreshGroupDetails(it) }
 
     /* ACTIVITY OVERRIDES */
 
@@ -100,6 +97,7 @@ class MainActivity : AppActivity(),
         nav_view.setNavigationItemSelectedListener(this)
 
         initFragments()
+        errorConsumer = { handleApiException(it) }
         showProgress(true, content_main, progress)
     }
 
@@ -124,7 +122,7 @@ class MainActivity : AppActivity(),
             drawer_layout.isDrawerOpen(GravityCompat.START) -> {
                 drawer_layout.closeDrawer(GravityCompat.START)
             }
-            isRootFragment() -> {}
+            isRootFragment() -> { /* Do nothing if root */ }
             else -> super.onBackPressed()
         }
     }
@@ -135,13 +133,13 @@ class MainActivity : AppActivity(),
 
     override fun onResume() {
         super.onResume()
-        onSwipe(null)
+        getFriends()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
             REQUEST_CHECK_SETTINGS -> {
-                if (resultCode == Activity.RESULT_OK) updateService?.startTracking()
+                if (resultCode == Activity.RESULT_OK) updateService?.subscribeToLocationUpdates()
             }
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
@@ -149,24 +147,24 @@ class MainActivity : AppActivity(),
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.nav_add_friend -> addFriend()
-            R.id.nav_create_group -> showFriendSelectorPopup(getUnGroupedFriendNames(),
-                    { friends -> createGroup(friends) })
-            R.id.nav_group -> {
-                addFragmentOnTop(groupFragment)
+            R.id.nav_add_friend -> showAddFriendDialog()
+            R.id.nav_create_group -> showFriendSelectorDialog(getUnGroupedFriendNames(),
+                    { friends -> createGroup(friends, { createGroup(it) }) })
+            R.id.nav_group -> startTask {
+                getGroup(null, {
+                    refreshGroupDetails(it)
+                    addFragmentOnTop(GroupFragment())
+                })
             }
-            R.id.nav_location -> {
-                showProgress(true, content_main, progress)
-                addFragmentOnTop(locationFragment)
-            }
-            R.id.nav_group_leave -> group?.let { removeGroupMember(group!!.id, getUserId()) }
+            R.id.nav_location -> startTask { addFragmentOnTop(LocationFragment()) }
+            R.id.nav_group_leave -> startTask { removeGroupMember(getUserId(), { setNoGroup() }) }
             R.id.nav_clustering_toggle -> {
 
             }
-            R.id.nav_group_close -> group?.let { removeGroup(group!!.id) }
+            R.id.nav_group_close -> removeGroup({ setNoGroup() })
             R.id.nav_settings -> {
             }
-            R.id.nav_sign_out -> {
+            R.id.nav_sign_out -> startTask {
                 editAppDetails { clear() }
                 startActivity(LoginActivity::class)
             }
@@ -199,64 +197,21 @@ class MainActivity : AppActivity(),
         }
     }
 
-    /* API CALLS */
-
-    private fun getFriends() {
-        showProgress(true, content_main, progress)
-        userClient!!.findFriends(getUserId()).call(refreshFriends)
-    }
-
-    private fun getGroup(groupId: Long) {
-        showProgress(true, content_main, progress)
-        groupClient!!.find(groupId).call(refreshGroup)
-    }
-
-    private fun addFriend(dto: FriendDto) {
-        showProgress(true, content_main, progress)
-        userClient!!.addFriend(getUserId(), dto).call(refreshFriends)
-    }
-
-    private fun removeFriend(dto: FriendDto) {
-        showProgress(true, content_main, progress)
-        userClient!!.removeFriend(getUserId(), dto.id).call(refreshFriends)
-    }
-
-    private fun updateFriendship(dto: FriendDto) {
-        showProgress(true, content_main, progress)
-        userClient!!.updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
-    }
-
-    private fun createGroup(friends: List<FriendDto>) {
-        showProgress(true, content_main, progress)
-        groupClient!!.create(CreateGroupDto(getUserId(), mapToGroupMembers(friends))).call(createGroup)
-    }
-
-    private fun removeGroup(groupId: Long) {
-        showProgress(true, content_main, progress)
-        groupClient!!.remove(groupId).call({
-            setNoGroup()
-            nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
-        })
-    }
-
-    private fun removeGroupMember(groupId: Long, userId: Long) {
-        showProgress(true, content_main, progress)
-        groupClient!!.removeMember(groupId, userId).call(refreshGroup)
-    }
-
-    private fun updateGroup(group: GroupDto) {
-        groupClient?.update(group.id, group)?.call(refreshGroup)
-    }
-
     /* FRAGMENT LISTENER */
 
-    override fun onSwipe(swipeView: SwipeRefreshLayout?) {
-        when (swipeView?.id) {
-            R.id.group_swipe_container -> group?.let { getGroup(it.id) }
+    override fun onSwipe(swipeView: SwipeRefreshLayout) {
+        when (swipeView.id) {
+            R.id.group_swipe_container -> getGroup()
             R.id.friend_swipe_container -> getFriends()
-            else -> {
-            }
         }
+    }
+
+    override fun pushView(swipeView: SwipeRefreshLayout) {
+        swipeRefreshLayouts += swipeView
+    }
+
+    override fun popView(swipeView: SwipeRefreshLayout) {
+        swipeRefreshLayouts -= swipeView
     }
 
     /* FRIEND FRAGMENT LISTENER */
@@ -264,39 +219,49 @@ class MainActivity : AppActivity(),
     override fun onListItemContextMenuSelection(dto: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
             R.id.action_remove_friend -> {
-                showUpdateFriendDialog(dto, R.string.txt_confirm_remove_friend,
+                showConfirmDialog(dto.username, R.string.txt_confirm_remove_friend,
                         removeFriendListener(dto))
             }
-            R.id.action_add_to_group -> {
-                if (dto.isGrouped()) showGroupedPopup(dto) else createGroup(listOf(dto))
+            R.id.action_add_to_group -> if (dto.isGrouped()) {
+                showGroupedPopup(dto)
+            } else {
+                startTask {
+                    if (group?.adminId == getUserId()) {
+                        addGroupMembers(listOf(dto))
+                    } else {
+                        createGroup(listOf(dto), { createGroup(it) })
+                    }
+                }
             }
-            else -> throw NotImplementedError("Not Implemented!!")
         }
     }
 
     override fun onListItemFriendUpdate(dto: FriendDto) {
-        when (dto.status) {
-            FriendDto.Status.CONFIRMED -> {
-                showUpdateFriendDialog(dto, R.string.txt_confirm_accept_friend,
-                        DialogInterface.OnClickListener { _, _ -> updateFriendship(dto) })
-            }
-            FriendDto.Status.INACTIVE -> {
-                showUpdateFriendDialog(dto, R.string.txt_confirm_remove_friend,
-                        removeFriendListener(dto))
-            }
-            else -> {
-            } // No action required
+        val (stringId, listener) = when (dto.status) {
+            FriendDto.Status.CONFIRMED -> Pair(R.string.txt_confirm_accept_friend,
+                    dialogOnClickListener { updateFriendship(dto) })
+            FriendDto.Status.INACTIVE -> Pair(R.string.txt_confirm_remove_friend,
+                    removeFriendListener(dto))
+            else -> throw NotImplementedError("this menu option doesn't exist")
         }
+        showConfirmDialog(dto.username, stringId, listener)
     }
 
     /* GROUP FRAGMENT LISTENER */
 
-    override fun onListItemContextMenuSelection(groupMember: GroupMemberDto, menuItem: MenuItem) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onListItemContextMenuSelection(dto: GroupMemberDto, menuItem: MenuItem) {
+        val (stringId, listener) = when (menuItem.itemId) {
+            R.id.action_remove_member -> Pair(R.string.txt_confirm_remove_group_member,
+                    dialogOnClickListener({ removeGroupMember(dto.id) }))
+            R.id.action_promote_admin -> Pair(R.string.txt_confirm_promote_group_member,
+                    dialogOnClickListener({ promoteToAdmin(dto) }))
+            else -> throw NotImplementedError("this menu option doesn't exist")
+        }
+        showConfirmDialog(dto.username, stringId, listener)
     }
 
     override fun onInviteCancellation(groupMember: GroupMemberDto) {
-        group?.let { groupClient!!.removeMember(it.id, groupMember.id).call(refreshGroup) }
+        startTask { removeGroupMember(groupMember.id) }
     }
 
     override fun userId(): Long = getUserId()
@@ -306,70 +271,66 @@ class MainActivity : AppActivity(),
 
     /* SERVICE LISTENER */
 
-    override fun onUpdate(userDto: UserDto) {
-        editAppDetails { putLong(getString(R.string.user_id), userDto.id) }
-        updateFriends(userDto.friends)
-        if (userDto.group != null && userDto.group != group?.id) userDto.group?.let { getGroup(it) }
-        val grouped = userDto.group != null
-
-        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, grouped)
-        nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !grouped)
+    override fun updateNavMenu(isGrouped: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, isGrouped)
+        nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !isGrouped)
     }
-
-    override fun onUpdate(groupDto: GroupDto) = refreshGroupDetails(groupDto)
 
     override fun handleApiException(e: Throwable) {
         when (e) {
             is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
+            is JsonMappingException -> Log.d("EXCEPTION", e.message, e)
             is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {})
             is HttpException -> handleResponse(e.response(), {}, { dismissDialogs() })
             else -> throw e
         }
-        swipeView?.apply { isRefreshing = false }
+        dismissProgressBar()
     }
 
     override fun requestPermissions() = requestLocationPermissions()
 
+    fun setAdminVisibility(isAdmin: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
+    }
+
+    fun dismissAfterTask() {
+        dismissProgressBar()
+        dismissDialogs()
+    }
+
     /* PRIVATE STUFF */
 
     private fun initFragments() {
-        friendFragment = FriendFragment()
-        groupFragment = GroupFragment()
-        locationFragment = LocationFragment()
         supportFragmentManager.addOnBackStackChangedListener(this)
 
         supportFragmentManager.beginTransaction()
-                .replace(R.id.content_main, friendFragment)
+                .replace(R.id.content_main, FriendFragment())
                 .addToBackStack(BACK_STACK_ROOT_TAG)
                 .commit()
     }
 
     private fun setFragmentProperties(fragment: AbstractAppFragment) {
-        this.swipeView = fragment.getSwipeView()
         supportActionBar?.title = fragment.getTitle()
         when (fragment) {
             is FriendFragment -> {
-                fab.setOnClickListener { addFriend() }
+                fab.setOnClickListener { showAddFriendDialog() }
                 fab.visibility = View.VISIBLE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, true)
             }
             is GroupFragment -> {
                 fab.setOnClickListener {
-                    showFriendSelectorPopup(getUnGroupedFriendNames(), { addGroupMembers(it) })
+                    showFriendSelectorDialog(getUnGroupedFriendNames(), { addGroupMembers(it) })
                 }
                 fab.visibility = if (getUserId() == group?.adminId) View.VISIBLE else View.GONE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
             is LocationFragment -> {
+                fragment.updateView(group?.location)
                 fab.setOnClickListener(null)
                 fab.visibility = View.GONE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
         }
-    }
-
-    private fun popToRoot() {
-        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
     }
 
     private fun addFragmentOnTop(fragment: Fragment) {
@@ -381,98 +342,67 @@ class MainActivity : AppActivity(),
         showProgress(false, content_main, progress)
     }
 
-    private fun addFriend() {
+    private fun showAddFriendDialog() {
         addDialog(AlertDialog.Builder(this)
                 .setTitle(R.string.header_add_friend)
                 .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main,
-                        false)
-                        .apply {
-                            btn_add_friend.setOnClickListener {
-                                addFriend(FriendDto(username = actv_user_detail.text.toString()))
-                                dismissDialogs()
-                            }
-                            btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
-                        })
+                        false).apply {
+                    btn_add_friend.setOnClickListener {
+                        dismissDialogs()
+                        startTask { addFriend(actv_user_detail.text.toString()) }
+                    }
+                    btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
+                })
                 .show())
     }
 
-    private fun refreshGroupDetails(dto: GroupDto) {
-//        groupMembers.clear()
-        if (getUserId() in dto.members.map { it.id }) {
-            group = dto
-//            groupMembers.addAll(dto.members)
-            groupFragment.updateGroup(dto)
-            locationFragment.updateView(dto.location)
-        } else {
-            setNoGroup()
-        }
-        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, getUserId() == group?.adminId)
-
-        swipeView?.apply { isRefreshing = false }
-        showProgress(false, content_main, progress)
-    }
-
-    private fun setNoGroup() {
-        group = null
-        popToRoot()
-    }
-
-    private fun addGroupMembers(friendsToAdd: List<FriendDto>) {
-        if (friendsToAdd.isEmpty()) return // TODO popup for friend not friend
-        if (group == null) return
-        val newMembers = (group!!.members + mapToGroupMembers(friendsToAdd))
-        updateGroup(group!!.copy(members = newMembers))
-    }
-
-    private fun mapToGroupMembers(friends: List<FriendDto>): List<GroupMemberDto> {
-        return friends.map { GroupMemberDto.fromFriendDto(it) }
-    }
-
-    private fun getUnGroupedFriendNames(): Array<String> {
-        return friends
-                .filter(FriendDto::canJoinGroup)
-                .map { it.username }
-                .toTypedArray()
-    }
-
-    private fun updateFriends(friends: List<FriendDto>) {
-        this.friends.clear()
-        this.friends.addAll(friends)
-        friendFragment.updateView()
-        showProgress(false, content_main, progress)
-        swipeView?.apply { isRefreshing = false }
-    }
-
-    private fun showFriendSelectorPopup(unGroupedNames: Array<String>, consumer: (List<FriendDto>) -> Unit) {
+    private fun showFriendSelectorDialog(unGroupedNames: Array<String>,
+                                         consumer: (List<FriendDto>) -> Unit) {
         val selectedIds = mutableListOf<FriendDto>()
         addDialog(AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMultiChoiceItems(unGroupedNames, null,
                         selectFriends(unGroupedNames, selectedIds))
-                .setPositiveButton(android.R.string.ok, { _, _ -> consumer(selectedIds) })
+                .setPositiveButton(android.R.string.ok, { _, _ ->
+                    dismissDialogs()
+                    startTask { consumer(selectedIds) }
+                })
                 .show())
-    }
-
-    private fun selectFriends(unGroupedNames: Array<String>,
-                              selectedFriends: MutableList<FriendDto>): (DialogInterface, Int, Boolean) -> Unit {
-        return { _, i, checked ->
-            val friend = friends.find { it.username == unGroupedNames[i] }!!
-            selectedFriends.apply { if (checked) add(friend) else remove(friend) }
-        }
     }
 
     private fun showGroupedPopup(friend: FriendDto) {
-        showDismissiblePopup("Grouped", "${friend.username} is already in a group!")
+        val isInCurrentGroup = group?.members?.let { friend.id in it.map { it.id } } ?: false
+        showDismissiblePopup("Grouped", "${friend.username} is already in " +
+                "${if (isInCurrentGroup) "your" else "a"} group!")
     }
 
-    private fun showUpdateFriendDialog(item: FriendDto, stringId: Int,
-                                       onOkListener: DialogInterface.OnClickListener) {
+    private fun showConfirmDialog(name: String, stringId: Int,
+                                  onOkListener: DialogInterface.OnClickListener) {
         addDialog(AlertDialog.Builder(this)
                 .setTitle(getString(R.string.header_confirm))
-                .setMessage(getString(stringId, item.username))
+                .setMessage(getString(stringId, name))
                 .setPositiveButton(getString(android.R.string.ok), onOkListener)
                 .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
                 .show())
+    }
+
+    private fun createGroup(it: GroupDto) {
+        refreshGroupDetails(it)
+        addFragmentOnTop(GroupFragment())
+        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, true)
+        dismissDialogs()
+    }
+
+    private fun setNoGroup() {
+        group = null
+        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
+        getFriends()
+        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
+    }
+
+    private fun dismissProgressBar() {
+        swipeRefreshLayouts.forEach { it.isRefreshing = false }
+        showProgress(false, content_main, progress)
     }
 
     companion object {
@@ -482,12 +412,15 @@ class MainActivity : AppActivity(),
 
     /* Convenience */
 
-    private fun removeFriendListener(dto: FriendDto): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ -> removeFriend(dto) }
+    private fun startTask(func: () -> Unit) {
+        showProgress(true, content_main, progress)
+        func()
     }
 
-    private fun <T> Observable<T>.call(consumer: (T) -> Unit) {
-        call(consumer, { handleApiException(it) })
+    private fun removeFriendListener(dto: FriendDto) = dialogOnClickListener { removeFriend(dto) }
+
+    private fun dialogOnClickListener(func: () -> Unit): DialogInterface.OnClickListener {
+        return DialogInterface.OnClickListener { _, _ -> startTask(func) }
     }
 
 }

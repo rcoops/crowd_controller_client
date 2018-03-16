@@ -19,10 +19,6 @@ class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
 
     lateinit var parent: ViewGroup
 
-    private val statusUpdate: (FriendDto, Status) -> Unit = { friendDto, status ->
-        listener.onListItemFriendUpdate(friendDto.copy(status = status))
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         this.parent = parent
         val view = LayoutInflater.from(parent.context)
@@ -35,6 +31,8 @@ class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
         holder.vwRoot.txt_content.text = friends[position].username
         setStatusView(holder)
     }
+
+    override fun getItemCount(): Int = friends.size
 
     private fun setStatusView(holder: ViewHolder) {
         val friendDto = holder.friendDto
@@ -53,6 +51,10 @@ class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
             INACTIVE -> setView(holder, GONE, GONE, GONE,
                     null, null)
         }
+    }
+
+    private fun statusUpdate(friendDto: FriendDto, status: Status) {
+        listener.onListItemFriendUpdate(friendDto.copy(status = status))
     }
 
     private fun setView(holder: ViewHolder, overlayVisibility: Int, actionPanelVisibility: Int,
@@ -74,8 +76,6 @@ class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
         vwRoot.fab_refuse_invite.setOnClickListener { refuseListener?.let { refuseListener() } }
     }
 
-    override fun getItemCount(): Int = friends.size
-
     inner class ViewHolder(val vwRoot: View) : RecyclerView.ViewHolder(vwRoot),
             View.OnCreateContextMenuListener,
             MenuItem.OnMenuItemClickListener {
@@ -90,6 +90,7 @@ class FriendRecyclerViewAdapter(private val friends: List<FriendDto>,
                     .apply { (findViewById<TextView>(R.id.txt_header)).text = friendDto.username })
 
             (0 until menu.size()).forEach { menu.getItem(it).setOnMenuItemClickListener(this) }
+            menu.findItem(R.id.action_add_to_group).isVisible = friendDto.canJoinGroup()
         }
 
         override fun onMenuItemClick(item: MenuItem?): Boolean {

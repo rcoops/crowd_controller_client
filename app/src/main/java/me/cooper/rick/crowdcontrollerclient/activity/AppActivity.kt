@@ -60,6 +60,7 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
 
     override fun onDestroy() {
         clearReferences()
+        App.refWatcher.watch(this)
         super.onDestroy()
     }
 
