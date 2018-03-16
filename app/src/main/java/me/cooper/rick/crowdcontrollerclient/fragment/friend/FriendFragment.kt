@@ -45,8 +45,8 @@ class FriendFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListen
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = if (context is OnFriendFragmentInteractionListener) context
-        else throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
+        listener = (context as? OnFriendFragmentInteractionListener) ?:
+        throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
     }
 
     override fun onDetach() {

@@ -22,6 +22,10 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.refreshGroupDetails
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
@@ -83,7 +87,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         }
     }
 
-    fun startTracking() {
+    fun subscribeToLocationUpdates() {
         if (fusedLocationProviderClient != null) return
         LocationServices.getSettingsClient(this)
                 .checkLocationSettings(
@@ -138,16 +142,29 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private fun getUser(userId: Long) {
         userClient!!.find(userId).call({
             Log.d("GET USER", it.toString())
-            listener?.onUpdate(it)
+            onUserUpdate(it)
             adjustGroup(it)
         })
+    }
+
+    @SuppressLint("CommitPrefEdits")
+    private fun onUserUpdate(userDto: UserDto) {
+        pref.edit().apply {
+            putLong(getString(R.string.user_id), userDto.id)
+            commit()
+        }
+        updateFriends(userDto.friends)
+        if (userDto.group != null && userDto.group != group?.id) {
+            userDto.group.let { getGroup(it) }
+        }
+        listener?.updateNavMenu(userDto.group != null)
     }
 
     private fun subscribeToGroupUpdates(groupId: Long) {
         stompClient.topic("/topic/group/$groupId")
                 .customSubscribe({
                     Log.d(TAG, "Received " + it.payload)
-                    listener?.onUpdate(jackson.readValue(it, GroupDto::class))
+                    refreshGroupDetails(jackson.readValue(it, GroupDto::class))
                 })
     }
 
@@ -156,7 +173,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 .customSubscribe({
                     Log.d(TAG, "Received " + it.payload)
                     val userDto = jackson.readValue(it, UserDto::class)
-                    listener?.onUpdate(userDto)
+                    onUserUpdate(userDto)
                     adjustGroup(userDto)
                 })
     }
@@ -208,9 +225,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun scheduleGroupRequest(groupId: Long) {
-        if (!stompClient.isConnected) stompClient.connect()
         subscribeToGroupUpdates(groupId)
-        startTracking()
+        subscribeToLocationUpdates()
     }
 
     private fun unScheduleGroupRequest() {
@@ -224,8 +240,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     interface UpdateServiceListener {
-        fun onUpdate(userDto: UserDto)
-        fun onUpdate(groupDto: GroupDto)
+        fun updateNavMenu(isGrouped: Boolean)
         fun requestPermissions()
         fun handleApiException(e: Throwable)
     }

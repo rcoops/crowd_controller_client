@@ -95,4 +95,5 @@
     <string name="action_leave_group">Leave Group</string>
     <string name="image_leader_icon">Group Admin</string>
     <string name="txt_me">Me</string>
+    <string name="hdr_fragment_registration">Registration</string>
 </resources>

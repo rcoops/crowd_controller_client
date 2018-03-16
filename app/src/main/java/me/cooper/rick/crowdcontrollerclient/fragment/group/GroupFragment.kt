@@ -47,8 +47,8 @@ class GroupFragment : AbstractAppFragment(), SwipeRefreshLayout.OnRefreshListene
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = if (context is OnGroupFragmentInteractionListener) context
-        else throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
+        listener = (context as? OnGroupFragmentInteractionListener) ?:
+        throw RuntimeException("${context!!} must implement OnFriendFragmentInteractionListener")
     }
 
     override fun onDetach() {

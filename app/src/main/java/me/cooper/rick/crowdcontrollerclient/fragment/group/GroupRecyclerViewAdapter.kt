@@ -64,31 +64,6 @@ class GroupRecyclerViewAdapter(private var privateGroup: GroupDto,
                             { mListener.onInviteCancellation(groupMember) })
             }
         }
-//        when {
-//            group.adminId == groupMember.id -> {
-//                if (groupMember.id == userId) holder.vwRoot.txt_content.text = me
-//                setReadOnly(holder)
-//                holder.vwRoot.leader_icon.visibility = VISIBLE
-//            }
-//            groupMember.id == userId -> {
-//                holder.vwRoot.txt_content.text = me
-//                setReadOnly(holder)
-//            }
-//            groupMember.groupAccepted -> setView(holder, GONE, GONE, VISIBLE, holder,
-//                    { holder.vwRoot.showContextMenu() })
-//            else -> {
-//                setView(holder, VISIBLE, VISIBLE, GONE,
-//                        null, null,
-//                        parent.context.getString(R.string.txt_cancel_group_invite),
-//                        { mListener.onInviteCancellation(groupMember) })
-//            }
-//        }
-//    }
-
-//    private fun groupAdminView(holder: ViewHolder, groupMember: GroupMemberDto, userId: Long) {
-//        when (groupMember.id) {
-//            userId ->
-//        }
     }
 
     private fun setReadOnly(holder: ViewHolder) {

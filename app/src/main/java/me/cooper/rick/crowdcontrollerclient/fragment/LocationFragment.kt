@@ -2,7 +2,6 @@ package me.cooper.rick.crowdcontrollerclient.fragment
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.widget.SwipeRefreshLayout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +14,8 @@ import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
@@ -61,11 +62,8 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = if (context is OnFragmentInteractionListener) {
-            context
-        } else {
-            throw RuntimeException("${context!!} must implement OnFragmentInteractionListener")
-        }
+        listener = (context as? OnFragmentInteractionListener) ?:
+                throw RuntimeException("${context!!} must implement OnFragmentInteractionListener")
     }
 
     override fun onDetach() {
@@ -75,6 +73,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap?) {
         googleMap = map
+        updateView(group?.location)
     }
 
     override fun getTitle(): String = TITLE

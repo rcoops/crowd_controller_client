@@ -3,60 +3,72 @@ package me.cooper.rick.crowdcontrollerclient.api.service
 import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
+import kotlinx.android.synthetic.main.activity_main.*
 import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.App
+import me.cooper.rick.crowdcontrollerclient.App.Companion.currentActivity
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.R.id.nav_view
+import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 
 object ApiService {
 
-    private val sharedPrefRef = App.context!!.getString(R.string.user_details)
-    private val tokenRef = App.context!!.getString(R.string.token)
-    private val userIdRef = App.context!!.getString(R.string.user_id)
+    private val sharedPrefRef = App.context.getString(R.string.user_details)
+    private val tokenRef = App.context.getString(R.string.token)
+    private val userIdRef = App.context.getString(R.string.user_id)
 
-    private val pref: SharedPreferences = App.context!!
+    private val pref: SharedPreferences = App.context
             .getSharedPreferences(sharedPrefRef, MODE_PRIVATE)
 
     val friends = mutableListOf<FriendDto>()
     var group: GroupDto? = null
 
-    var refreshGroup: ((GroupDto?) -> Unit)? = null
-    var refreshFriends: ((List<FriendDto>) -> Unit)? = null
+    private val refreshGroup: ((GroupDto?) -> Unit) = { refreshGroupDetails(it) }
+    private val refreshFriends: ((List<FriendDto>) -> Unit) = { updateFriends(it) }
     var errorConsumer: ((Throwable) -> Unit)? = null
 
-    private fun getToken(): String = pref.getString(tokenRef, null)
-    private fun getUserId(): Long = pref.getLong(userIdRef, -1)
+    fun updateFriends(friendDtos: List<FriendDto>) {
+        friends.clear()
+        friends.addAll(friendDtos)
+        (currentActivity
+                ?.supportFragmentManager
+                ?.findFragmentById(R.id.content_main) as? FriendFragment)?.updateView()
 
-    private fun userClient(): UserClient = createService(UserClient::class, getToken())
-    private fun groupClient(): GroupClient = createService(GroupClient::class, getToken())
+        (currentActivity as? MainActivity)?.dismissAfterTask()
+    }
+
 
     fun getFriends() {
-        userClient().findFriends(getUserId()).call(refreshFriends!!, errorConsumer!!)
+        userClient().findFriends(getUserId()).call(refreshFriends, errorConsumer!!)
     }
 
     fun addFriend(username: String) {
         userClient().addFriend(getUserId(), FriendDto(username = username))
-                .call(refreshFriends!!, errorConsumer!!)
+                .call(refreshFriends, errorConsumer!!)
     }
 
     fun removeFriend(dto: FriendDto) {
-        userClient().removeFriend(getUserId(), dto.id).call(refreshFriends!!, errorConsumer!!)
+        userClient().removeFriend(getUserId(), dto.id).call(refreshFriends, errorConsumer!!)
     }
 
     fun updateFriendship(dto: FriendDto) {
-        userClient().updateFriendship(getUserId(), dto.id, dto).call(refreshFriends!!, errorConsumer!!)
+        userClient().updateFriendship(getUserId(), dto.id, dto).call(refreshFriends, errorConsumer!!)
     }
 
     fun getGroup(id: Long? = null, consumer: ((GroupDto) -> Unit)? = null) {
         val groupClient = groupClient()
-        if (id != null ) groupClient.find(id).call(consumer ?: refreshGroup!!, errorConsumer!!)
-        else group?.let { groupClient.find(it.id).call(consumer ?: refreshGroup!!, errorConsumer!!) }
+        if (id != null ) groupClient.find(id).call(consumer ?: refreshGroup, errorConsumer!!)
+        else group?.let { groupClient.find(it.id).call(consumer ?: refreshGroup, errorConsumer!!) }
     }
 
     fun createGroup(friends: List<FriendDto>, consumer: (GroupDto) -> Unit) {
@@ -69,20 +81,16 @@ object ApiService {
 
     fun removeGroupMember(userId: Long, errorConsumer: ((Throwable) -> Unit)? = null) {
         group?.let {
-            groupClient().removeMember(it.id, userId).call(refreshGroup!!, errorConsumer ?: this.errorConsumer!!)
+            groupClient().removeMember(it.id, userId).call(refreshGroup, errorConsumer ?: this.errorConsumer!!)
         }
     }
 
     fun updateGroup(dto: GroupDto) {
-        group?.let { groupClient().update(it.id, dto).call(refreshGroup!!, errorConsumer!!) }
+        group?.let { groupClient().update(it.id, dto).call(refreshGroup, errorConsumer!!) }
     }
 
     fun promoteToAdmin(dto: GroupMemberDto) {
         group?.let { updateGroup(it.copy(adminId = dto.id)) }
-    }
-
-    private fun updateGroupMembers(groupMembers: List<GroupMemberDto>) {
-        group?.let { updateGroup(it.copy(members = groupMembers)) }
     }
 
     fun addGroupMembers(friendsToAdd: List<FriendDto>) {
@@ -91,11 +99,6 @@ object ApiService {
         } else {
             group?.let { updateGroupMembers((it.members + mapToGroupMembers(friendsToAdd))) }
         }
-    }
-
-    fun updateFriends(friendDtos: List<FriendDto>) {
-        friends.clear()
-        friends.addAll(friendDtos)
     }
 
     fun getUnGroupedFriendNames(): Array<String> {
@@ -111,6 +114,40 @@ object ApiService {
             val friend = friends.find { it.username == unGroupedNames[i] }!!
             selectedFriends.apply { if (checked) add(friend) else remove(friend) }
         }
+    }
+
+    fun refreshGroupDetails(dto: GroupDto?) {
+        if (isGroupMember(dto)) updateGroupDetails(dto!!) else setNoGroup()
+    }
+
+    private fun getToken(): String = pref.getString(tokenRef, null)
+    private fun getUserId(): Long = pref.getLong(userIdRef, -1)
+
+    private fun userClient(): UserClient = createService(UserClient::class, getToken())
+    private fun groupClient(): GroupClient = createService(GroupClient::class, getToken())
+
+    private fun isGroupMember(dto: GroupDto?) =
+            dto != null && getUserId() in dto.members.map { it.id }
+
+    private fun updateGroupDetails(dto: GroupDto) {
+        group = dto
+        val currentActivity = App.currentActivity
+        val currentFragment = currentActivity?.supportFragmentManager?.findFragmentById(R.id.content_main)
+        (currentFragment as? GroupFragment)?.updateGroup(dto)
+        (currentFragment as? LocationFragment)?.updateView(dto.location)
+        (currentActivity  as? MainActivity)?.setAdminVisibility(getUserId() == group?.adminId)
+        getFriends()
+    }
+
+    private fun setNoGroup() {
+        group = null
+        currentActivity?.supportFragmentManager?.popBackStack(MainActivity.BACK_STACK_ROOT_TAG, 0)
+        getFriends()
+        (currentActivity as? MainActivity)?.setAdminVisibility(false)
+    }
+
+    private fun updateGroupMembers(groupMembers: List<GroupMemberDto>) {
+        group?.let { updateGroup(it.copy(members = groupMembers)) }
     }
 
     private fun mapToGroupMembers(friends: List<FriendDto>): List<GroupMemberDto> {
