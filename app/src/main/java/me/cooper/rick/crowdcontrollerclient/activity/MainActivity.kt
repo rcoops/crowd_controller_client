@@ -348,7 +348,6 @@ class MainActivity : AppActivity(),
                 .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main,
                         false).apply {
                     btn_add_friend.setOnClickListener {
-                        dismissDialogs()
                         startTask { addFriend(actv_user_detail.text.toString()) }
                     }
                     btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
@@ -397,7 +396,7 @@ class MainActivity : AppActivity(),
         group = null
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
         getFriends()
-        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, false)
+        setAdminVisibility(false)
     }
 
     private fun dismissProgressBar() {
