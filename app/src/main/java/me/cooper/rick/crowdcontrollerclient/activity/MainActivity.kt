@@ -249,15 +249,15 @@ class MainActivity : AppActivity(),
 
     /* GROUP FRAGMENT LISTENER */
 
-    override fun onListItemContextMenuSelection(dto: GroupMemberDto, menuItem: MenuItem) {
+    override fun onListItemContextMenuSelection(groupMember: GroupMemberDto, menuItem: MenuItem) {
         val (stringId, listener) = when (menuItem.itemId) {
             R.id.action_remove_member -> Pair(R.string.txt_confirm_remove_group_member,
-                    dialogOnClickListener({ removeGroupMember(dto.id) }))
+                    dialogOnClickListener({ removeGroupMember(groupMember.id) }))
             R.id.action_promote_admin -> Pair(R.string.txt_confirm_promote_group_member,
-                    dialogOnClickListener({ promoteToAdmin(dto) }))
+                    dialogOnClickListener({ promoteToAdmin(groupMember) }))
             else -> throw NotImplementedError("this menu option doesn't exist")
         }
-        showConfirmDialog(dto.username, stringId, listener)
+        showConfirmDialog(groupMember.username, stringId, listener)
     }
 
     override fun onInviteCancellation(groupMember: GroupMemberDto) {

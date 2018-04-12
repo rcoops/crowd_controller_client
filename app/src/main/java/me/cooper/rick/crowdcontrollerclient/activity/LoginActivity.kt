@@ -24,7 +24,6 @@ import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.Token
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
-import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
@@ -58,11 +57,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         setListeners()
 
         requestLocationPermissions()
-    }
-
-    override fun onDestroy() {
-        App.refWatcher.watch(this)
-        super.onDestroy()
     }
 
     /**

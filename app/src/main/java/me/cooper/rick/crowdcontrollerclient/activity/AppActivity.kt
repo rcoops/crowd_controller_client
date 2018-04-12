@@ -23,10 +23,10 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
-import me.cooper.rick.crowdcontrollerclient.App
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
@@ -35,8 +35,6 @@ import kotlin.reflect.KClass
 
 abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
 
-    protected var app: App? = null
-
     private val dialogs = mutableListOf<AlertDialog>()
 
     protected var userClient: UserClient? = null
@@ -44,13 +42,12 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        app = applicationContext as App
         initClients()
     }
 
     override fun onResume() {
         super.onResume()
-        App.currentActivity = this
+        ApiService.setActivity(this)
     }
 
     override fun onPause() {
@@ -60,7 +57,7 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
 
     override fun onDestroy() {
         clearReferences()
-        App.refWatcher.watch(this)
+
         super.onDestroy()
     }
 
@@ -220,7 +217,9 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
     }
 
     private fun clearReferences() {
-        if (this == App.currentActivity) App.currentActivity = null
+        if (ApiService.currentActivity.get() == this) {
+            ApiService.setActivity(null)
+        }
     }
 
     inner class APIError(private val apiErrorDto: APIErrorDto,
