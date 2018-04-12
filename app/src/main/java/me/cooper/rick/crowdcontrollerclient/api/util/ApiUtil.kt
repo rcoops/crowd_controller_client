@@ -3,8 +3,8 @@ package me.cooper.rick.crowdcontrollerclient.api.util
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_DESCRIPTION
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto.Companion.DEFAULT_ERROR
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.BAD_REQUEST
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
+import me.cooper.rick.crowdcontrollerclient.api.constants.HttpStatus.Companion.BAD_REQUEST
+import me.cooper.rick.crowdcontrollerclient.api.constants.HttpStatus.Companion.SERVICE_UNAVAILABLE
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import okhttp3.MediaType.parse
 import okhttp3.ResponseBody

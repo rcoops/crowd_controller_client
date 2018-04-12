@@ -22,12 +22,11 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
+import me.cooper.rick.crowdcontrollerclient.api.constants.BASE_WS_URL
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.refreshGroupDetails
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
-import me.cooper.rick.crowdcontrollerclient.constants.BASE_URL
-import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
@@ -43,16 +42,6 @@ import kotlin.reflect.KClass
 
 
 class UpdateService : Service(), OnSharedPreferenceChangeListener {
-    private val spec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-            .tlsVersions(TlsVersion.TLS_1_2)
-            .cipherSuites(
-                    CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                    CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                    CipherSuite.TLS_DHE_RSA_WITH_AES_128_GCM_SHA256)
-            .build()
-    private val httpClient = OkHttpClient.Builder()
-            .connectionSpecs(listOf(spec))
-            .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
 
     private val binder = LocalBinder()
 
@@ -86,7 +75,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
         userClient = createService(UserClient::class, getToken())
         stompClient = Stomp.over(WebSocket::class.java,
-                "ws://$BASE_URL/chat/websocket", null, null)//httpClient.build())
+                "$BASE_WS_URL/chat/websocket")
         openUserSocket()
 
         return binder

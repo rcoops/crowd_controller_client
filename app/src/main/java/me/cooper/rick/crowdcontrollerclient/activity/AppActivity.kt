@@ -28,7 +28,7 @@ import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
-import me.cooper.rick.crowdcontrollerclient.constants.HttpStatus
+import me.cooper.rick.crowdcontrollerclient.api.constants.HttpStatus
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import retrofit2.Response
 import kotlin.reflect.KClass

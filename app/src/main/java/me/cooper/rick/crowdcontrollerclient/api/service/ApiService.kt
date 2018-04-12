@@ -10,7 +10,6 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
-import me.cooper.rick.crowdcontrollerclient.activity.MainActivity.Companion.BACK_STACK_ROOT_TAG
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
@@ -159,12 +158,7 @@ object ApiService {
     }
 
     private fun setNoGroup() {
-        group = null
-        (currentActivity.get() as? MainActivity)?.apply {
-            supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
-            getFriends()
-            setAdminVisibility(false)
-        }
+        (currentActivity.get() as? MainActivity)?.apply { setNoGroup() }
     }
 
     private fun updateGroupMembers(groupMembers: List<GroupMemberDto>) {

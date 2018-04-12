@@ -1,8 +1,5 @@
-package me.cooper.rick.crowdcontrollerclient.constants
+package me.cooper.rick.crowdcontrollerclient.api.constants
 
-/**
- * Created by rick on 23/02/18.
- */
 class HttpStatus private constructor() {
 
     companion object {

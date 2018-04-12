@@ -59,7 +59,7 @@ dependencies {
     implementation "io.reactivex.rxjava2:rxandroid:$rx_version"
     implementation "io.reactivex.rxjava2:rxkotlin:$rx_version"
 
-    implementation ('me.cooper.rick:crowd-controller-api:1.0-SNAPSHOT') {
+    implementation ('me.cooper.rick:crowd-controller-api:1.0') {
         exclude group: 'org.jetbrains.kotlin'
     }
 
