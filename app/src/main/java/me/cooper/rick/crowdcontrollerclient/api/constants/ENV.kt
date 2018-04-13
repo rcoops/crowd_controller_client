@@ -18,18 +18,26 @@ sealed class Environment {
 
 class Dev : Environment() {
 
-    override val host: String = "rickcooper.ddns.net"
-    override val restProtocol: String = "http"
-    override val websocketProtocol: String = "ws"
-    override val port: String = "8080"
+    override val host: String
+        get() = "rickcooper.ddns.net"
+    override val restProtocol: String
+        get() = "http"
+    override val websocketProtocol: String
+        get() = "ws"
+    override val port: String
+        get() = "8080"
 
 }
 
 class Prod : Environment() {
 
-    override val host: String = "crowdcontroller.ddns.net"
-    override val restProtocol: String = "https"
-    override val websocketProtocol: String = "wss"
-    override val port: String = "8443"
+    override val host: String
+        get() = "crowdcontroller.ddns.net"
+    override val restProtocol: String
+        get() = "https"
+    override val websocketProtocol: String
+        get() = "wss"
+    override val port: String
+        get() = "8443"
 
 }
