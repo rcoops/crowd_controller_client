@@ -30,8 +30,7 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
-import okhttp3.*
-import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.WebSocket
 import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
