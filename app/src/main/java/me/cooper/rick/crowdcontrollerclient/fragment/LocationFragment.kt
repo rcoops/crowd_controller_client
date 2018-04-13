@@ -7,14 +7,16 @@ import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
@@ -33,6 +35,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         root = view
         view.map.onCreate(savedInstanceState)//.getMapAsync(this)
         (view.map as MapView).getMapAsync(this)
+
         try {
             MapsInitializer.initialize(this.activity)
         } catch (e: GooglePlayServicesNotAvailableException) {
@@ -43,9 +46,6 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     }
 
     override fun onResume() {
-        val mapParams = root.map.layoutParams
-        mapParams.height = mapParams.width
-        root.map.layoutParams = mapParams
         super.onResume()
         root.map.onResume()
     }
@@ -73,26 +73,37 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap?) {
         googleMap = map
-        updateView(group?.location)
+        updateView(group)
     }
 
     override fun getTitle(): String = TITLE
-
-    fun updateView(locationDto: LocationDto?) {
-        locationDto?.let {
+    
+    fun updateView(groupDto: GroupDto?) {
+        groupDto?.location?.let { locationDto ->
             if (locationDto.hasLocation()) {
-                it.latitude?.let { txt_latitude?.text = "$it" }
-                it.longitude?.let { txt_longitude?.text = "$it" }
-                googleMap?.let { updateMap(locationDto) }
+                locationDto.address?.let { txt_address.text = parseAddress(it) }
+                googleMap?.let { updateMap(locationDto, groupDto.settings?.clustering ?: false) }
             }
         }
     }
 
-    private fun updateMap(locationDto: LocationDto) {
+    private fun parseAddress(address: String): String {
+        return address.replace(", ", ",\n")
+    }
+
+    private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
         val here = LatLng(locationDto.latitude!!, locationDto.longitude!!)
         tempMarker?.remove()
-        tempMarker = googleMap?.addMarker(MarkerOptions().position(here))
+        val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_GREEN else HUE_RED)
+        tempMarker = googleMap?.addMarker(
+                MarkerOptions().position(here)
+                        .icon(bitmapDescriptor)
+        )
         googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(here, 17.0f))
+        val mapParams = root.map.layoutParams
+        mapParams.height = root.map.measuredWidth
+        root.map.layoutParams = mapParams
+        root.map.invalidate()
     }
 
     interface OnFragmentInteractionListener

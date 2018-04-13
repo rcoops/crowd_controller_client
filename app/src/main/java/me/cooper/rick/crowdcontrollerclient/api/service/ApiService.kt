@@ -157,7 +157,7 @@ object ApiService {
         val currentFragment = currentActivity.get()?.supportFragmentManager?.findFragmentById(R.id.content_main)
         when (currentFragment) {
             is GroupFragment -> currentFragment.updateGroup(dto)
-            is LocationFragment -> currentFragment.updateView(dto.location)
+            is LocationFragment -> currentFragment.updateView(dto)
         }
         (currentActivity.get() as? MainActivity)?.setAdminVisibility(getUserId() == group?.adminId)
         getFriends()

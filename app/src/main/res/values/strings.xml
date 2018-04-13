@@ -56,7 +56,7 @@
     <string name="jwt_client_secret">IKUJENFiewf8124ensdcfwfSDF</string>
     <string name="jwt_grant_type">password</string>
 
-    <string name="txt_coordinates_default">Waiting for co-ordinates&#8230;</string>
+    <string name="txt_location_waiting">Waiting for location update&#8230;</string>
     <string name="title_activity_test">TestActivity</string>
     <string name="title_activity_auth">AuthActivity</string>
     <string name="header_register">Register</string>

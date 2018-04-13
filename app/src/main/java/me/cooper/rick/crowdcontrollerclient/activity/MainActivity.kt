@@ -354,7 +354,7 @@ class MainActivity : AppActivity(),
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
             }
             is LocationFragment -> {
-                fragment.updateView(group?.location)
+                fragment.updateView(group)
                 fab.setOnClickListener(null)
                 fab.visibility = View.GONE
                 nav_view.menu.setGroupVisible(R.id.nav_group_friend, false)
