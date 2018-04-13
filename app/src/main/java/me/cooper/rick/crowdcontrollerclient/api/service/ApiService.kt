@@ -90,6 +90,12 @@ object ApiService {
                 .call(consumer, errorConsumer!!)
     }
 
+    fun acceptGroupInvite(groupId: Long, consumer: (GroupDto) -> Unit) {
+        groupClient()
+                .acceptInvite(groupId, getUserId())
+                .call(consumer, errorConsumer!!)
+    }
+
     fun removeGroup(consumer: () -> Unit) {
         group?.let { groupClient().remove(it.id).call(consumer, errorConsumer!!) }
     }

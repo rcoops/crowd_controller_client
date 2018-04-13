@@ -96,4 +96,6 @@
     <string name="image_leader_icon">Group Admin</string>
     <string name="txt_me">Me</string>
     <string name="hdr_fragment_registration">Registration</string>
+    <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
+    <string name="action_accept_grp_invite">Accept</string>
 </resources>

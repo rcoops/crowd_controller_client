@@ -35,7 +35,7 @@
             android:title="@string/action_location_view" />
         <item
             android:id="@+id/nav_group_leave"
-            android:icon="@drawable/ic_location"
+            android:icon="@drawable/ic_cancel"
             android:title="@string/action_leave_group" />
     </group>
     <!-- on group update -->

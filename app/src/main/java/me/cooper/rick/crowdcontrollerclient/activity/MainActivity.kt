@@ -6,8 +6,11 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
 import android.support.design.widget.NavigationView
+import android.support.design.widget.Snackbar
+import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.view.GravityCompat
@@ -27,6 +30,8 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.createGroup
@@ -122,7 +127,8 @@ class MainActivity : AppActivity(),
             drawer_layout.isDrawerOpen(GravityCompat.START) -> {
                 drawer_layout.closeDrawer(GravityCompat.START)
             }
-            isRootFragment() -> { /* Do nothing if root */ }
+            isRootFragment() -> { /* Do nothing if root */
+            }
             else -> super.onBackPressed()
         }
     }
@@ -293,6 +299,29 @@ class MainActivity : AppActivity(),
         nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
     }
 
+    override fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String) {
+        val notification = Snackbar.make(
+                content,
+                getString(R.string.txt_pending_grp_invite, groupAdmin),
+                LENGTH_INDEFINITE
+        ).apply {
+            setAction(R.string.action_accept_grp_invite, { _ ->
+                acceptGroupInvite(groupId, {
+                    updateService?.hasPendingGroupInvite = false
+                    createGroup(it)
+                })
+            })
+            view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {}
+
+                override fun onViewDetachedFromWindow(v: View) {
+                    updateService?.hasPendingGroupInvite = false
+                }
+            })
+        }
+        notification.show()
+    }
+
     fun dismissAfterTask() {
         dismissProgressBar()
         dismissDialogs()
@@ -390,7 +419,7 @@ class MainActivity : AppActivity(),
         nav_view.menu.setGroupVisible(R.id.nav_group_grouped, true)
     }
 
-    private fun setNoGroup() {
+    fun setNoGroup() {
         group = null
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
         getFriends()

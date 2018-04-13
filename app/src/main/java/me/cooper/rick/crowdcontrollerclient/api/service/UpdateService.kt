@@ -56,6 +56,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private var latestGroupId: Long? = null
 
+    var hasPendingGroupInvite = false
+
     private val locationRequest = LocationRequest.create().apply {
         interval = SECONDS.toMillis(10)
         fastestInterval = SECONDS.toMillis(10)
@@ -199,7 +201,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun resubscribe() {
-        reconnectTimer.schedule({ openUserSocket() }, SECONDS.toMillis(10), SECONDS.toMillis(5))
+        reconnectTimer.schedule({ openUserSocket() }, SECONDS.toMillis(1), SECONDS.toMillis(3))
     }
 
     @SuppressLint("MissingPermission")
@@ -223,6 +225,10 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
             scheduleGroupRequest(userDto.group!!)
             getUser(userDto.id)
         }
+        if (userDto.group != null && !userDto.groupAccepted && !hasPendingGroupInvite) {
+            listener?.notifyUserOfGroupInvite(userDto.group!!, userDto.groupAdmin!!)
+            hasPendingGroupInvite = true
+        }
         latestGroupId = userDto.group
     }
 
@@ -244,6 +250,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     interface UpdateServiceListener {
         fun updateNavMenu(isGrouped: Boolean)
         fun requestPermissions()
+        fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String)
         fun handleApiException(e: Throwable)
     }
 

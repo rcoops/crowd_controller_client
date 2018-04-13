@@ -10,7 +10,7 @@ private const val DEV_REST_URL = "$DEV_PROTOCOL://$DEV_HOST:$DEV_PORT"
 private const val PROD_WS_URL = "wss://$PROD_HOST:$PROD_PORT"
 private const val DEV_WS_URL = "ws://$DEV_HOST:$DEV_PORT"
 
-private const val isProd = true
+private const val isProd = false
 
 val BASE_REST_URL = if (isProd) PROD_REST_URL else DEV_REST_URL
 val BASE_WS_URL = if (isProd) PROD_WS_URL else DEV_WS_URL
