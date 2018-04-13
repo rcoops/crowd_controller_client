@@ -363,7 +363,6 @@ class MainActivity : AppActivity(),
                 .setMultiChoiceItems(unGroupedNames, null,
                         selectFriends(unGroupedNames, selectedIds))
                 .setPositiveButton(android.R.string.ok, { _, _ ->
-                    dismissDialogs()
                     startTask { consumer(selectedIds) }
                 })
                 .show())
@@ -389,7 +388,6 @@ class MainActivity : AppActivity(),
         refreshGroupDetails(it)
         addFragmentOnTop(GroupFragment())
         nav_view.menu.setGroupVisible(R.id.nav_group_grouped, true)
-        dismissDialogs()
     }
 
     private fun setNoGroup() {
