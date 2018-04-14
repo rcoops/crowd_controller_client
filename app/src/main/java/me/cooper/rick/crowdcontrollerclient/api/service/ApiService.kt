@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
@@ -136,6 +137,12 @@ object ApiService {
         return { _, i, checked ->
             val friend = friends.find { it.username == unGroupedNames[i] }!!
             selectedFriends.apply { if (checked) add(friend) else remove(friend) }
+        }
+    }
+
+    fun updateGroupSettings(groupSettingsDto: GroupSettingsDto) {
+        group?.let {
+            groupClient().updateSettings(it.id, groupSettingsDto).call({}, errorConsumer!!)
         }
     }
 

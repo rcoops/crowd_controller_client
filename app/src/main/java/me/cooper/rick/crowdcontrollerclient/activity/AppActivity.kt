@@ -29,6 +29,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
@@ -188,9 +189,20 @@ abstract class AppActivity : AppCompatActivity(),
                     shouldVibrate = sharedPreferences.getBoolean(PREF_TOG_VIBRATE, false)
                     vibrate(VibratePattern.CLICK)
                 }
-
+                PREF_TOG_CLUSTERING, PREF_CLUSER_MIN_PERCENT, PREF_CLUSER_MIN_RADIUS -> {
+                    updateGroupSettings(sharedPreferences)
+                }
             }
         }
+    }
+
+    private fun updateGroupSettings(sharedPreferences: SharedPreferences) {
+        val settings = GroupSettingsDto(
+                sharedPreferences.getBoolean(PREF_TOG_CLUSTERING, true),
+                sharedPreferences.getInt(PREF_CLUSER_MIN_RADIUS, 50).toDouble(),
+                sharedPreferences.getInt(PREF_CLUSER_MIN_PERCENT, 50) / 100.0
+        )
+        ApiService.updateGroupSettings(settings)
     }
 
     protected fun playSound(key: String) {
@@ -326,6 +338,9 @@ abstract class AppActivity : AppCompatActivity(),
         private const val REQUEST_FINE_LOCATION = 2
         private const val PREF_VOL_EFFECTS = "pref_volume_effects"
         private const val PREF_TOG_VIBRATE = "pref_toggle_vibrate"
+        private const val PREF_TOG_CLUSTERING = "pref_grp_clustering_toggle"
+        private const val PREF_CLUSER_MIN_PERCENT = "pref_grp_clustering_min_percentage"
+        private const val PREF_CLUSER_MIN_RADIUS = "pref_grp_clustering_min_distance"
         private const val DEFAULT_VOLUME = 5
         const val SOUND_DING = "ding"
         const val SOUND_CLICK = "click"

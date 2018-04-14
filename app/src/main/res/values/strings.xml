@@ -80,6 +80,8 @@
     <string name="txt_confirm_accept_friend">Accept friend request from %1$s?</string>
     <string name="hdr_registration_successful">Registration Successful!</string>
     <string name="txt_registration_successful">Please log in to continue.</string>
+    <string name="hdr_settings_change_successful">Settings Updated!</string>
+    <string name="txt_settings_change_successful">Group settings have now been updated</string>
     <string name="txt_awaiting_friend_accept">Waiting for friend to accept&#8230;</string> <!-- &#8230; = ... -->
     <string name="txt_awaiting_group_accept">Waiting for group invite confirmation&#8230;</string>
     <string name="txt_to_accept_friend_request">Hold to accept or confirm</string>
@@ -104,4 +106,9 @@
     <string name="pref_sound_effects">Effects Volume</string>
     <string name="pref_vib_title">Vibrate Settings</string>
     <string name="pref_vib_toggle">Toggle Vibration</string>
+    <string name="pref_grp_clustering_toggle_title">Toggle Group Clustering</string>
+    <string name="pref_grp_clustering_toggle">Clustering</string>
+    <string name="pref_grp_clustering_title">Cluster Settings</string>
+    <string name="pref_grp_clustering_min_percentage">Min % of Group for Cluster</string>
+    <string name="pref_grp_clustering_min_distance">Min Cluster Radius (metres)</string>
 </resources>

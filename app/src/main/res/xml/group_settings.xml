@@ -1,20 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:asp="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-        android:title="@string/pref_sound_title">
-        <android.support.v7.preference.SeekBarPreference
-            android:key="pref_volume_effects"
-            android:title="@string/pref_sound_effects"
-            android:min="50"
-            android:defaultValue="80"
-            android:max="100" />
+        android:title="@string/pref_grp_clustering_toggle_title">
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:id="@+id/tog_cluster"
+            android:key="pref_grp_clustering_toggle"
+            android:title="@string/pref_grp_clustering_toggle"
+            android:defaultValue="true" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:title="@string/pref_vib_title">
-        <android.support.v7.preference.SwitchPreferenceCompat
-            android:id="@+id/tog_vib"
-            android:key="pref_toggle_vibrate"
-            android:title="@string/pref_vib_toggle"
-            android:defaultValue="true" />
+        android:dependency="pref_grp_clustering_toggle"
+        android:title="@string/pref_grp_clustering_title">
+        <android.support.v7.preference.SeekBarPreference
+            android:id="@+id/seek_percentage"
+            android:key="pref_grp_clustering_min_percentage"
+            android:title="@string/pref_grp_clustering_min_percentage"
+            asp:min="50"
+            android:defaultValue="80"
+            android:max="100" />
+        <android.support.v7.preference.SeekBarPreference
+            android:id="@+id/seek_distance"
+            android:key="pref_grp_clustering_min_distance"
+            android:title="@string/pref_grp_clustering_min_distance"
+            asp:min="10"
+            android:defaultValue="50"
+            android:max="100" />
     </PreferenceCategory>
 </PreferenceScreen>
