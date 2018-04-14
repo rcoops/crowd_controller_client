@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
 import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
@@ -26,11 +25,13 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
+import me.cooper.rick.crowdcontrollerclient.R.id.*
+import me.cooper.rick.crowdcontrollerclient.activity.AppActivity.Companion.SOUND_DING
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
@@ -49,12 +50,15 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
+import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.settings.GroupSettingsFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.settings.SettingsFragment
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -95,8 +99,7 @@ class MainActivity : AppActivity(),
 
         drawer_layout.addDrawerListener(
                 ActionBarDrawerToggle(this, drawer_layout, toolbar,
-                        R.string.navigation_drawer_open, R.string.navigation_drawer_close)
-                        .apply { syncState() }
+                        R.string.navigation_drawer_open, R.string.navigation_drawer_close).apply { syncState() }
         )
 
         nav_view.setNavigationItemSelectedListener(this)
@@ -152,6 +155,7 @@ class MainActivity : AppActivity(),
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        playClick()
         when (item.itemId) {
             R.id.nav_add_friend -> showAddFriendDialog()
             R.id.nav_create_group -> showFriendSelectorDialog(getUnGroupedFriendNames(),
@@ -164,12 +168,9 @@ class MainActivity : AppActivity(),
             }
             R.id.nav_location -> startTask { addFragmentOnTop(LocationFragment()) }
             R.id.nav_group_leave -> startTask { removeGroupMember(getUserId(), { setNoGroup() }) }
-            R.id.nav_clustering_toggle -> {
-
-            }
+            R.id.nav_group_settings -> addFragmentOnTop(GroupSettingsFragment())
             R.id.nav_group_close -> removeGroup({ setNoGroup() })
-            R.id.nav_settings -> {
-            }
+            R.id.nav_settings -> addFragmentOnTop(SettingsFragment())
             R.id.nav_sign_out -> startTask {
                 editAppDetails { clear() }
                 startActivity(LoginActivity::class)
@@ -224,10 +225,11 @@ class MainActivity : AppActivity(),
 
     override fun onListItemContextMenuSelection(dto: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
-            R.id.action_remove_friend -> {
-                showConfirmDialog(dto.username, R.string.txt_confirm_remove_friend,
-                        removeFriendListener(dto))
-            }
+            R.id.action_remove_friend -> showConfirmDialog(
+                    dto.username,
+                    R.string.txt_confirm_remove_friend,
+                    removeFriendListener(dto)
+            )
             R.id.action_add_to_group -> if (dto.isGrouped()) {
                 showGroupedPopup(dto)
             } else {
@@ -277,8 +279,8 @@ class MainActivity : AppActivity(),
 
     /* SERVICE LISTENER */
 
-    override fun updateNavMenu(isGrouped: Boolean) {
-        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, isGrouped)
+    override fun updateNavMenu(isGrouped: Boolean, hasAccepted: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, isGrouped && hasAccepted)
         nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !isGrouped)
     }
 
@@ -294,10 +296,6 @@ class MainActivity : AppActivity(),
     }
 
     override fun requestPermissions() = requestLocationPermissions()
-
-    fun setAdminVisibility(isAdmin: Boolean) {
-        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
-    }
 
     override fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String) {
         val notification = Snackbar.make(
@@ -320,6 +318,17 @@ class MainActivity : AppActivity(),
             })
         }
         notification.show()
+        playSound(SOUND_DING)
+        vibrate(VibratePattern.NOTIFICATION)
+    }
+
+    override fun notifyOfGroupExpiry(dto: APIErrorDto) {
+        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
+        showDismissiblePopup(dto.error, dto.errorDescription, null)
+    }
+
+    fun setAdminVisibility(isAdmin: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
     }
 
     fun dismissAfterTask() {
@@ -446,7 +455,7 @@ class MainActivity : AppActivity(),
     private fun removeFriendListener(dto: FriendDto) = dialogOnClickListener { removeFriend(dto) }
 
     private fun dialogOnClickListener(func: () -> Unit): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ -> startTask(func) }
+        return DialogInterface.OnClickListener { _, _ -> playClick(); startTask(func) }
     }
 
 }

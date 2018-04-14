@@ -10,8 +10,12 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.SoundPool
 import android.os.Build
 import android.os.Bundle
+import android.os.Vibrator
 import android.support.design.widget.Snackbar
 import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
 import android.support.v4.app.ActivityCompat.requestPermissions
@@ -19,30 +23,58 @@ import android.support.v4.app.ActivityCompat.shouldShowRequestPermissionRational
 import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.preference.PreferenceManager
+import android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences
 import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.GroupClient
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
 import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.api.constants.HttpStatus
+import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
+import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import retrofit2.Response
 import kotlin.reflect.KClass
 
-abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
+abstract class AppActivity : AppCompatActivity(),
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        AbstractAppFragment.FragmentListenerInterface {
 
     private val dialogs = mutableListOf<AlertDialog>()
 
     protected var userClient: UserClient? = null
     protected var groupClient: GroupClient? = null
 
+    private lateinit var soundPool: SoundPool
+
+    private var shouldVibrate: Boolean = false
+
+    private val sounds = mutableMapOf<String, Int>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initClients()
+
+        initPreferences()
+    }
+
+    private fun initPreferences() {
+        PreferenceManager.setDefaultValues(this, R.xml.settings, false)
+
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        shouldVibrate = preferences.getBoolean(getString(R.string.pref_toggle_vibrate), false)
+        preferences.registerOnSharedPreferenceChangeListener(this)
+
+        soundPool = if (isVersionOrGreater(Build.VERSION_CODES.LOLLIPOP)) buildSoundPoolLollipop() else buildSoundPoolBase()
+        addSound(SOUND_DING, R.raw.ding)
+        addSound(SOUND_CLICK, R.raw.click)
+        addSound(SOUND_NEGATIVE, R.raw.negative)
     }
 
     override fun onResume() {
@@ -59,6 +91,36 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
         clearReferences()
 
         super.onDestroy()
+    }
+
+    protected fun addSound(key: String, rawSoundId: Int) {
+        sounds[key] = soundPool.load(this, rawSoundId, 1)
+    }
+
+    protected fun isVersionOrGreater(versionCode: Int): Boolean {
+        return Build.VERSION.SDK_INT >= versionCode
+    }
+
+    override fun playClick() {
+        playSound(SOUND_CLICK)
+        vibrate(VibratePattern.CLICK)
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun buildSoundPoolLollipop(): SoundPool {
+        return SoundPool.Builder()
+                .setAudioAttributes(AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .build())
+                .setMaxStreams(1)
+                .build()
+    }
+
+
+    @TargetApi(Build.VERSION_CODES.BASE)
+    private fun buildSoundPoolBase(): SoundPool {
+        return SoundPool(1, AudioManager.STREAM_MUSIC, 0)
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
@@ -119,7 +181,54 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
         sharedPreferences?.let {
             when (key) {
                 getString(R.string.token) -> initClients()
+                getString(R.string.pref_volume_effects) -> {
+                    setSoundVolume(getVolumeSetting(sharedPreferences, key!!))
+                    playSound(SOUND_DING)
+                }
+                getString(R.string.pref_toggle_vibrate) -> {
+                    shouldVibrate = sharedPreferences.getBoolean(key, false)
+                    vibrate(VibratePattern.CLICK)
+                }
+                getString(R.string.pref_grp_clustering_toggle),
+                getString(R.string.pref_grp_clustering_min_percentage),
+                getString(R.string.pref_grp_clustering_min_distance),
+                getString(R.string.pref_grp_lifetime) -> {
+                    updateGroupSettings(sharedPreferences)
+                }
             }
+        }
+    }
+
+    private fun updateGroupSettings(sharedPreferences: SharedPreferences) {
+        val settings = GroupSettingsDto(
+                sharedPreferences.getBoolean(getString(R.string.pref_grp_clustering_toggle), true),
+                sharedPreferences.getInt(getString(R.string.pref_grp_clustering_min_distance), 50).toDouble(),
+                sharedPreferences.getInt(getString(R.string.pref_grp_clustering_min_percentage), 50) / 100.0,
+                sharedPreferences.getInt(getString(R.string.pref_grp_lifetime), 12)
+        )
+        ApiService.updateGroupSettings(settings)
+    }
+
+    protected fun playSound(key: String) {
+        val volume = getVolumeSetting(getDefaultSharedPreferences(this), getString(R.string.pref_volume_effects))
+        sounds[key]?.let { soundPool.play(it, volume, volume, 1, 0, 1f) }
+    }
+
+    private fun getVolumeSetting(preferences: SharedPreferences, tag: String): Float {
+        return preferences.getInt(tag, DEFAULT_VOLUME) / 10.0f
+    }
+
+    private fun setSoundVolume(volume: Float) {
+        sounds.keys.forEach { setEffectVolume(it, volume) }
+    }
+
+    private fun setEffectVolume(tag: String, volume: Float) {
+        sounds[tag]?.let { soundPool.setVolume(it, volume, volume) }
+    }
+
+    protected fun vibrate(pattern: VibratePattern) {
+        if (shouldVibrate) {
+            (getSystemService(VIBRATOR_SERVICE) as? Vibrator)?.vibrate(pattern.pattern, -1)
         }
     }
 
@@ -231,6 +340,10 @@ abstract class AppActivity : AppCompatActivity(), SharedPreferences.OnSharedPref
 
     companion object {
         private const val REQUEST_FINE_LOCATION = 2
+        private const val DEFAULT_VOLUME = 5
+        const val SOUND_DING = "ding"
+        const val SOUND_CLICK = "click"
+        const val SOUND_NEGATIVE = "negative"
     }
 
 }

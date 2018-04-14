@@ -4,6 +4,7 @@ import io.reactivex.Completable
 import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
+import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
 import retrofit2.http.*
 
 interface GroupClient {
@@ -20,6 +21,10 @@ interface GroupClient {
     @PUT("$BASE_PATH/{groupId}")
     fun update(@Path("groupId") groupId: Long,
                @Body groupDto: GroupDto): Observable<GroupDto>
+
+    @PUT("$BASE_PATH/{groupId}/settings")
+    fun updateSettings(@Path("groupId") groupId: Long,
+               @Body groupSettingsDto: GroupSettingsDto): Observable<GroupDto>
 
     @PATCH("$BASE_PATH/{groupId}/members/{userId}")
     fun acceptInvite(@Path("groupId") groupId: Long,

@@ -11,12 +11,14 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
@@ -131,7 +133,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
         getUser(userId)
 
-        if (!stompClient.isConnected) connectStompClient()
+        if (!stompClient.isConnected && !stompClient.isConnecting) connectStompClient()
 
         clearReconnectTimer()
         subscribeToUserUpdates(userId)
@@ -160,14 +162,21 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (userDto.group != null && userDto.group != group?.id) {
             userDto.group.let { getGroup(it) }
         }
-        listener?.updateNavMenu(userDto.group != null)
+        listener?.updateNavMenu(userDto.group != null, userDto.groupAccepted)
     }
 
     private fun subscribeToGroupUpdates(groupId: Long) {
         stompClient.topic("/topic/group/$groupId")
+                .takeUntil { latestGroupId == null }
                 .customSubscribe({
-                    Log.d(TAG, "Received " + it.payload)
-                    refreshGroupDetails(jackson.readValue(it, GroupDto::class))
+                    Log.d(TAG, "Received group update: " + it.payload)
+                    try {
+                        refreshGroupDetails(jackson.readValue(it, GroupDto::class))
+                    } catch (e: UnrecognizedPropertyException) {
+                        val dto = jackson.readValue(it, APIErrorDto::class)
+                        ApiService.refreshGroupDetails(null)
+                        listener?.notifyOfGroupExpiry(dto)
+                    }
                 })
     }
 
@@ -219,10 +228,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun adjustGroup(userDto: UserDto) {
         if (userDto.group == null) {
-            unScheduleGroupRequest()
+            unscheduleLocationUpdates()
         } else if (latestGroupId != userDto.group) {
             scheduleGroupRequest(userDto.group!!)
-            getUser(userDto.id)
         }
         if (userDto.group != null && !userDto.groupAccepted && !hasPendingGroupInvite) {
             listener?.notifyUserOfGroupInvite(userDto.group!!, userDto.groupAdmin!!)
@@ -236,10 +244,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         subscribeToLocationUpdates()
     }
 
-    private fun unScheduleGroupRequest() {
+    private fun unscheduleLocationUpdates() {
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
         fusedLocationProviderClient = null
-        stompClient.disconnect()
     }
 
     inner class LocalBinder : Binder() {
@@ -247,10 +254,11 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     interface UpdateServiceListener {
-        fun updateNavMenu(isGrouped: Boolean)
+        fun updateNavMenu(isGrouped: Boolean, hasAccepted: Boolean)
         fun requestPermissions()
         fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String)
         fun handleApiException(e: Throwable)
+        fun notifyOfGroupExpiry(dto: APIErrorDto)
     }
 
     companion object {

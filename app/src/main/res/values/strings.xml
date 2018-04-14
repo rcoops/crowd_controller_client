@@ -42,6 +42,7 @@
 
     <string name="action_create_group">Create Group</string>
     <string name="action_new_friend">Add Friend</string>
+    <string name="action_grp_settings">Group Settings</string>
     <string name="action_settings">Settings</string>
     <string name="action_sign_out">Sign Out</string>
     <string name="header_app_menu">App</string>
@@ -79,6 +80,8 @@
     <string name="txt_confirm_accept_friend">Accept friend request from %1$s?</string>
     <string name="hdr_registration_successful">Registration Successful!</string>
     <string name="txt_registration_successful">Please log in to continue.</string>
+    <string name="hdr_settings_change_successful">Settings Updated!</string>
+    <string name="txt_settings_change_successful">Group settings have now been updated</string>
     <string name="txt_awaiting_friend_accept">Waiting for friend to accept&#8230;</string> <!-- &#8230; = ... -->
     <string name="txt_awaiting_group_accept">Waiting for group invite confirmation&#8230;</string>
     <string name="txt_to_accept_friend_request">Hold to accept or confirm</string>
@@ -98,4 +101,22 @@
     <string name="hdr_fragment_registration">Registration</string>
     <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
     <string name="action_accept_grp_invite">Accept</string>
+
+    <string name="pref_hdr_sound">Sound Settings</string>
+    <string name="pref_txt_sound">Effects Volume</string>
+    <string name="pref_hdr_vib">Vibrate Settings</string>
+    <string name="pref_txt_vib">Toggle Vibration</string>
+    <string name="pref_hdr_grp">Group Settings</string>
+    <string name="pref_txt_grp_clustering_toggle">Toggle Clustering</string>
+    <string name="pref_hdr_grp_clustering">Cluster Settings</string>
+    <string name="pref_txt_grp_clustering_min_percentage">Min % of Group for Cluster</string>
+    <string name="pref_txt_grp_clustering_min_distance">Min Cluster Radius (metres)</string>
+    <string name="pref_txt_grp_lifetime">Group lifetime (hours)</string>
+
+    <string name="pref_volume_effects">pref_volume_effects</string>
+    <string name="pref_toggle_vibrate">pref_toggle_vibrate</string>
+    <string name="pref_grp_clustering_toggle">pref_grp_clustering_toggle</string>
+    <string name="pref_grp_clustering_min_percentage">pref_grp_clustering_min_percentage</string>
+    <string name="pref_grp_lifetime">pref_grp_lifetime</string>
+    <string name="pref_grp_clustering_min_distance">pref_grp_clustering_min_distance</string>
 </resources>

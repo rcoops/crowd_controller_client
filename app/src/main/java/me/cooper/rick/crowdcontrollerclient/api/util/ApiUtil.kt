@@ -17,6 +17,7 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 
 const val BAD_PASSWORD = "Password Incorrect"
+const val FAILED_VALIDATION = "Failed Validation"
 const val BAD_USERNAME = "Username Incorrect"
 
 private const val BAD_USERNAME_INCOMING_ERROR = "unauthorized"

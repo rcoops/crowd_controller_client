@@ -136,7 +136,7 @@
             </android.support.design.widget.TextInputLayout>
 
             <Button
-                android:id="@+id/btnRegisterAccount"
+                android:id="@+id/btn_register_account"
                 style="@style/AppTheme.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
