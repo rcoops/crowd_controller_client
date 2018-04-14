@@ -173,13 +173,13 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         var cancel = false
         var focusView: View? = null
 
-        if (!TextUtils.isEmpty(passwordStr) && !isPasswordValid(passwordStr)) {
+        if (!isPasswordValid(passwordStr)) {
             password.error = getString(R.string.error_invalid_password)
             focusView = password
             cancel = true
         }
 
-        if (TextUtils.isEmpty(usernameStr)) {
+        if (usernameStr.isBlank()) {
             username.error = getString(R.string.error_field_required)
             focusView = username
             cancel = true
