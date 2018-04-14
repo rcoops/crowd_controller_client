@@ -1,6 +1,6 @@
 package me.cooper.rick.crowdcontrollerclient.api.constants
 
-val environment: Environment = Dev()
+val environment: Environment = Prod()
 
 val BASE_REST_URL = environment.restUrl
 val BASE_WS_URL = environment.websocketUrl

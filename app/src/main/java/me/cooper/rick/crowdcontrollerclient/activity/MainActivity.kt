@@ -30,6 +30,8 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.R.id.*
+import me.cooper.rick.crowdcontrollerclient.activity.AppActivity.Companion.SOUND_DING
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
@@ -97,8 +99,7 @@ class MainActivity : AppActivity(),
 
         drawer_layout.addDrawerListener(
                 ActionBarDrawerToggle(this, drawer_layout, toolbar,
-                        R.string.navigation_drawer_open, R.string.navigation_drawer_close)
-                        .apply { syncState() }
+                        R.string.navigation_drawer_open, R.string.navigation_drawer_close).apply { syncState() }
         )
 
         nav_view.setNavigationItemSelectedListener(this)
@@ -224,10 +225,11 @@ class MainActivity : AppActivity(),
 
     override fun onListItemContextMenuSelection(dto: FriendDto, menuItem: MenuItem) {
         when (menuItem.itemId) {
-            R.id.action_remove_friend -> {
-                showConfirmDialog(dto.username, R.string.txt_confirm_remove_friend,
-                        removeFriendListener(dto))
-            }
+            R.id.action_remove_friend -> showConfirmDialog(
+                    dto.username,
+                    R.string.txt_confirm_remove_friend,
+                    removeFriendListener(dto)
+            )
             R.id.action_add_to_group -> if (dto.isGrouped()) {
                 showGroupedPopup(dto)
             } else {
@@ -277,8 +279,8 @@ class MainActivity : AppActivity(),
 
     /* SERVICE LISTENER */
 
-    override fun updateNavMenu(isGrouped: Boolean) {
-        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, isGrouped)
+    override fun updateNavMenu(isGrouped: Boolean, hasAccepted: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_grouped, isGrouped && hasAccepted)
         nav_view.menu.setGroupVisible(R.id.nav_group_ungrouped, !isGrouped)
     }
 

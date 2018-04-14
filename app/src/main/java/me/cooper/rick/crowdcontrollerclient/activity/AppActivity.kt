@@ -68,7 +68,7 @@ abstract class AppActivity : AppCompatActivity(),
         PreferenceManager.setDefaultValues(this, R.xml.settings, false)
 
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
-        shouldVibrate = preferences.getBoolean(PREF_TOG_VIBRATE, false)
+        shouldVibrate = preferences.getBoolean(getString(R.string.pref_toggle_vibrate), false)
         preferences.registerOnSharedPreferenceChangeListener(this)
 
         soundPool = if (isVersionOrGreater(Build.VERSION_CODES.LOLLIPOP)) buildSoundPoolLollipop() else buildSoundPoolBase()
@@ -181,15 +181,18 @@ abstract class AppActivity : AppCompatActivity(),
         sharedPreferences?.let {
             when (key) {
                 getString(R.string.token) -> initClients()
-                PREF_VOL_EFFECTS -> {
-                    setSoundVolume(getVolumeSetting(sharedPreferences, key))
+                getString(R.string.pref_volume_effects) -> {
+                    setSoundVolume(getVolumeSetting(sharedPreferences, key!!))
                     playSound(SOUND_DING)
                 }
-                PREF_TOG_VIBRATE -> {
-                    shouldVibrate = sharedPreferences.getBoolean(PREF_TOG_VIBRATE, false)
+                getString(R.string.pref_toggle_vibrate) -> {
+                    shouldVibrate = sharedPreferences.getBoolean(key, false)
                     vibrate(VibratePattern.CLICK)
                 }
-                PREF_TOG_CLUSTERING, PREF_CLUSER_MIN_PERCENT, PREF_CLUSER_MIN_RADIUS -> {
+                getString(R.string.pref_grp_clustering_toggle),
+                getString(R.string.pref_grp_clustering_min_percentage),
+                getString(R.string.pref_grp_clustering_min_distance),
+                getString(R.string.pref_grp_lifetime) -> {
                     updateGroupSettings(sharedPreferences)
                 }
             }
@@ -198,15 +201,16 @@ abstract class AppActivity : AppCompatActivity(),
 
     private fun updateGroupSettings(sharedPreferences: SharedPreferences) {
         val settings = GroupSettingsDto(
-                sharedPreferences.getBoolean(PREF_TOG_CLUSTERING, true),
-                sharedPreferences.getInt(PREF_CLUSER_MIN_RADIUS, 50).toDouble(),
-                sharedPreferences.getInt(PREF_CLUSER_MIN_PERCENT, 50) / 100.0
+                sharedPreferences.getBoolean(getString(R.string.pref_grp_clustering_toggle), true),
+                sharedPreferences.getInt(getString(R.string.pref_grp_clustering_min_distance), 50).toDouble(),
+                sharedPreferences.getInt(getString(R.string.pref_grp_clustering_min_percentage), 50) / 100.0,
+                sharedPreferences.getInt(getString(R.string.pref_grp_lifetime), 12)
         )
         ApiService.updateGroupSettings(settings)
     }
 
     protected fun playSound(key: String) {
-        val volume = getVolumeSetting(getDefaultSharedPreferences(this), PREF_VOL_EFFECTS)
+        val volume = getVolumeSetting(getDefaultSharedPreferences(this), getString(R.string.pref_volume_effects))
         sounds[key]?.let { soundPool.play(it, volume, volume, 1, 0, 1f) }
     }
 
@@ -336,11 +340,6 @@ abstract class AppActivity : AppCompatActivity(),
 
     companion object {
         private const val REQUEST_FINE_LOCATION = 2
-        private const val PREF_VOL_EFFECTS = "pref_volume_effects"
-        private const val PREF_TOG_VIBRATE = "pref_toggle_vibrate"
-        private const val PREF_TOG_CLUSTERING = "pref_grp_clustering_toggle"
-        private const val PREF_CLUSER_MIN_PERCENT = "pref_grp_clustering_min_percentage"
-        private const val PREF_CLUSER_MIN_RADIUS = "pref_grp_clustering_min_distance"
         private const val DEFAULT_VOLUME = 5
         const val SOUND_DING = "ding"
         const val SOUND_CLICK = "click"

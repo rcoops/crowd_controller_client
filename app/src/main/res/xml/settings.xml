@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
-        android:title="@string/pref_sound_title">
+        android:title="@string/pref_hdr_sound">
         <android.support.v7.preference.SeekBarPreference
-            android:key="pref_volume_effects"
-            android:title="@string/pref_sound_effects"
+            android:key="@string/pref_volume_effects"
+            android:title="@string/pref_txt_sound"
             android:defaultValue="8"
             android:max="10" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:title="@string/pref_vib_title">
+        android:title="@string/pref_hdr_vib">
         <android.support.v7.preference.SwitchPreferenceCompat
             android:id="@+id/tog_vib"
-            android:key="pref_toggle_vibrate"
-            android:title="@string/pref_vib_toggle"
+            android:key="@string/pref_toggle_vibrate"
+            android:title="@string/pref_txt_vib"
             android:defaultValue="true" />
     </PreferenceCategory>
 </PreferenceScreen>

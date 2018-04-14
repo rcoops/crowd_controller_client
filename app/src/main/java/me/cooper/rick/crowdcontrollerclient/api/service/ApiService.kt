@@ -126,8 +126,7 @@ object ApiService {
     }
 
     fun getUnGroupedFriendNames(): Array<String> {
-        return friends
-                .filter(FriendDto::canJoinGroup)
+        return friends.filter(FriendDto::canJoinGroup)
                 .map { it.username }
                 .toTypedArray()
     }

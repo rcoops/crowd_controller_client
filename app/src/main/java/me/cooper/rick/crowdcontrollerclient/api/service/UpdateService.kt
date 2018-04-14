@@ -162,7 +162,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (userDto.group != null && userDto.group != group?.id) {
             userDto.group.let { getGroup(it) }
         }
-        listener?.updateNavMenu(userDto.group != null)
+        listener?.updateNavMenu(userDto.group != null, userDto.groupAccepted)
     }
 
     private fun subscribeToGroupUpdates(groupId: Long) {
@@ -254,7 +254,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     interface UpdateServiceListener {
-        fun updateNavMenu(isGrouped: Boolean)
+        fun updateNavMenu(isGrouped: Boolean, hasAccepted: Boolean)
         fun requestPermissions()
         fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String)
         fun handleApiException(e: Throwable)

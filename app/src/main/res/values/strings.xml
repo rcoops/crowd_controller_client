@@ -102,13 +102,21 @@
     <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
     <string name="action_accept_grp_invite">Accept</string>
 
-    <string name="pref_sound_title">Sound Settings</string>
-    <string name="pref_sound_effects">Effects Volume</string>
-    <string name="pref_vib_title">Vibrate Settings</string>
-    <string name="pref_vib_toggle">Toggle Vibration</string>
-    <string name="pref_grp_clustering_toggle_title">Toggle Group Clustering</string>
-    <string name="pref_grp_clustering_toggle">Clustering</string>
-    <string name="pref_grp_clustering_title">Cluster Settings</string>
-    <string name="pref_grp_clustering_min_percentage">Min % of Group for Cluster</string>
-    <string name="pref_grp_clustering_min_distance">Min Cluster Radius (metres)</string>
+    <string name="pref_hdr_sound">Sound Settings</string>
+    <string name="pref_txt_sound">Effects Volume</string>
+    <string name="pref_hdr_vib">Vibrate Settings</string>
+    <string name="pref_txt_vib">Toggle Vibration</string>
+    <string name="pref_hdr_grp">Group Settings</string>
+    <string name="pref_txt_grp_clustering_toggle">Toggle Clustering</string>
+    <string name="pref_hdr_grp_clustering">Cluster Settings</string>
+    <string name="pref_txt_grp_clustering_min_percentage">Min % of Group for Cluster</string>
+    <string name="pref_txt_grp_clustering_min_distance">Min Cluster Radius (metres)</string>
+    <string name="pref_txt_grp_lifetime">Group lifetime (hours)</string>
+
+    <string name="pref_volume_effects">pref_volume_effects</string>
+    <string name="pref_toggle_vibrate">pref_toggle_vibrate</string>
+    <string name="pref_grp_clustering_toggle">pref_grp_clustering_toggle</string>
+    <string name="pref_grp_clustering_min_percentage">pref_grp_clustering_min_percentage</string>
+    <string name="pref_grp_lifetime">pref_grp_lifetime</string>
+    <string name="pref_grp_clustering_min_distance">pref_grp_clustering_min_distance</string>
 </resources>

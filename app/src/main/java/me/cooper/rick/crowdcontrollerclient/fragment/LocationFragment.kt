@@ -98,7 +98,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
         val here = LatLng(locationDto.latitude!!, locationDto.longitude!!)
         tempMarker?.remove()
-        val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_GREEN else HUE_RED)
+        val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_RED else HUE_GREEN)
         tempMarker = googleMap?.addMarker(
                 MarkerOptions().position(here)
                         .icon(bitmapDescriptor)
