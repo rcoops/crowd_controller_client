@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
 import android.support.design.widget.NavigationView
 import android.support.design.widget.Snackbar
@@ -26,11 +25,11 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.service.ApiService
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
@@ -296,10 +295,6 @@ class MainActivity : AppActivity(),
 
     override fun requestPermissions() = requestLocationPermissions()
 
-    fun setAdminVisibility(isAdmin: Boolean) {
-        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
-    }
-
     override fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String) {
         val notification = Snackbar.make(
                 content,
@@ -323,6 +318,15 @@ class MainActivity : AppActivity(),
         notification.show()
         playSound(SOUND_DING)
         vibrate(VibratePattern.NOTIFICATION)
+    }
+
+    override fun notifyOfGroupExpiry(dto: APIErrorDto) {
+        supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
+        showDismissiblePopup(dto.error, dto.errorDescription, null)
+    }
+
+    fun setAdminVisibility(isAdmin: Boolean) {
+        nav_view.menu.setGroupVisible(R.id.nav_group_group_admin, isAdmin)
     }
 
     fun dismissAfterTask() {
