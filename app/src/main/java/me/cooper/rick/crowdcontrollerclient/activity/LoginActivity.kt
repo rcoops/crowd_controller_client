@@ -27,11 +27,14 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
+import me.cooper.rick.crowdcontrollerclient.api.util.FAILED_VALIDATION
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
+import me.cooper.rick.crowdcontrollerclient.api.util.parseError
 import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
+import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
 
@@ -99,7 +102,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     override fun onLoaderReset(cursorLoader: Loader<Cursor>) {}
 
     override fun register(dto: RegistrationDto) {
-        userClient!!.create(dto).call(successfulRegistration, {})
+        userClient!!.create(dto).call(successfulRegistration, {
+            (it as? HttpException)?.let { handleResponse(it.response(), {}) }
+        })
     }
 
     private fun startMainActivityIfLoggedIn() {
@@ -214,6 +219,14 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         username.setText(dto.username)
         password.text.clear()
         password.requestFocus()
+    }
+
+    override fun showRegistrationErrorPopup(error: String, instruction: String, consumer: () -> Unit) {
+        showDismissiblePopup(
+                error,
+                instruction,
+                OnClickListener { _, _ -> consumer() }
+        )
     }
 
     private fun handleLoginResponse(response: Response<Token>) {
