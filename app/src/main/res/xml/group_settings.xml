@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="@string/pref_sound_title">
+        <android.support.v7.preference.SeekBarPreference
+            android:key="pref_volume_effects"
+            android:title="@string/pref_sound_effects"
+            android:min="50"
+            android:defaultValue="80"
+            android:max="100" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/pref_vib_title">
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:id="@+id/tog_vib"
+            android:key="pref_toggle_vibrate"
+            android:title="@string/pref_vib_toggle"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+</PreferenceScreen>

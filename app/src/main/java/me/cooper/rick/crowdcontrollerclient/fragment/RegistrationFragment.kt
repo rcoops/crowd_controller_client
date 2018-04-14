@@ -2,7 +2,6 @@ package me.cooper.rick.crowdcontrollerclient.fragment
 
 import android.content.Context
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,6 +23,7 @@ class RegistrationFragment : AbstractAppFragment() {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         btn_register_account.setOnClickListener {
+            fragmentListener?.playClick()
             val validationStatus = validateForm()
             if (validationStatus == FormValidation.VALID) {
                 listener?.register(createDto())

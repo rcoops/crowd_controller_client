@@ -14,7 +14,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.support.design.widget.Snackbar
-import android.text.TextUtils
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
@@ -27,9 +26,8 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
-import me.cooper.rick.crowdcontrollerclient.api.util.FAILED_VALIDATION
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
-import me.cooper.rick.crowdcontrollerclient.api.util.parseError
+import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
 import me.cooper.rick.crowdcontrollerclient.fragment.RegistrationFragment
 import me.cooper.rick.crowdcontrollerclient.util.OrdinalSuperscriptFormatter
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
@@ -112,6 +110,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     private fun handleLoginError(it: APIErrorDto) {
+        playWrong()
         dismissDialogs()
         showProgress(false, login_form, login_progress)
         if (it.error == BAD_PASSWORD) password?.requestFocus()
@@ -126,8 +125,9 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
             }
             false
         })
-        btn_username_signin.setOnClickListener { attemptLogin() }
+        btn_username_signin.setOnClickListener { playClick(); attemptLogin() }
         btn_register.setOnClickListener {
+            playClick()
             supportFragmentManager.beginTransaction()
                     .add(R.id.content, RegistrationFragment())
                     .addToBackStack("reg")
@@ -222,11 +222,17 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     override fun showRegistrationErrorPopup(error: String, instruction: String, consumer: () -> Unit) {
+        playWrong()
         showDismissiblePopup(
                 error,
                 instruction,
                 OnClickListener { _, _ -> consumer() }
         )
+    }
+
+    private fun playWrong() {
+        playSound(SOUND_NEGATIVE)
+        vibrate(VibratePattern.WRONG)
     }
 
     private fun handleLoginResponse(response: Response<Token>) {

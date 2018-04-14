@@ -42,6 +42,10 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
             e.printStackTrace()
         }
 
+        view.btn_directions.setOnClickListener {
+            fragmentListener?.playClick()
+        }
+
         return view
     }
 

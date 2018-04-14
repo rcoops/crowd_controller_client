@@ -49,12 +49,15 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
+import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
 import me.cooper.rick.crowdcontrollerclient.fragment.AbstractAppFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.LocationFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.friend.FriendFragment.OnFriendFragmentInteractionListener
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment
 import me.cooper.rick.crowdcontrollerclient.fragment.group.GroupFragment.OnGroupFragmentInteractionListener
+import me.cooper.rick.crowdcontrollerclient.fragment.settings.GroupSettingsFragment
+import me.cooper.rick.crowdcontrollerclient.fragment.settings.SettingsFragment
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -152,6 +155,7 @@ class MainActivity : AppActivity(),
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        playClick()
         when (item.itemId) {
             R.id.nav_add_friend -> showAddFriendDialog()
             R.id.nav_create_group -> showFriendSelectorDialog(getUnGroupedFriendNames(),
@@ -164,12 +168,9 @@ class MainActivity : AppActivity(),
             }
             R.id.nav_location -> startTask { addFragmentOnTop(LocationFragment()) }
             R.id.nav_group_leave -> startTask { removeGroupMember(getUserId(), { setNoGroup() }) }
-            R.id.nav_clustering_toggle -> {
-
-            }
+            R.id.nav_group_settings -> addFragmentOnTop(GroupSettingsFragment())
             R.id.nav_group_close -> removeGroup({ setNoGroup() })
-            R.id.nav_settings -> {
-            }
+            R.id.nav_settings -> addFragmentOnTop(SettingsFragment())
             R.id.nav_sign_out -> startTask {
                 editAppDetails { clear() }
                 startActivity(LoginActivity::class)
@@ -320,6 +321,8 @@ class MainActivity : AppActivity(),
             })
         }
         notification.show()
+        playSound(SOUND_DING)
+        vibrate(VibratePattern.NOTIFICATION)
     }
 
     fun dismissAfterTask() {
@@ -446,7 +449,7 @@ class MainActivity : AppActivity(),
     private fun removeFriendListener(dto: FriendDto) = dialogOnClickListener { removeFriend(dto) }
 
     private fun dialogOnClickListener(func: () -> Unit): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ -> startTask(func) }
+        return DialogInterface.OnClickListener { _, _ -> playClick(); startTask(func) }
     }
 
 }

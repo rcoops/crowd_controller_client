@@ -44,9 +44,9 @@
         android:visible="false"
         android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_clustering_toggle"
-            android:icon="@drawable/ic_action_group_toggle"
-            android:title="@string/action_toggle_clustering" />
+            android:id="@+id/nav_group_settings"
+            android:icon="@drawable/ic_menu_settings"
+            android:title="@string/action_grp_settings" />
         <item
             android:id="@+id/nav_group_close"
             android:icon="@drawable/ic_action_group_close"

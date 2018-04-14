@@ -42,6 +42,7 @@
 
     <string name="action_create_group">Create Group</string>
     <string name="action_new_friend">Add Friend</string>
+    <string name="action_grp_settings">Group Settings</string>
     <string name="action_settings">Settings</string>
     <string name="action_sign_out">Sign Out</string>
     <string name="header_app_menu">App</string>
@@ -98,4 +99,9 @@
     <string name="hdr_fragment_registration">Registration</string>
     <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
     <string name="action_accept_grp_invite">Accept</string>
+
+    <string name="pref_sound_title">Sound Settings</string>
+    <string name="pref_sound_effects">Effects Volume</string>
+    <string name="pref_vib_title">Vibrate Settings</string>
+    <string name="pref_vib_toggle">Toggle Vibration</string>
 </resources>
