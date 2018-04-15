@@ -21,6 +21,7 @@ import android.view.MenuItem
 import android.view.View
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.maps.model.LatLng
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
@@ -67,7 +68,6 @@ class MainActivity : AppActivity(),
         OnFriendFragmentInteractionListener,
         OnGroupFragmentInteractionListener,
         UpdateService.UpdateServiceListener,
-        LocationFragment.OnFragmentInteractionListener,
         FragmentManager.OnBackStackChangedListener {
 
     private var mBound = false
@@ -274,9 +274,6 @@ class MainActivity : AppActivity(),
 
     override fun userId(): Long = getUserId()
 
-    /* LOCATION FRAGMENT LISTENER */
-
-
     /* SERVICE LISTENER */
 
     override fun updateNavMenu(isGrouped: Boolean, hasAccepted: Boolean) {
@@ -325,6 +322,12 @@ class MainActivity : AppActivity(),
     override fun notifyOfGroupExpiry(dto: APIErrorDto) {
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
         showDismissiblePopup(dto.error, dto.errorDescription, null)
+    }
+
+    override fun updateMapSelfLocation(latLng: LatLng) {
+        (supportFragmentManager
+                .findFragmentById(R.id.content_main) as? LocationFragment)
+                ?.drawLocationMarker(latLng)
     }
 
     fun setAdminVisibility(isAdmin: Boolean) {

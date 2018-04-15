@@ -71,6 +71,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                     locationResult.lastLocation.latitude,
                     locationResult.lastLocation.longitude
             )
+            listener?.updateMapSelfLocation(lastLocation!!)
 
             sendLocation(LocationDto(getUserId(), lastLocation!!.latitude, lastLocation!!.longitude))
         }
@@ -256,6 +257,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String)
         fun handleApiException(e: Throwable)
         fun notifyOfGroupExpiry(dto: APIErrorDto)
+        fun updateMapSelfLocation(latLng: LatLng)
     }
 
     companion object {

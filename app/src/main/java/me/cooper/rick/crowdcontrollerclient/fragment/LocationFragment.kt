@@ -22,13 +22,12 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
-    private var listener: OnFragmentInteractionListener? = null
-
     private var googleMap: GoogleMap? = null
 
     private lateinit var root: View
 
-    private var tempMarker: Marker? = null
+    private var destinationMarker: Marker? = null
+    private var locationMarker: Marker? = null
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -69,15 +68,8 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         super.onLowMemory()
     }
 
-    override fun onAttach(context: Context?) {
-        super.onAttach(context)
-        listener = (context as? OnFragmentInteractionListener)
-                ?: throw RuntimeException("${context!!} must implement OnFragmentInteractionListener")
-    }
-
     override fun onDetach() {
         super.onDetach()
-        listener = null
     }
 
     override fun onMapReady(map: GoogleMap?) {
@@ -107,10 +99,9 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
         destination = LatLng(locationDto.latitude!!, locationDto.longitude!!)
-        if (lastLocation != null) drawStartMarker(lastLocation!!)
-        tempMarker?.remove()
+        destinationMarker?.remove()
         val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_RED else HUE_GREEN)
-        tempMarker = googleMap?.addMarker(
+        destinationMarker = googleMap?.addMarker(
                 MarkerOptions().position(destination!!)
                         .icon(bitmapDescriptor)
         )
@@ -120,14 +111,13 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         root.map.invalidate()
     }
 
-    private fun drawStartMarker(lastLocation: LatLng) {
-        googleMap?.addMarker(
+    fun drawLocationMarker(lastLocation: LatLng) {
+        locationMarker?.remove()
+        locationMarker = googleMap?.addMarker(
                 MarkerOptions().position(lastLocation)
                         .icon(defaultMarker(HUE_YELLOW))
         )
     }
-
-    interface OnFragmentInteractionListener
 
     companion object {
         private const val TITLE = "Location"
