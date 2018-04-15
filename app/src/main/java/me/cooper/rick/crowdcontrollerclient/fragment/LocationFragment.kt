@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.maps.*
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
@@ -17,7 +16,9 @@ import kotlinx.android.synthetic.main.fragment_location.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.destination
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
@@ -42,11 +43,15 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
             e.printStackTrace()
         }
 
-        view.btn_directions.setOnClickListener {
-            fragmentListener?.playClick()
-        }
+        view.btn_zoom_to_target.setOnClickListener { btnZoom(destination) }
+        view.btn_zoom_to_me.setOnClickListener { btnZoom(lastLocation) }
 
         return view
+    }
+
+    private fun btnZoom(target: LatLng?) {
+        fragmentListener?.playClick()
+        target?.let { zoomToLocation(it) }
     }
 
     override fun onResume() {
@@ -66,8 +71,8 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = (context as? OnFragmentInteractionListener) ?:
-                throw RuntimeException("${context!!} must implement OnFragmentInteractionListener")
+        listener = (context as? OnFragmentInteractionListener)
+                ?: throw RuntimeException("${context!!} must implement OnFragmentInteractionListener")
     }
 
     override fun onDetach() {
@@ -78,10 +83,15 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap?) {
         googleMap = map
         updateView(group)
+        group?.location?.let { zoomToLocation(LatLng(it.latitude!!, it.longitude!!)) }
+    }
+
+    private fun zoomToLocation(target: LatLng) {
+        googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(target, 17.0f))
     }
 
     override fun getTitle(): String = TITLE
-    
+
     fun updateView(groupDto: GroupDto?) {
         groupDto?.location?.let { locationDto ->
             if (locationDto.hasLocation()) {
@@ -96,18 +106,25 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     }
 
     private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
-        val here = LatLng(locationDto.latitude!!, locationDto.longitude!!)
+        destination = LatLng(locationDto.latitude!!, locationDto.longitude!!)
+        if (lastLocation != null) drawStartMarker(lastLocation!!)
         tempMarker?.remove()
         val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_RED else HUE_GREEN)
         tempMarker = googleMap?.addMarker(
-                MarkerOptions().position(here)
+                MarkerOptions().position(destination!!)
                         .icon(bitmapDescriptor)
         )
-        googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(here, 17.0f))
         val mapParams = root.map.layoutParams
         mapParams.height = root.map.measuredWidth
         root.map.layoutParams = mapParams
         root.map.invalidate()
+    }
+
+    private fun drawStartMarker(lastLocation: LatLng) {
+        googleMap?.addMarker(
+                MarkerOptions().position(lastLocation)
+                        .icon(defaultMarker(HUE_YELLOW))
+        )
     }
 
     interface OnFragmentInteractionListener

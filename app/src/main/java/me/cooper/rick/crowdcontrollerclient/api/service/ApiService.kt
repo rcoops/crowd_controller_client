@@ -3,10 +3,8 @@ package me.cooper.rick.crowdcontrollerclient.api.service
 import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
-import me.cooper.rick.crowdcontrollerapi.dto.group.CreateGroupDto
-import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
-import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
-import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
+import com.google.android.gms.maps.model.LatLng
+import me.cooper.rick.crowdcontrollerapi.dto.group.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
@@ -28,6 +26,8 @@ object ApiService {
 
     val friends = mutableListOf<FriendDto>()
     var group: GroupDto? = null
+    var lastLocation: LatLng? = null
+    var destination: LatLng? = null
 
     private val refreshGroup: ((GroupDto?) -> Unit) = { refreshGroupDetails(it) }
     private val refreshFriends: ((List<FriendDto>) -> Unit) = { updateFriends(it) }

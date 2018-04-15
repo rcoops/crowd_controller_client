@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
+import com.google.android.gms.maps.model.LatLng
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -27,6 +28,7 @@ import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.constants.BASE_WS_URL
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.refreshGroupDetails
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
@@ -49,8 +51,6 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private var listener: UpdateServiceListener? = null
     private lateinit var pref: SharedPreferences
 
-    private val reconnectTimer = Timer(true)
-
     private var userClient: UserClient? = null
     private lateinit var stompClient: StompClient
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
@@ -67,8 +67,12 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private val locationCallback: LocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            val lastLocation = locationResult.lastLocation
-            sendLocation(LocationDto(getUserId(), lastLocation.latitude, lastLocation.longitude))
+            lastLocation = LatLng(
+                    locationResult.lastLocation.latitude,
+                    locationResult.lastLocation.longitude
+            )
+
+            sendLocation(LocationDto(getUserId(), lastLocation!!.latitude, lastLocation!!.longitude))
         }
     }
 
@@ -77,8 +81,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         pref.registerOnSharedPreferenceChangeListener(this)
 
         userClient = createService(UserClient::class, getToken())
-        stompClient = Stomp.over(WebSocket::class.java,
-                "$BASE_WS_URL/chat/websocket")
+        stompClient = Stomp.over(WebSocket::class.java, "$BASE_WS_URL/chat/websocket")
         openUserSocket()
 
         return binder
@@ -134,14 +137,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         getUser(userId)
 
         if (!stompClient.isConnected && !stompClient.isConnecting) connectStompClient()
-
-        clearReconnectTimer()
         subscribeToUserUpdates(userId)
-    }
-
-    private fun clearReconnectTimer() {
-        reconnectTimer.cancel()
-        reconnectTimer.purge()
     }
 
     private fun getUser(userId: Long) {
@@ -191,6 +187,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun connectStompClient() {
+        stompClient.disconnect()
+        stompClient = Stomp.over(WebSocket::class.java, "$BASE_WS_URL/chat/websocket")
         stompClient.connect(true)
 
         stompClient.lifecycle()
@@ -199,17 +197,16 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 .subscribe { lifecycleEvent ->
                     when (lifecycleEvent.type!!) {
                         OPENED -> Log.d("opened", "Stomp connection opened")
-                        ERROR -> Log.e(TAG, "Stomp connection error", lifecycleEvent.exception) // TODO - error handling?
+                        ERROR -> {
+                            Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
+                            openUserSocket()
+                        } // TODO - error handling?
                         CLOSED -> {
                             Log.d("closed", "Stomp connection closed")
-                            resubscribe()
+                            openUserSocket()
                         }
                     }
                 }
-    }
-
-    private fun resubscribe() {
-        reconnectTimer.schedule({ openUserSocket() }, SECONDS.toMillis(1), SECONDS.toMillis(3))
     }
 
     @SuppressLint("MissingPermission")
@@ -263,10 +260,6 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     companion object {
         private val jackson = ObjectMapper()
-    }
-
-    private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
-        schedule(object : TimerTask() { override fun run() = task() }, delay, period)
     }
 
     private fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
