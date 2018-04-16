@@ -1,24 +1,27 @@
 package me.cooper.rick.crowdcontrollerclient.fragment
 
-import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.*
 import com.google.android.gms.maps.model.BitmapDescriptorFactory.*
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.fragment_location.*
 import kotlinx.android.synthetic.main.fragment_location.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.destination
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofence
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceCentre
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceLimit
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
+
 
 class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
@@ -28,6 +31,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
 
     private var destinationMarker: Marker? = null
     private var locationMarker: Marker? = null
+    private var geoFenceLimits: Circle? = null
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -68,14 +72,12 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         super.onLowMemory()
     }
 
-    override fun onDetach() {
-        super.onDetach()
-    }
-
     override fun onMapReady(map: GoogleMap?) {
         googleMap = map
         updateView(group)
-        group?.location?.let { zoomToLocation(LatLng(it.latitude!!, it.longitude!!)) }
+        group?.location?.let {
+            zoomToLocation(LatLng(it.latitude!!, it.longitude!!))
+        }
     }
 
     private fun zoomToLocation(target: LatLng) {
@@ -98,6 +100,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     }
 
     private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
+        googleMap?.let { drawGeofence(it) }
         destination = LatLng(locationDto.latitude!!, locationDto.longitude!!)
         destinationMarker?.remove()
         val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_RED else HUE_GREEN)
@@ -117,6 +120,21 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
                 MarkerOptions().position(lastLocation)
                         .icon(defaultMarker(HUE_YELLOW))
         )
+    }
+    private fun drawGeofence(map: GoogleMap?) {
+        geofence?.let {
+            Log.d(TITLE, "drawGeofence()")
+
+            if (geoFenceLimits != null)
+                geoFenceLimits!!.remove()
+
+            val circleOptions = CircleOptions()
+                    .center(geofenceCentre)
+                    .strokeColor(Color.argb(50, 70, 70, 70))
+                    .fillColor(Color.argb(100, 150, 150, 150))
+                    .radius(geofenceLimit!!)
+            geoFenceLimits = map?.addCircle(circleOptions)
+        }
     }
 
     companion object {

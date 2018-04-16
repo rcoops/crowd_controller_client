@@ -120,4 +120,13 @@
     <string name="pref_grp_clustering_min_percentage">pref_grp_clustering_min_percentage</string>
     <string name="pref_grp_lifetime">pref_grp_lifetime</string>
     <string name="pref_grp_clustering_min_distance">pref_grp_clustering_min_distance</string>
+
+    <string name="geofence_not_available">Geofence not available</string>
+    <string name="geofence_too_many_geofences">Too many geofences!</string>
+    <string name="geofence_too_many_pending_intents">Geofence - too many pending intents</string>
+    <string name="unknown_geofence_error">Unknown Geofence error</string>
+    <string name="geofence_transition_invalid_type">Invalid geofence transition type: %1$d</string>
+    <string name="geofence_transition_entered">Entered </string>
+    <string name="geofence_transition_exited">Exited</string>
+    <string name="unknown_geofence_transition">Unknown transition</string>
 </resources>

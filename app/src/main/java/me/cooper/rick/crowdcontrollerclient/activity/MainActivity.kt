@@ -1,6 +1,8 @@
 package me.cooper.rick.crowdcontrollerclient.activity
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
@@ -21,6 +23,11 @@ import android.view.MenuItem
 import android.view.View
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.Geofence.NEVER_EXPIRE
+import com.google.android.gms.location.GeofencingClient
+import com.google.android.gms.location.GeofencingRequest
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
@@ -31,13 +38,12 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.R.id.*
-import me.cooper.rick.crowdcontrollerclient.activity.AppActivity.Companion.SOUND_DING
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.createGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.errorConsumer
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofence
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getUnGroupedFriendNames
@@ -49,6 +55,7 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroupMember
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
+import me.cooper.rick.crowdcontrollerclient.api.service.GeofenceTransitionsIntentService
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
 import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
@@ -75,6 +82,15 @@ class MainActivity : AppActivity(),
     private var updateService: UpdateService? = null
 
     private val swipeRefreshLayouts = mutableSetOf<SwipeRefreshLayout>()
+
+    private lateinit var geofencingClient: GeofencingClient
+
+    private val geofencePendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
+        // addGeofences() and removeGeofences().
+        PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, iBinder: IBinder?) {
@@ -107,6 +123,7 @@ class MainActivity : AppActivity(),
         initFragments()
         errorConsumer = { handleApiException(it) }
         showProgress(true, content_main, progress)
+        geofencingClient = LocationServices.getGeofencingClient(this)
     }
 
     override fun onStart() {
@@ -324,6 +341,35 @@ class MainActivity : AppActivity(),
         showDismissiblePopup(dto.error, dto.errorDescription, null)
     }
 
+    override fun setGeofence(centre: LatLng, radius: Float) {
+        geofence = Geofence.Builder()
+                .setRequestId("my geofence")
+                .setCircularRegion(
+                        centre.latitude,
+                        centre.longitude,
+                        radius
+                )
+                .setExpirationDuration(NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build()
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun addGeofence() {
+        geofencingClient.addGeofences(getGeofencingRequest(), geofencePendingIntent)?.run {
+            addOnSuccessListener { Log.i(TAG, "geofence added") }
+            addOnFailureListener { Log.w(TAG, "failed to add geofence") }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun removeGeofence() {
+        geofencingClient.removeGeofences(geofencePendingIntent)?.run {
+            addOnSuccessListener { Log.i(TAG, "geofence removed") }
+            addOnFailureListener { Log.w(TAG, "failed to remove geofence") }
+        }
+    }
+
     override fun updateMapSelfLocation(latLng: LatLng) {
         (supportFragmentManager
                 .findFragmentById(R.id.content_main) as? LocationFragment)
@@ -340,6 +386,15 @@ class MainActivity : AppActivity(),
     }
 
     /* PRIVATE STUFF */
+
+    // TODO must check geofence exists before calling this
+    private fun getGeofencingRequest(): GeofencingRequest {
+        return GeofencingRequest.Builder().apply {
+            setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+            addGeofences(listOf(geofence))
+        }.build()
+    }
+
 
     private fun initFragments() {
         supportFragmentManager.addOnBackStackChangedListener(this)
@@ -446,6 +501,7 @@ class MainActivity : AppActivity(),
     companion object {
         const val BACK_STACK_ROOT_TAG = "root"
         const val REQUEST_CHECK_SETTINGS = 1
+        private const val TAG = "MAIN"
     }
 
     /* Convenience */

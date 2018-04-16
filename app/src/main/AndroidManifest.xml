@@ -41,6 +41,7 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <service android:name=".api.service.UpdateService" />
+        <service android:name=".api.service.GeofenceTransitionsIntentService"/>
     </application>
 
 </manifest>

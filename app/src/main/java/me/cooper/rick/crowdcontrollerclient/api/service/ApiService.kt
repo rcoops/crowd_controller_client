@@ -3,6 +3,7 @@ package me.cooper.rick.crowdcontrollerclient.api.service
 import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
+import com.google.android.gms.location.Geofence
 import com.google.android.gms.maps.model.LatLng
 import me.cooper.rick.crowdcontrollerapi.dto.group.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
@@ -34,6 +35,10 @@ object ApiService {
     var errorConsumer: ((Throwable) -> Unit)? = null
 
     var currentActivity: WeakReference<AppActivity?> = WeakReference(null)
+
+    var geofence: Geofence? = null
+    var geofenceLimit: Double? = null
+    lateinit var geofenceCentre: LatLng
 
     fun setActivity(activity: AppActivity?) {
         currentActivity = WeakReference(activity)

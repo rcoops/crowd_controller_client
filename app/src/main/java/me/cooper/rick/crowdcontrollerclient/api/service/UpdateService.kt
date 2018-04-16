@@ -26,6 +26,8 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.constants.BASE_WS_URL
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceCentre
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceLimit
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
@@ -168,13 +170,29 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 .customSubscribe({
                     Log.d(TAG, "Received group update: " + it.payload)
                     try {
-                        refreshGroupDetails(jackson.readValue(it, GroupDto::class))
+                        val groupDto = jackson.readValue(it, GroupDto::class)
+                        refreshGroupDetails(groupDto)
+                            createGeofence(groupDto)
                     } catch (e: UnrecognizedPropertyException) {
                         val dto = jackson.readValue(it, APIErrorDto::class)
                         ApiService.refreshGroupDetails(null)
                         listener?.notifyOfGroupExpiry(dto)
                     }
                 })
+    }
+
+    private fun createGeofence(groupDto: GroupDto) {
+        groupDto.location?.let { location ->
+            groupDto.settings?.let { settings ->
+                listener?.run {
+                    geofenceLimit = settings.minClusterRadius
+                    geofenceCentre = LatLng(location.latitude!!, location.longitude!!)
+                    setGeofence(geofenceCentre, geofenceLimit!!.toFloat())
+                    removeGeofence()
+                    addGeofence()
+                }
+            }
+        }
     }
 
     private fun subscribeToUserUpdates(userId: Long) {
@@ -226,6 +244,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun adjustGroup(userDto: UserDto) {
         if (userDto.group == null) {
+            latestGroupId?.let { listener?.removeGeofence() }
             unscheduleLocationUpdates()
         } else if (latestGroupId != userDto.group) {
             scheduleGroupRequest(userDto.group!!)
@@ -258,6 +277,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         fun handleApiException(e: Throwable)
         fun notifyOfGroupExpiry(dto: APIErrorDto)
         fun updateMapSelfLocation(latLng: LatLng)
+        fun setGeofence(centre: LatLng, radius: Float)
+        fun addGeofence()
+        fun removeGeofence()
     }
 
     companion object {
