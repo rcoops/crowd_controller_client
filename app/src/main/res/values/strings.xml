@@ -50,7 +50,7 @@
     <string name="title_activity_group">GroupActivity</string>
     <string name="title_activity_location">Location</string>
     <string name="token">token</string>
-    <string name="user_id">userId</string>
+    <string name="pref_user_id">userId</string>
     <string name="dummy_address_header">The Oast House</string>
     <string name="dummy_address">The Avenue Courtyard, SpinningFields, Green Square, Manchester, M3 3AY</string>
 

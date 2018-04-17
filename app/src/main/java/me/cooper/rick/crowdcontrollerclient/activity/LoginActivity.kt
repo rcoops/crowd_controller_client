@@ -281,7 +281,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         private fun save(token: Token) {
             editAppDetails {
                 putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
-                putLong(getString(R.string.user_id), token.user!!.id)
+                putLong(getString(R.string.pref_user_id), token.user!!.id)
             }
         }
 

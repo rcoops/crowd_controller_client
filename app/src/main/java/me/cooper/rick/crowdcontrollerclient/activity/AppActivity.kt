@@ -322,7 +322,7 @@ abstract class AppActivity : AppCompatActivity(),
     }
 
     protected fun getUserId(): Long {
-        return appDetails().getLong(getString(R.string.user_id), -1L)
+        return appDetails().getLong(getString(R.string.pref_user_id), -1L)
     }
 
     private fun clearReferences() {

@@ -33,10 +33,12 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.nav_header_main.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
@@ -126,6 +128,13 @@ class MainActivity : AppActivity(),
         geofencingClient = LocationServices.getGeofencingClient(this)
     }
 
+    override fun setHeader(userDto: UserDto) {
+        val navHeader = nav_view.getHeaderView(0)
+        navHeader.txt_username.text = userDto.username
+        val details = "<${if (userDto.email.isBlank()) userDto.mobileNumber else userDto.email}>"
+        navHeader.txt_details.text = details
+    }
+
     override fun onStart() {
         super.onStart()
         bindService(Intent(this, UpdateService::class.java), serviceConnection,
@@ -190,6 +199,7 @@ class MainActivity : AppActivity(),
             R.id.nav_settings -> addFragmentOnTop(SettingsFragment())
             R.id.nav_sign_out -> startTask {
                 editAppDetails { clear() }
+                updateService?.cancelLocationUpdates()
                 startActivity(LoginActivity::class)
             }
         }

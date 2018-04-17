@@ -41,7 +41,6 @@ import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
 import ua.naiksoftware.stomp.client.StompMessage
-import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.reflect.KClass
 
@@ -74,8 +73,10 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                     locationResult.lastLocation.longitude
             )
             listener?.updateMapSelfLocation(lastLocation!!)
-
-            sendLocation(LocationDto(getUserId(), lastLocation!!.latitude, lastLocation!!.longitude))
+            val userId = getUserId()
+            if (userId != -1L) {
+                sendLocation(LocationDto(userId, lastLocation!!.latitude, lastLocation!!.longitude))
+            }
         }
     }
 
@@ -120,7 +121,11 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (this.listener == listener) this.listener = null
     }
 
-    private fun getUserId() = pref.getLong(getString(R.string.user_id), -1)
+    fun cancelLocationUpdates() {
+        fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
+    }
+
+    private fun getUserId() = pref.getLong(getString(R.string.pref_user_id), -1)
 
     private fun getToken() = pref.getString(getString(R.string.token), null)
 
@@ -143,9 +148,10 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         subscribeToUserUpdates(userId)
     }
 
-    private fun getUser(userId: Long) {
+    fun getUser(userId: Long) {
         userClient!!.find(userId).call({
             Log.d("GET USER", it.toString())
+            listener?.setHeader(it)
             onUserUpdate(it)
             adjustGroup(it)
         })
@@ -154,7 +160,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     @SuppressLint("CommitPrefEdits")
     private fun onUserUpdate(userDto: UserDto) {
         pref.edit().apply {
-            putLong(getString(R.string.user_id), userDto.id)
+            putLong(getString(R.string.pref_user_id), userDto.id)
             commit()
         }
         updateFriends(userDto.friends)
@@ -244,6 +250,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun adjustGroup(userDto: UserDto) {
         if (userDto.group == null) {
+            cancelLocationUpdates()
             latestGroupId?.let { listener?.removeGeofence() }
             unscheduleLocationUpdates()
         } else if (latestGroupId != userDto.group) {
@@ -280,6 +287,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         fun setGeofence(centre: LatLng, radius: Float)
         fun addGeofence()
         fun removeGeofence()
+        fun setHeader(userDto: UserDto)
     }
 
     companion object {
