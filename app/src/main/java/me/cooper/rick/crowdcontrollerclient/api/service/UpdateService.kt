@@ -3,10 +3,12 @@ package me.cooper.rick.crowdcontrollerclient.api.service
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.net.ConnectivityManager
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
@@ -41,6 +43,7 @@ import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
 import ua.naiksoftware.stomp.client.StompMessage
+import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.reflect.KClass
 
@@ -57,6 +60,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
 
     private var latestGroupId: Long? = null
+
+    private var reconnectTimer: Timer? = null
 
     var hasPendingGroupInvite = false
 
@@ -149,12 +154,21 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun getUser(userId: Long) {
-        userClient!!.find(userId).call({
-            Log.d("GET USER", it.toString())
-            listener?.setHeader(it)
-            onUserUpdate(it)
-            adjustGroup(it)
-        })
+        if (isConnected()) {
+            userClient!!.find(userId).call({
+                Log.d("GET USER", it.toString())
+                listener?.setHeader(it)
+                onUserUpdate(it)
+                adjustGroup(it)
+            })
+        }
+    }
+
+    private fun isConnected(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        val activeNetwork = cm.activeNetworkInfo
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting
     }
 
     @SuppressLint("CommitPrefEdits")
@@ -211,9 +225,29 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 })
     }
 
+    private fun resubscribe() {
+        if (reconnectTimer != null) return
+        reconnectTimer = Timer(true)
+        reconnectTimer?.schedule(
+                { connectStompClient() },
+                SECONDS.toMillis(3),
+                SECONDS.toMillis(3)
+        )
+    }
+
+    private fun cancelTimer() {
+        reconnectTimer?.cancel()
+        reconnectTimer?.purge()
+        reconnectTimer = null
+    }
+
     private fun connectStompClient() {
         stompClient.disconnect()
         stompClient = Stomp.over(WebSocket::class.java, "$BASE_WS_URL/chat/websocket")
+
+        if (!isConnected()) { resubscribe(); return }
+        if (reconnectTimer != null) cancelTimer()
+
         stompClient.connect(true)
 
         stompClient.lifecycle()
@@ -292,6 +326,10 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     companion object {
         private val jackson = ObjectMapper()
+    }
+
+    private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
+        schedule(object : TimerTask() { override fun run() = task() }, delay, period)
     }
 
     private fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
