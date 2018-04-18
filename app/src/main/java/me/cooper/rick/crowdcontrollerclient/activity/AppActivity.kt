@@ -77,6 +77,8 @@ abstract class AppActivity : AppCompatActivity(),
         addSound(SOUND_DING, R.raw.ding)
         addSound(SOUND_CLICK, R.raw.click)
         addSound(SOUND_NEGATIVE, R.raw.negative)
+        addSound(SOUND_GEOFENCE_EXIT, R.raw.negative_2)
+        addSound(SOUND_GEOFENCE_ENTER, R.raw.positive)
     }
 
     override fun onResume() {
@@ -349,6 +351,8 @@ abstract class AppActivity : AppCompatActivity(),
         const val SOUND_DING = "ding"
         const val SOUND_CLICK = "click"
         const val SOUND_NEGATIVE = "negative"
+        val SOUND_GEOFENCE_EXIT = "geofence_exit"
+        val SOUND_GEOFENCE_ENTER = "geofence_enter"
     }
 
 }

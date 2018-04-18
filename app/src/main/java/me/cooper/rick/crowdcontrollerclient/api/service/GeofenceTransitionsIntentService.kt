@@ -7,6 +7,7 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.constants.GeofenceErrorMessages
+import me.cooper.rick.crowdcontrollerclient.api.service.receiver.ResponseReceiver
 
 // https://github.com/googlesamples/android-play-location/blob/master/Geofencing/app/src/main/java/com/google/android/gms/location/sample/geofencing/GeofenceTransitionsJobIntentService.java
 class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsIntentService") {
@@ -36,8 +37,12 @@ class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsInten
                     geofenceTransition,
                     triggeringGeofences
             )
-
             Log.i(TAG, geofenceTransitionDetails)
+            val broadcastIntent = Intent()
+            broadcastIntent.action = ResponseReceiver.ACTION
+            broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT)
+            broadcastIntent.putExtra(getString(R.string.geofence_transition), geofenceTransition)
+            sendBroadcast(broadcastIntent)
         } else {
             // Log the error.
             Log.e(TAG, getString(R.string.geofence_transition_invalid_type, geofenceTransition))
@@ -81,6 +86,7 @@ class GeofenceTransitionsIntentService : IntentService("GeofenceTransitionsInten
 
     companion object {
         private const val TAG = "GeofenceService"
+        const val UNINTERESTING_TRANSITION = 0
     }
 
 }

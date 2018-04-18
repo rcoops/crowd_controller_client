@@ -3,7 +3,6 @@ package me.cooper.rick.crowdcontrollerclient.activity
 import android.Manifest.permission.READ_CONTACTS
 import android.app.LoaderManager.LoaderCallbacks
 import android.content.CursorLoader
-import android.content.DialogInterface.OnClickListener
 import android.content.Loader
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -227,7 +226,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     private fun playWrong() {
         playSound(SOUND_NEGATIVE)
-        vibrate(VibratePattern.WRONG)
+        vibrate(VibratePattern.FAILED)
     }
 
     private fun handleLoginResponse(response: Response<Token>) {
