@@ -3,7 +3,6 @@ package me.cooper.rick.crowdcontrollerclient.activity
 import android.Manifest.permission.READ_CONTACTS
 import android.app.LoaderManager.LoaderCallbacks
 import android.content.CursorLoader
-import android.content.DialogInterface.OnClickListener
 import android.content.Loader
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -213,8 +212,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     private fun updateLoginForm(dto: UserDto) {
         showDismissiblePopup(
                 getString(R.string.hdr_registration_successful),
-                getString(R.string.txt_registration_successful),
-                OnClickListener { _, _ -> }
+                getString(R.string.txt_registration_successful)
         )
         username.setText(dto.username)
         password.text.clear()
@@ -223,16 +221,12 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun showRegistrationErrorPopup(error: String, instruction: String, consumer: () -> Unit) {
         playWrong()
-        showDismissiblePopup(
-                error,
-                instruction,
-                OnClickListener { _, _ -> consumer() }
-        )
+        showDismissiblePopup(error, instruction, consumer)
     }
 
     private fun playWrong() {
         playSound(SOUND_NEGATIVE)
-        vibrate(VibratePattern.WRONG)
+        vibrate(VibratePattern.FAILED)
     }
 
     private fun handleLoginResponse(response: Response<Token>) {
@@ -281,7 +275,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         private fun save(token: Token) {
             editAppDetails {
                 putString(getString(R.string.token), "${token.tokenType.capitalize()} ${token.accessToken}")
-                putLong(getString(R.string.user_id), token.user!!.id)
+                putLong(getString(R.string.pref_user_id), token.user!!.id)
             }
         }
 

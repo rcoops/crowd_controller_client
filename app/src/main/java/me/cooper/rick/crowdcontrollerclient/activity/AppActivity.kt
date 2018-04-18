@@ -57,6 +57,8 @@ abstract class AppActivity : AppCompatActivity(),
 
     private val sounds = mutableMapOf<String, Int>()
 
+    private val alertDialogs = mutableMapOf<String, AlertDialog>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initClients()
@@ -75,6 +77,8 @@ abstract class AppActivity : AppCompatActivity(),
         addSound(SOUND_DING, R.raw.ding)
         addSound(SOUND_CLICK, R.raw.click)
         addSound(SOUND_NEGATIVE, R.raw.negative)
+        addSound(SOUND_GEOFENCE_EXIT, R.raw.negative_2)
+        addSound(SOUND_GEOFENCE_ENTER, R.raw.positive)
     }
 
     override fun onResume() {
@@ -165,16 +169,15 @@ abstract class AppActivity : AppCompatActivity(),
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
-    protected fun showDismissiblePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
-        buildBasePopup(title, message)
-                .setNegativeButton(getString(android.R.string.ok), onClickListener)
-                .show()
-    }
-
-    protected fun showDismissiblePopup(title: String, message: String, apiError: APIError? = null) {
-        buildBasePopup(title, message)
-                .setNegativeButton(getString(android.R.string.ok), { _, _ -> apiError?.call() })
-                .show()
+    protected fun showDismissiblePopup(title: String, message: String, consumer: (() -> Unit)? = null) {
+        if (alertDialogs[title] == null) {
+            val dialog = buildBasePopup(title, message)
+                    .setNegativeButton(getString(android.R.string.ok), { _, _ ->
+                        consumer?.invoke()
+                        if (alertDialogs[title] != null) alertDialogs.remove(title)
+                    })
+            alertDialogs[title] = dialog.show()
+        }
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
@@ -293,7 +296,11 @@ abstract class AppActivity : AppCompatActivity(),
 
     private fun showAPIErrorPopup(apiErrorDto: APIErrorDto,
                                   errorConsumer: ((APIErrorDto) -> Unit)?) {
-        showDismissiblePopup(apiErrorDto.error, apiErrorDto.errorDescription, APIError(apiErrorDto, errorConsumer))
+        showDismissiblePopup(
+                apiErrorDto.error,
+                apiErrorDto.errorDescription,
+                { APIError(apiErrorDto, errorConsumer).call() }
+        )
     }
 
     private fun buildBasePopup(title: String, message: String): AlertDialog.Builder {
@@ -322,7 +329,7 @@ abstract class AppActivity : AppCompatActivity(),
     }
 
     protected fun getUserId(): Long {
-        return appDetails().getLong(getString(R.string.user_id), -1L)
+        return appDetails().getLong(getString(R.string.pref_user_id), -1L)
     }
 
     private fun clearReferences() {
@@ -344,6 +351,8 @@ abstract class AppActivity : AppCompatActivity(),
         const val SOUND_DING = "ding"
         const val SOUND_CLICK = "click"
         const val SOUND_NEGATIVE = "negative"
+        val SOUND_GEOFENCE_EXIT = "geofence_exit"
+        val SOUND_GEOFENCE_ENTER = "geofence_enter"
     }
 
 }

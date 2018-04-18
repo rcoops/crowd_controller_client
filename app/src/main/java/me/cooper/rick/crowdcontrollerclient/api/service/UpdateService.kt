@@ -3,10 +3,12 @@ package me.cooper.rick.crowdcontrollerclient.api.service
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
+import android.net.ConnectivityManager
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
@@ -26,6 +28,9 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.constants.BASE_WS_URL
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofence
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceCentre
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceLimit
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.group
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.lastLocation
@@ -39,10 +44,11 @@ import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
 import ua.naiksoftware.stomp.client.StompMessage
+import java.net.UnknownHostException
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
+import javax.net.ssl.SSLHandshakeException
 import kotlin.reflect.KClass
-
 
 class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
@@ -56,6 +62,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     private var fusedLocationProviderClient: FusedLocationProviderClient? = null
 
     private var latestGroupId: Long? = null
+
+    private var reconnectTimer: Timer? = null
 
     var hasPendingGroupInvite = false
 
@@ -72,9 +80,17 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                     locationResult.lastLocation.longitude
             )
             listener?.updateMapSelfLocation(lastLocation!!)
-
-            sendLocation(LocationDto(getUserId(), lastLocation!!.latitude, lastLocation!!.longitude))
+            val userId = getUserId()
+            if (userId != -1L && isConnected()) {
+                tryHttpRequest({
+                    sendLocation(createLocationDto(userId, lastLocation!!))
+                })
+            }
         }
+    }
+
+    private fun createLocationDto(userId: Long, lastLocation: LatLng): LocationDto {
+        return LocationDto(userId, lastLocation.latitude, lastLocation.longitude)
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -118,7 +134,11 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         if (this.listener == listener) this.listener = null
     }
 
-    private fun getUserId() = pref.getLong(getString(R.string.user_id), -1)
+    fun cancelLocationUpdates() {
+        fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
+    }
+
+    private fun getUserId() = pref.getLong(getString(R.string.pref_user_id), -1)
 
     private fun getToken() = pref.getString(getString(R.string.token), null)
 
@@ -142,17 +162,42 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun getUser(userId: Long) {
-        userClient!!.find(userId).call({
-            Log.d("GET USER", it.toString())
-            onUserUpdate(it)
-            adjustGroup(it)
-        })
+        if (isConnected()) {
+            tryHttpRequest({
+                userClient!!.find(userId).call({
+                    Log.d("GET USER", it.toString())
+                    listener?.setHeader(it)
+                    onUserUpdate(it)
+                    adjustGroup(it)
+                })
+            })
+        }
+    }
+
+    private fun tryHttpRequest(consumer: () -> Unit, errorConsumer: (() -> Unit)? = null) {
+        try {
+            consumer()
+        } catch (e: Exception) {
+            when (e) {
+                is SSLHandshakeException, is UnknownHostException -> {
+                    errorConsumer?.invoke()
+                }
+                else -> throw e
+            }
+        }
+    }
+
+    private fun isConnected(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        val activeNetwork = cm.activeNetworkInfo
+        return activeNetwork != null && activeNetwork.isConnected
     }
 
     @SuppressLint("CommitPrefEdits")
     private fun onUserUpdate(userDto: UserDto) {
         pref.edit().apply {
-            putLong(getString(R.string.user_id), userDto.id)
+            putLong(getString(R.string.pref_user_id), userDto.id)
             commit()
         }
         updateFriends(userDto.friends)
@@ -168,13 +213,35 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 .customSubscribe({
                     Log.d(TAG, "Received group update: " + it.payload)
                     try {
-                        refreshGroupDetails(jackson.readValue(it, GroupDto::class))
+                        val groupDto = jackson.readValue(it, GroupDto::class)
+                        refreshGroupDetails(groupDto)
+                        createGeofence(groupDto)
                     } catch (e: UnrecognizedPropertyException) {
                         val dto = jackson.readValue(it, APIErrorDto::class)
                         ApiService.refreshGroupDetails(null)
                         listener?.notifyOfGroupExpiry(dto)
                     }
                 })
+    }
+
+    fun ensureGeofenceExists() {
+        if (geofence == null) {
+            latestGroupId?.let { ApiService.getGroup(it, { createGeofence(it) }) }
+        }
+    }
+
+    fun createGeofence(groupDto: GroupDto) {
+        groupDto.location?.let { location ->
+            groupDto.settings?.let { settings ->
+                listener?.run {
+                    geofenceLimit = settings.minClusterRadius
+                    geofenceCentre = LatLng(location.latitude!!, location.longitude!!)
+                    setGeofence(geofenceCentre, geofenceLimit!!.toFloat())
+                    removeGeofence()
+                    addGeofence()
+                }
+            }
+        }
     }
 
     private fun subscribeToUserUpdates(userId: Long) {
@@ -187,27 +254,52 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 })
     }
 
+    private fun resubscribe() {
+        if (reconnectTimer != null) return
+        reconnectTimer = Timer(true)
+        reconnectTimer?.schedule(
+                { connectStompClient() },
+                SECONDS.toMillis(3),
+                SECONDS.toMillis(3)
+        )
+    }
+
+    private fun cancelTimer() {
+        if (reconnectTimer == null) return
+        reconnectTimer?.cancel()
+        reconnectTimer?.purge()
+        reconnectTimer = null
+    }
+
     private fun connectStompClient() {
         stompClient.disconnect()
         stompClient = Stomp.over(WebSocket::class.java, "$BASE_WS_URL/chat/websocket")
-        stompClient.connect(true)
 
-        stompClient.lifecycle()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { lifecycleEvent ->
-                    when (lifecycleEvent.type!!) {
-                        OPENED -> Log.d("opened", "Stomp connection opened")
-                        ERROR -> {
-                            Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
-                            openUserSocket()
-                        } // TODO - error handling?
-                        CLOSED -> {
-                            Log.d("closed", "Stomp connection closed")
-                            openUserSocket()
+        if (!isConnected()) {
+            resubscribe(); return
+        }
+        cancelTimer()
+
+        tryHttpRequest({
+            stompClient.connect(true)
+
+            stompClient.lifecycle()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe { lifecycleEvent ->
+                        when (lifecycleEvent.type!!) {
+                            OPENED -> Log.d("opened", "Stomp connection opened")
+                            ERROR -> {
+                                Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
+                                openUserSocket()
+                            } // TODO - error handling?
+                            CLOSED -> {
+                                Log.d("closed", "Stomp connection closed")
+                                openUserSocket()
+                            }
                         }
                     }
-                }
+        }, { resubscribe() })
     }
 
     @SuppressLint("MissingPermission")
@@ -226,6 +318,8 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun adjustGroup(userDto: UserDto) {
         if (userDto.group == null) {
+            cancelLocationUpdates()
+            latestGroupId?.let { listener?.removeGeofence() }
             unscheduleLocationUpdates()
         } else if (latestGroupId != userDto.group) {
             scheduleGroupRequest(userDto.group!!)
@@ -258,10 +352,20 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         fun handleApiException(e: Throwable)
         fun notifyOfGroupExpiry(dto: APIErrorDto)
         fun updateMapSelfLocation(latLng: LatLng)
+        fun setGeofence(centre: LatLng, radius: Float)
+        fun addGeofence()
+        fun removeGeofence()
+        fun setHeader(userDto: UserDto)
     }
 
     companion object {
         private val jackson = ObjectMapper()
+    }
+
+    private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
+        schedule(object : TimerTask() {
+            override fun run() = task()
+        }, delay, period)
     }
 
     private fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {

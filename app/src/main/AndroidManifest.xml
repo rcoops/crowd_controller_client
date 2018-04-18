@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".App"
@@ -41,6 +42,7 @@
             android:theme="@style/AppTheme.NoActionBar" />
 
         <service android:name=".api.service.UpdateService" />
+        <service android:name=".api.service.GeofenceTransitionsIntentService"/>
     </application>
 
 </manifest>
