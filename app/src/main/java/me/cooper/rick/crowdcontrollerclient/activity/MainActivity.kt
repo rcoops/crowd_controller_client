@@ -86,6 +86,8 @@ class MainActivity : AppActivity(),
     private lateinit var geofencingClient: GeofencingClient
     private lateinit var receiver: ResponseReceiver
 
+    private var inGeoFence = false
+
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
@@ -384,13 +386,19 @@ class MainActivity : AppActivity(),
         when (geofenceTransitionType) {
             GeofenceTransitionsIntentService.UNINTERESTING_TRANSITION -> return
             Geofence.GEOFENCE_TRANSITION_EXIT -> {
-                vibrate(VibratePattern.GEOFENCE_EXIT)
-                playSound(SOUND_GEOFENCE_EXIT)
+                reactToGeofenceTransition(VibratePattern.GEOFENCE_EXIT, SOUND_GEOFENCE_EXIT, false)
             }
             Geofence.GEOFENCE_TRANSITION_ENTER -> {
-                vibrate(VibratePattern.NOTIFICATION)
-                playSound(SOUND_GEOFENCE_ENTER)
+                reactToGeofenceTransition(VibratePattern.NOTIFICATION, SOUND_GEOFENCE_ENTER, true)
             }
+        }
+    }
+
+    private fun reactToGeofenceTransition(vibratePattern: VibratePattern, sound: String, isNowInGeofence: Boolean) {
+        if (inGeoFence != isNowInGeofence) {
+            vibrate(vibratePattern)
+            playSound(sound)
+            inGeoFence = !inGeoFence
         }
     }
 
