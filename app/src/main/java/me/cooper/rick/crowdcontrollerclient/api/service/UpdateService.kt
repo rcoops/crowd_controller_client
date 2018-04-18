@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.LatLng
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.exceptions.CompositeException
 import io.reactivex.schedulers.Schedulers
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
@@ -38,13 +39,15 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
-import okhttp3.WebSocket
+import okhttp3.*
 import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
 import ua.naiksoftware.stomp.client.StompMessage
+import java.net.UnknownHostException
 import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
+import javax.net.ssl.SSLHandshakeException
 import kotlin.reflect.KClass
 
 
@@ -80,9 +83,15 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
             listener?.updateMapSelfLocation(lastLocation!!)
             val userId = getUserId()
             if (userId != -1L && isConnected()) {
-                sendLocation(LocationDto(userId, lastLocation!!.latitude, lastLocation!!.longitude))
+                tryHttpRequest({
+                    sendLocation(createLocationDto(userId, lastLocation!!))
+                })
             }
         }
+    }
+
+    private fun createLocationDto(userId: Long, lastLocation: LatLng): LocationDto {
+        return LocationDto(userId, lastLocation.latitude, lastLocation.longitude)
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -155,12 +164,27 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private fun getUser(userId: Long) {
         if (isConnected()) {
-            userClient!!.find(userId).call({
-                Log.d("GET USER", it.toString())
-                listener?.setHeader(it)
-                onUserUpdate(it)
-                adjustGroup(it)
+            tryHttpRequest({
+                userClient!!.find(userId).call({
+                    Log.d("GET USER", it.toString())
+                    listener?.setHeader(it)
+                    onUserUpdate(it)
+                    adjustGroup(it)
+                })
             })
+        }
+    }
+
+    private fun tryHttpRequest(consumer: () -> Unit, errorConsumer: (() -> Unit)? = null) {
+        try {
+            consumer()
+        } catch (e: Exception) {
+            when (e) {
+                is SSLHandshakeException, is UnknownHostException -> {
+                    errorConsumer?.invoke()
+                }
+                else -> throw e
+            }
         }
     }
 
@@ -168,7 +192,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         val activeNetwork = cm.activeNetworkInfo
-        return activeNetwork != null && activeNetwork.isConnectedOrConnecting
+        return activeNetwork != null && activeNetwork.isConnected
     }
 
     @SuppressLint("CommitPrefEdits")
@@ -192,7 +216,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                     try {
                         val groupDto = jackson.readValue(it, GroupDto::class)
                         refreshGroupDetails(groupDto)
-                            createGeofence(groupDto)
+                        createGeofence(groupDto)
                     } catch (e: UnrecognizedPropertyException) {
                         val dto = jackson.readValue(it, APIErrorDto::class)
                         ApiService.refreshGroupDetails(null)
@@ -236,6 +260,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun cancelTimer() {
+        if (reconnectTimer == null) return
         reconnectTimer?.cancel()
         reconnectTimer?.purge()
         reconnectTimer = null
@@ -245,27 +270,31 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         stompClient.disconnect()
         stompClient = Stomp.over(WebSocket::class.java, "$BASE_WS_URL/chat/websocket")
 
-        if (!isConnected()) { resubscribe(); return }
-        if (reconnectTimer != null) cancelTimer()
+        if (!isConnected()) {
+            resubscribe(); return
+        }
+        cancelTimer()
 
-        stompClient.connect(true)
+        tryHttpRequest({
+            stompClient.connect(true)
 
-        stompClient.lifecycle()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe { lifecycleEvent ->
-                    when (lifecycleEvent.type!!) {
-                        OPENED -> Log.d("opened", "Stomp connection opened")
-                        ERROR -> {
-                            Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
-                            openUserSocket()
-                        } // TODO - error handling?
-                        CLOSED -> {
-                            Log.d("closed", "Stomp connection closed")
-                            openUserSocket()
+            stompClient.lifecycle()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe { lifecycleEvent ->
+                        when (lifecycleEvent.type!!) {
+                            OPENED -> Log.d("opened", "Stomp connection opened")
+                            ERROR -> {
+                                Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
+                                openUserSocket()
+                            } // TODO - error handling?
+                            CLOSED -> {
+                                Log.d("closed", "Stomp connection closed")
+                                openUserSocket()
+                            }
                         }
                     }
-                }
+        }, { resubscribe() })
     }
 
     @SuppressLint("MissingPermission")
@@ -329,7 +358,9 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
     }
 
     private fun Timer.schedule(task: () -> Unit, delay: Long, period: Long) {
-        schedule(object : TimerTask() { override fun run() = task() }, delay, period)
+        schedule(object : TimerTask() {
+            override fun run() = task()
+        }, delay, period)
     }
 
     private fun <T : Any> ObjectMapper.readValue(value: StompMessage, clazz: KClass<T>): T {
