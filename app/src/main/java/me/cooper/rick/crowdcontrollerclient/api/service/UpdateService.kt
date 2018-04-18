@@ -79,7 +79,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
             )
             listener?.updateMapSelfLocation(lastLocation!!)
             val userId = getUserId()
-            if (userId != -1L) {
+            if (userId != -1L && isConnected()) {
                 sendLocation(LocationDto(userId, lastLocation!!.latitude, lastLocation!!.longitude))
             }
         }
