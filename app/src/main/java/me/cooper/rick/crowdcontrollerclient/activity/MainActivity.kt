@@ -202,7 +202,10 @@ class MainActivity : AppActivity(),
                     addFragmentOnTop(GroupFragment())
                 })
             }
-            R.id.nav_location -> startTask { addFragmentOnTop(LocationFragment()) }
+            R.id.nav_location -> startTask {
+                updateService?.ensureGeofenceExists()
+                addFragmentOnTop(LocationFragment())
+            }
             R.id.nav_group_leave -> startTask { removeGroupMember(getUserId(), { setNoGroup() }) }
             R.id.nav_group_settings -> addFragmentOnTop(GroupSettingsFragment())
             R.id.nav_group_close -> removeGroup({ setNoGroup() })

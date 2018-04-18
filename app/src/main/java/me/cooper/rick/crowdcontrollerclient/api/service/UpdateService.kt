@@ -20,7 +20,6 @@ import com.google.android.gms.maps.model.LatLng
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.exceptions.CompositeException
 import io.reactivex.schedulers.Schedulers
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
@@ -29,6 +28,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.UserClient
 import me.cooper.rick.crowdcontrollerclient.api.constants.BASE_WS_URL
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofence
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceCentre
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.geofenceLimit
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.getGroup
@@ -39,7 +39,7 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriends
 import me.cooper.rick.crowdcontrollerclient.util.ServiceGenerator.createService
 import me.cooper.rick.crowdcontrollerclient.util.call
 import me.cooper.rick.crowdcontrollerclient.util.subscribeWithConsumers
-import okhttp3.*
+import okhttp3.WebSocket
 import ua.naiksoftware.stomp.LifecycleEvent.Type.*
 import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.client.StompClient
@@ -49,7 +49,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit.SECONDS
 import javax.net.ssl.SSLHandshakeException
 import kotlin.reflect.KClass
-
 
 class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
@@ -225,7 +224,13 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                 })
     }
 
-    private fun createGeofence(groupDto: GroupDto) {
+    fun ensureGeofenceExists() {
+        if (geofence == null) {
+            latestGroupId?.let { ApiService.getGroup(it, { createGeofence(it) }) }
+        }
+    }
+
+    fun createGeofence(groupDto: GroupDto) {
         groupDto.location?.let { location ->
             groupDto.settings?.let { settings ->
                 listener?.run {
