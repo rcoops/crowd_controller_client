@@ -148,7 +148,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         subscribeToUserUpdates(userId)
     }
 
-    fun getUser(userId: Long) {
+    private fun getUser(userId: Long) {
         userClient!!.find(userId).call({
             Log.d("GET USER", it.toString())
             listener?.setHeader(it)
