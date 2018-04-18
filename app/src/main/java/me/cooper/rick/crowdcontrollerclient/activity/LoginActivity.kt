@@ -213,8 +213,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     private fun updateLoginForm(dto: UserDto) {
         showDismissiblePopup(
                 getString(R.string.hdr_registration_successful),
-                getString(R.string.txt_registration_successful),
-                OnClickListener { _, _ -> }
+                getString(R.string.txt_registration_successful)
         )
         username.setText(dto.username)
         password.text.clear()
@@ -223,11 +222,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     override fun showRegistrationErrorPopup(error: String, instruction: String, consumer: () -> Unit) {
         playWrong()
-        showDismissiblePopup(
-                error,
-                instruction,
-                OnClickListener { _, _ -> consumer() }
-        )
+        showDismissiblePopup(error, instruction, consumer)
     }
 
     private fun playWrong() {

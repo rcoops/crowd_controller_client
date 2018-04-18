@@ -312,7 +312,7 @@ class MainActivity : AppActivity(),
         when (e) {
             is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
             is JsonMappingException -> Log.d("EXCEPTION", e.message, e)
-            is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {})
+            is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {}) // TODO timer before reconnect
             is HttpException -> handleResponse(e.response(), {}, { dismissDialogs() })
             else -> throw e
         }
@@ -348,7 +348,7 @@ class MainActivity : AppActivity(),
 
     override fun notifyOfGroupExpiry(dto: APIErrorDto) {
         supportFragmentManager.popBackStack(BACK_STACK_ROOT_TAG, 0)
-        showDismissiblePopup(dto.error, dto.errorDescription, null)
+        showDismissiblePopup(dto.error, dto.errorDescription)
     }
 
     override fun setGeofence(centre: LatLng, radius: Float) {

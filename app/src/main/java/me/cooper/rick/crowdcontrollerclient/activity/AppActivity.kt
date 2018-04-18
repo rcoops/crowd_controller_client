@@ -57,6 +57,8 @@ abstract class AppActivity : AppCompatActivity(),
 
     private val sounds = mutableMapOf<String, Int>()
 
+    private val alertDialogs = mutableMapOf<String, AlertDialog>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initClients()
@@ -165,16 +167,15 @@ abstract class AppActivity : AppCompatActivity(),
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
-    protected fun showDismissiblePopup(title: String, message: String, onClickListener: DialogInterface.OnClickListener) {
-        buildBasePopup(title, message)
-                .setNegativeButton(getString(android.R.string.ok), onClickListener)
-                .show()
-    }
-
-    protected fun showDismissiblePopup(title: String, message: String, apiError: APIError? = null) {
-        buildBasePopup(title, message)
-                .setNegativeButton(getString(android.R.string.ok), { _, _ -> apiError?.call() })
-                .show()
+    protected fun showDismissiblePopup(title: String, message: String, consumer: (() -> Unit)? = null) {
+        if (alertDialogs[title] == null) {
+            val dialog = buildBasePopup(title, message)
+                    .setNegativeButton(getString(android.R.string.ok), { _, _ ->
+                        consumer?.invoke()
+                        if (alertDialogs[title] != null) alertDialogs.remove(title)
+                    })
+            alertDialogs[title] = dialog.show()
+        }
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
@@ -293,7 +294,11 @@ abstract class AppActivity : AppCompatActivity(),
 
     private fun showAPIErrorPopup(apiErrorDto: APIErrorDto,
                                   errorConsumer: ((APIErrorDto) -> Unit)?) {
-        showDismissiblePopup(apiErrorDto.error, apiErrorDto.errorDescription, APIError(apiErrorDto, errorConsumer))
+        showDismissiblePopup(
+                apiErrorDto.error,
+                apiErrorDto.errorDescription,
+                { APIError(apiErrorDto, errorConsumer).call() }
+        )
     }
 
     private fun buildBasePopup(title: String, message: String): AlertDialog.Builder {
