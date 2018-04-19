@@ -90,6 +90,10 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         groupDto?.location?.let { locationDto ->
             if (locationDto.hasLocation()) {
                 locationDto.address?.let { txt_address.text = parseAddress(it) }
+                locationDto.lastUpdate?.let {
+                    val lastUpdate = getString(R.string.txt_location_last_update, it)
+                    txt_last_update.text = lastUpdate
+                }
                 googleMap?.let { updateMap(locationDto) }
             }
         }
