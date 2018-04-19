@@ -96,9 +96,9 @@ object ApiService {
                 .call(consumer, errorConsumer!!)
     }
 
-    fun acceptGroupInvite(groupId: Long, consumer: (GroupDto) -> Unit) {
+    fun respondToInvite(groupId: Long, consumer: (GroupDto?) -> Unit, isAccept: Boolean) {
         groupClient()
-                .acceptInvite(groupId, getUserId())
+                .respondToInvite(groupId, getUserId(), isAccept)
                 .call(consumer, errorConsumer!!)
     }
 

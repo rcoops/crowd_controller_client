@@ -84,7 +84,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(target, 17.0f))
     }
 
-    override fun getTitle(): String = TITLE
+    override fun getTitle(): String = getString(R.string.action_location_view)
 
     fun updateView(groupDto: GroupDto?) {
         groupDto?.location?.let { locationDto ->
@@ -123,7 +123,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     }
     private fun drawGeofence(map: GoogleMap?) {
         geofence?.let {
-            Log.d(TITLE, "drawGeofence()")
+            Log.d(TAG, "drawGeofence()")
 
             if (geoFenceLimits != null)
                 geoFenceLimits!!.remove()
@@ -138,7 +138,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
     }
 
     companion object {
-        private const val TITLE = "Location"
+        private const val TAG = "Location"
     }
 
 }

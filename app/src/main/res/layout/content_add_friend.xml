@@ -20,19 +20,19 @@
         android:layout_height="match_parent"
         android:orientation="horizontal">
         <Button
-            android:id="@+id/btn_add_friend"
-            style="@style/AppTheme.Button"
-            android:layout_width="0dp"
-            android:layout_weight=".5"
-            android:layout_height="wrap_content"
-            android:text="@string/action_add_friend" />
-        <Button
             android:id="@+id/btn_cancel_add_friend"
             style="@style/AppTheme.Button"
             android:layout_width="0dp"
             android:layout_weight=".5"
             android:layout_height="wrap_content"
             android:text="@android:string/cancel" />
+        <Button
+            android:id="@+id/btn_add_friend"
+            style="@style/AppTheme.Button"
+            android:layout_width="0dp"
+            android:layout_weight=".5"
+            android:layout_height="wrap_content"
+            android:text="@string/action_add_friend" />
 
     </LinearLayout>
 

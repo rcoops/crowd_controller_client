@@ -59,6 +59,7 @@
     <string name="jwt_grant_type">password</string>
 
     <string name="txt_location_waiting">Waiting for location update&#8230;</string>
+    <string name="txt_location_label">Address:</string>
     <string name="title_activity_test">TestActivity</string>
     <string name="title_activity_auth">AuthActivity</string>
     <string name="header_register">Register</string>
@@ -92,7 +93,7 @@
     <string name="txt_cancel_group_invite">Cancel\nGroup\nInvite?</string>
     <string name="user_details">details</string>
     <string name="location_permissions_granted">Location Permissions Granted</string>
-    <string name="action_location_view">Location View</string>
+    <string name="action_location_view">Where\'s my Group?</string>
     <string name="action_group_view">Group</string>
     <string name="action_toggle_clustering">Toggle Group Share (On)</string>
     <string name="action_close_group">Close Group</string>
@@ -101,7 +102,10 @@
     <string name="txt_me">Me</string>
     <string name="hdr_fragment_registration">Registration</string>
     <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
+    <string name="hdr_respond_grp_invite">Invited to Group</string>
+    <string name="txt_respond_grp_invite">You have been invited to a group by %1$s, Do you accept?\nAccepting signals your agreement to share and store your location for the duration of the group.</string>
     <string name="action_accept_grp_invite">Accept</string>
+    <string name="action_refuse_grp_invite">Refuse</string>
 
     <string name="pref_hdr_sound">Sound Settings</string>
     <string name="pref_txt_sound">Effects Volume</string>

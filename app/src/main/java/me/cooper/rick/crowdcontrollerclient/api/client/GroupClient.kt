@@ -27,8 +27,9 @@ interface GroupClient {
                @Body groupSettingsDto: GroupSettingsDto): Observable<GroupDto>
 
     @PATCH("$BASE_PATH/{groupId}/members/{userId}")
-    fun acceptInvite(@Path("groupId") groupId: Long,
-                     @Path("userId") userId: Long): Observable<GroupDto>
+    fun respondToInvite(@Path("groupId") groupId: Long,
+                        @Path("userId") userId: Long,
+                        @Query("isAccept") isAccept: Boolean): Observable<GroupDto?>
 
     @DELETE("$BASE_PATH/{groupId}")
     fun remove(@Path("groupId") groupId: Long): Completable

@@ -65,8 +65,6 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
     private var reconnectTimer: Timer? = null
 
-    var hasPendingGroupInvite = false
-
     private val locationRequest = LocationRequest.create().apply {
         interval = SECONDS.toMillis(10)
         fastestInterval = SECONDS.toMillis(10)
@@ -157,6 +155,10 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
 
         getUser(userId)
 
+        reconnectWebsocket(userId)
+    }
+
+    private fun reconnectWebsocket(userId: Long) {
         if (!stompClient.isConnected && !stompClient.isConnecting) connectStompClient()
         subscribeToUserUpdates(userId)
     }
@@ -230,7 +232,7 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
         }
     }
 
-    fun createGeofence(groupDto: GroupDto) {
+    private fun createGeofence(groupDto: GroupDto) {
         groupDto.location?.let { location ->
             groupDto.settings?.let { settings ->
                 listener?.run {
@@ -291,11 +293,11 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
                             OPENED -> Log.d("opened", "Stomp connection opened")
                             ERROR -> {
                                 Log.e(TAG, "Stomp connection error", lifecycleEvent.exception)
-                                openUserSocket()
-                            } // TODO - error handling?
+                                resubscribe()
+                            }
                             CLOSED -> {
                                 Log.d("closed", "Stomp connection closed")
-                                openUserSocket()
+                                resubscribe()
                             }
                         }
                     }
@@ -321,12 +323,11 @@ class UpdateService : Service(), OnSharedPreferenceChangeListener {
             cancelLocationUpdates()
             latestGroupId?.let { listener?.removeGeofence() }
             unscheduleLocationUpdates()
-        } else if (latestGroupId != userDto.group) {
+        } else if (latestGroupId != userDto.group && userDto.groupAccepted) {
             scheduleGroupRequest(userDto.group!!)
         }
-        if (userDto.group != null && !userDto.groupAccepted && !hasPendingGroupInvite) {
+        if (userDto.group != null && !userDto.groupAccepted) {
             listener?.notifyUserOfGroupInvite(userDto.group!!, userDto.groupAdmin!!)
-            hasPendingGroupInvite = true
         }
         latestGroupId = userDto.group
     }

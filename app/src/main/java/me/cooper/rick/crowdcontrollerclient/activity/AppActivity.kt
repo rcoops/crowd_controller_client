@@ -6,7 +6,6 @@ import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -55,7 +54,7 @@ abstract class AppActivity : AppCompatActivity(),
 
     private var shouldVibrate: Boolean = false
 
-    private val sounds = mutableMapOf<String, Int>()
+    private val sounds = mutableMapOf<Int, Int>()
 
     private val alertDialogs = mutableMapOf<String, AlertDialog>()
 
@@ -77,8 +76,8 @@ abstract class AppActivity : AppCompatActivity(),
         addSound(SOUND_DING, R.raw.ding)
         addSound(SOUND_CLICK, R.raw.click)
         addSound(SOUND_NEGATIVE, R.raw.negative)
-        addSound(SOUND_GEOFENCE_EXIT, R.raw.negative_2)
-        addSound(SOUND_GEOFENCE_ENTER, R.raw.positive)
+        addSound(SOUND_GEOFENCE_EXIT, R.raw.geofence_exit)
+        addSound(SOUND_GEOFENCE_ENTER, R.raw.geofence_enter)
     }
 
     override fun onResume() {
@@ -97,7 +96,7 @@ abstract class AppActivity : AppCompatActivity(),
         super.onDestroy()
     }
 
-    protected fun addSound(key: String, rawSoundId: Int) {
+    protected fun addSound(key: Int, rawSoundId: Int) {
         sounds[key] = soundPool.load(this, rawSoundId, 1)
     }
 
@@ -212,7 +211,7 @@ abstract class AppActivity : AppCompatActivity(),
         ApiService.updateGroupSettings(settings)
     }
 
-    protected fun playSound(key: String) {
+    protected fun playSound(key: Int) {
         val volume = getVolumeSetting(getDefaultSharedPreferences(this), getString(R.string.pref_volume_effects))
         sounds[key]?.let { soundPool.play(it, volume, volume, 1, 0, 1f) }
     }
@@ -225,8 +224,8 @@ abstract class AppActivity : AppCompatActivity(),
         sounds.keys.forEach { setEffectVolume(it, volume) }
     }
 
-    private fun setEffectVolume(tag: String, volume: Float) {
-        sounds[tag]?.let { soundPool.setVolume(it, volume, volume) }
+    private fun setEffectVolume(key: Int, volume: Float) {
+        sounds[key]?.let { soundPool.setVolume(it, volume, volume) }
     }
 
     protected fun vibrate(pattern: VibratePattern) {
@@ -348,11 +347,11 @@ abstract class AppActivity : AppCompatActivity(),
     companion object {
         private const val REQUEST_FINE_LOCATION = 2
         private const val DEFAULT_VOLUME = 5
-        const val SOUND_DING = "ding"
-        const val SOUND_CLICK = "click"
-        const val SOUND_NEGATIVE = "negative"
-        val SOUND_GEOFENCE_EXIT = "geofence_exit"
-        val SOUND_GEOFENCE_ENTER = "geofence_enter"
+        const val SOUND_DING = 0
+        const val SOUND_CLICK = 1
+        const val SOUND_NEGATIVE = 2
+        const val SOUND_GEOFENCE_EXIT = 3
+        const val SOUND_GEOFENCE_ENTER = 4
     }
 
 }

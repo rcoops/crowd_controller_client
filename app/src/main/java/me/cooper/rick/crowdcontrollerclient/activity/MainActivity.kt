@@ -7,8 +7,6 @@ import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import android.support.design.widget.NavigationView
-import android.support.design.widget.Snackbar
-import android.support.design.widget.Snackbar.LENGTH_INDEFINITE
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.view.GravityCompat
@@ -37,7 +35,6 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
-import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.acceptGroupInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.createGroup
@@ -52,6 +49,7 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.refreshGroupD
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroup
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroupMember
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.respondToInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
 import me.cooper.rick.crowdcontrollerclient.api.service.GeofenceTransitionsIntentService
@@ -87,6 +85,8 @@ class MainActivity : AppActivity(),
     private lateinit var receiver: ResponseReceiver
 
     private var inGeoFence = false
+
+    var groupInviteNotified = false
 
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
@@ -325,7 +325,7 @@ class MainActivity : AppActivity(),
         when (e) {
             is ResolvableApiException -> e.startResolutionForResult(this, REQUEST_CHECK_SETTINGS)
             is JsonMappingException -> Log.d("EXCEPTION", e.message, e)
-            is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {}) // TODO timer before reconnect
+            is IOException -> handleResponse(buildConnectionExceptionResponse<Any>(e), {})
             is HttpException -> handleResponse(e.response(), {}, { dismissDialogs() })
             else -> throw e
         }
@@ -335,28 +335,23 @@ class MainActivity : AppActivity(),
     override fun requestPermissions() = requestLocationPermissions()
 
     override fun notifyUserOfGroupInvite(groupId: Long, groupAdmin: String) {
-        val notification = Snackbar.make(
-                content,
-                getString(R.string.txt_pending_grp_invite, groupAdmin),
-                LENGTH_INDEFINITE
-        ).apply {
-            setAction(R.string.action_accept_grp_invite, { _ ->
-                acceptGroupInvite(groupId, {
-                    updateService?.hasPendingGroupInvite = false
-                    createGroup(it)
-                })
-            })
-            view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View) {}
-
-                override fun onViewDetachedFromWindow(v: View) {
-                    updateService?.hasPendingGroupInvite = false
-                }
-            })
+        if (!groupInviteNotified) {
+            groupInviteNotified = true
+            showConfirmDialog(
+                    groupAdmin,
+                    R.string.txt_respond_grp_invite,
+                    dialogOnClickListener {
+                        respondToInvite(groupId, { it?.let { createGroup(it) } }, true)
+                    },
+                    dialogOnClickListener { respondToInvite(groupId, { }, false) },
+                    { _ -> groupInviteNotified = false },
+                    R.string.hdr_respond_grp_invite,
+                    R.string.action_accept_grp_invite,
+                    R.string.action_refuse_grp_invite
+            )
+            playSound(SOUND_DING)
+            vibrate(VibratePattern.NOTIFICATION)
         }
-        notification.show()
-        playSound(SOUND_DING)
-        vibrate(VibratePattern.NOTIFICATION)
     }
 
     override fun notifyOfGroupExpiry(dto: APIErrorDto) {
@@ -397,7 +392,7 @@ class MainActivity : AppActivity(),
         }
     }
 
-    private fun reactToGeofenceTransition(vibratePattern: VibratePattern, sound: String, isNowInGeofence: Boolean) {
+    private fun reactToGeofenceTransition(vibratePattern: VibratePattern, sound: Int, isNowInGeofence: Boolean) {
         if (inGeoFence != isNowInGeofence) {
             vibrate(vibratePattern)
             playSound(sound)
@@ -425,12 +420,10 @@ class MainActivity : AppActivity(),
 
     fun dismissAfterTask() {
         dismissProgressBar()
-        dismissDialogs()
     }
 
     /* PRIVATE STUFF */
 
-    // TODO must check geofence exists before calling this
     private fun getGeofencingRequest(): GeofencingRequest {
         return GeofencingRequest.Builder().apply {
             setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
@@ -513,13 +506,19 @@ class MainActivity : AppActivity(),
                 "${if (isInCurrentGroup) "your" else "a"} group!")
     }
 
-    private fun showConfirmDialog(name: String, stringId: Int,
-                                  onOkListener: DialogInterface.OnClickListener) {
+    private fun showConfirmDialog(name: String, messageStringId: Int,
+                                  okConsumer: (dialog: DialogInterface, which: Int) -> Unit,
+                                  cancelConsumer: (dialog: DialogInterface, which: Int) -> Unit = { _, _ -> },
+                                  onDismissListener: (dialog: DialogInterface) -> Unit = { _ -> },
+                                  headerId: Int = R.string.header_confirm,
+                                  positiveButtonTextId: Int = android.R.string.ok,
+                                  negativeButtonTextId: Int = android.R.string.cancel) {
         addDialog(AlertDialog.Builder(this)
-                .setTitle(getString(R.string.header_confirm))
-                .setMessage(getString(stringId, name))
-                .setPositiveButton(getString(android.R.string.ok), onOkListener)
-                .setNegativeButton(getString(android.R.string.cancel), { _, _ -> })
+                .setTitle(getString(headerId))
+                .setMessage(getString(messageStringId, name))
+                .setPositiveButton(getString(positiveButtonTextId), okConsumer)
+                .setNegativeButton(getString(negativeButtonTextId), cancelConsumer)
+                .setOnDismissListener(onDismissListener)
                 .show())
     }
 
@@ -556,8 +555,8 @@ class MainActivity : AppActivity(),
 
     private fun removeFriendListener(dto: FriendDto) = dialogOnClickListener { removeFriend(dto) }
 
-    private fun dialogOnClickListener(func: () -> Unit): DialogInterface.OnClickListener {
-        return DialogInterface.OnClickListener { _, _ -> playClick(); startTask(func) }
+    private fun dialogOnClickListener(func: () -> Unit): (dialog: DialogInterface, which: Int) -> Unit {
+        return { _, _ -> playClick(); startTask(func) }
     }
 
 }

@@ -248,7 +248,6 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
      * Represents an asynchronous login/registration task used to authenticate
      * the baseUserEntity.
      */
-    // TODO CONVERT TO Observable OR DESTROY TASK
     inner class UserLoginTask internal constructor(
             private val username: String,
             private val password: String) : AsyncTask<Void, Void, Response<Token>>() {
