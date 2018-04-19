@@ -90,7 +90,7 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         groupDto?.location?.let { locationDto ->
             if (locationDto.hasLocation()) {
                 locationDto.address?.let { txt_address.text = parseAddress(it) }
-                googleMap?.let { updateMap(locationDto, groupDto.settings?.clustering ?: false) }
+                googleMap?.let { updateMap(locationDto) }
             }
         }
     }
@@ -99,15 +99,11 @@ class LocationFragment : AbstractAppFragment(), OnMapReadyCallback {
         return address.replace(", ", ",\n")
     }
 
-    private fun updateMap(locationDto: LocationDto, isClustered: Boolean) {
+    private fun updateMap(locationDto: LocationDto) {
         googleMap?.let { drawGeofence(it) }
         destination = LatLng(locationDto.latitude!!, locationDto.longitude!!)
         destinationMarker?.remove()
-        val bitmapDescriptor = defaultMarker(if (!isClustered) HUE_RED else HUE_GREEN)
-        destinationMarker = googleMap?.addMarker(
-                MarkerOptions().position(destination!!)
-                        .icon(bitmapDescriptor)
-        )
+        destinationMarker = googleMap?.addMarker(MarkerOptions().position(destination!!))
         val mapParams = root.map.layoutParams
         mapParams.height = root.map.measuredWidth
         root.map.layoutParams = mapParams
