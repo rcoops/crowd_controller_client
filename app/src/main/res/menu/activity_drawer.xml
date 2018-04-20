@@ -52,7 +52,14 @@
             android:icon="@drawable/ic_action_group_close"
             android:title="@string/action_close_group" />
     </group>
-
+    <item android:title="@string/hdr_account">
+        <menu>
+            <item
+                android:id="@+id/nav_reset_password"
+                android:icon="@drawable/ic_reset_password"
+                android:title="@string/hdr_reset_password" />
+        </menu>
+    </item>
     <item android:title="@string/header_app_menu">
         <menu>
             <item

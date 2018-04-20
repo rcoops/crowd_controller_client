@@ -103,7 +103,7 @@ class RegistrationFragment : AbstractAppFragment() {
 
     // https://www.mkyong.com/regular-expressions/how-to-validate-email-address-with-regular-expression/
     object EmailValidator {
-        private val EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"
+        private const val EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"
 
         private val pattern = Pattern.compile(EMAIL_PATTERN)
 

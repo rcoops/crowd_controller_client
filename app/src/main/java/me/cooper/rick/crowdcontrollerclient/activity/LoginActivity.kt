@@ -20,6 +20,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.content_reset_password.view.*
+import kotlinx.android.synthetic.main.nav_header_main.*
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.Token
@@ -60,6 +61,14 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
         setListeners()
 
         requestLocationPermissions()
+        if (intent.hasExtra(USERNAME_KEY)) {
+            username.setText(intent.getStringExtra(USERNAME_KEY))
+            password.requestFocus()
+            showDismissiblePopup(
+                    getString(R.string.hdr_pass_update_confirm),
+                    getString(R.string.txt_pass_update_confirm)
+            )
+        }
     }
 
     /**
@@ -135,29 +144,31 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                     .addToBackStack("reg")
                     .commit()
         }
-        reset_password.setOnClickListener {
-            addDialog(AlertDialog.Builder(this)
-                    .setTitle(R.string.hdr_reset_password)
-                    .setView(layoutInflater.inflate(R.layout.content_reset_password, content,
-                            false).apply {
-                        btn_confirm_reset_password.setOnClickListener {
-                            val valid = RegistrationFragment.EmailValidator.validate(actv_email.text.toString())
-                            if (valid) {
-                                requestPasswordReset(actv_email.text.toString())
-                                dismissDialogs()
-                                showDismissiblePopup(
-                                        getString(R.string.hdr_pass_request_sent),
-                                        getString(R.string.txt_pass_request_sent)
-                                )
-                            } else {
-                                txt_email_invalid.text = getString(R.string.txt_reset_password_invalid_email)
-                            }
+        reset_password.setOnClickListener { resetPasswordDialog() }
+    }
+
+    private fun resetPasswordDialog() {
+        addDialog(AlertDialog.Builder(this)
+                .setTitle(R.string.hdr_reset_password)
+                .setView(layoutInflater.inflate(R.layout.content_reset_password, content,
+                        false).apply {
+                    btn_confirm_reset_password.setOnClickListener {
+                        val valid = RegistrationFragment.EmailValidator.validate(actv_email.text.toString())
+                        if (valid) {
+                            requestPasswordReset(actv_email.text.toString())
+                            dismissDialogs()
+                            showDismissiblePopup(
+                                    getString(R.string.hdr_pass_request_sent),
+                                    getString(R.string.txt_pass_request_sent)
+                            )
+                        } else {
+                            txt_email_invalid.text = getString(R.string.txt_reset_password_invalid_email)
                         }
-                        btn_cancel_reset_password.setOnClickListener { dismissDialogs() }
-                    })
-                    .show()
-            )
-        }
+                    }
+                    btn_cancel_reset_password.setOnClickListener { dismissDialogs() }
+                })
+                .show()
+        )
     }
 
     private fun populateAutoComplete() {
@@ -219,7 +230,7 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
     }
 
     private fun isPasswordValid(password: String): Boolean {
-        return password.length > 4
+        return password.length >= MIN_PASSWORD_LENGTH
     }
 
     private fun addEmailsToAutoComplete(emailAddressCollection: List<String>) {
@@ -312,6 +323,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
 
     companion object {
         private const val REQUEST_READ_CONTACTS = 1
+        const val USERNAME_KEY = "username"
+        const val MIN_PASSWORD_LENGTH = 5
     }
 
 }

@@ -47,6 +47,7 @@
     <string name="action_settings">Settings</string>
     <string name="action_sign_out">Sign Out</string>
     <string name="header_app_menu">App</string>
+    <string name="hdr_account">Account</string>
     <string name="title_activity_group">GroupActivity</string>
     <string name="title_activity_location">Location</string>
     <string name="token">token</string>
@@ -68,9 +69,14 @@
     <string name="header_add_friend">Add Friend</string>
     <string name="action_add_friend">Add</string>
     <string name="prompt_user_detail">Username / email / mobile number</string>
-    <string name="prompt_reset_password_email">email</string>
+    <string name="prompt_reset_password_email">Email</string>
+    <string name="prompt_update_password_old">Current Password</string>
+    <string name="prompt_update_password_new">New Password</string>
+    <string name="prompt_update_password_new_confirm">Confirm New Password</string>
     <string name="txt_reset_password">Please enter your email to request a password reset</string>
     <string name="txt_reset_password_invalid_email">Email Invalid</string>
+    <string name="txt_update_password_not_matching">Passwords do not match</string>
+    <string name="txt_update_password_invalid">Password must be at least 4 characters</string>
     <string name="action_remove">Remove</string>
     <string name="header_bad_credentials">Bad Credentials</string>
     <string name="txt_bad_credentials">Username or password is incorrect. Please try again.</string>
@@ -141,4 +147,6 @@
     <string name="unknown_geofence_transition">Unknown transition</string>
     <string name="hdr_pass_request_sent">Password Reset Request Sent</string>
     <string name="txt_pass_request_sent">Please check your inbox</string>
+    <string name="hdr_pass_update_confirm">Password Updated</string>
+    <string name="txt_pass_update_confirm">Your password has been updated, please log back in with the your password.</string>
 </resources>

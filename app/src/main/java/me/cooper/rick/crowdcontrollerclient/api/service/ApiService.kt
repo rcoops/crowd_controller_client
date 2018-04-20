@@ -8,7 +8,9 @@ import com.google.android.gms.maps.model.LatLng
 import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.group.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.PasswordResetDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
@@ -75,6 +77,13 @@ object ApiService {
 
     fun updateFriendship(dto: FriendDto) {
         userClient().updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
+    }
+
+    fun updatePassword(oldPassword: String, newPassword: String,
+                       successConsumer: (UserDto) -> Unit) {
+        val userId = getUserId()
+        userClient().updatePassword(userId, PasswordResetDto(userId, oldPassword, newPassword))
+                .call(successConsumer, errorConsumer)
     }
 
     fun getGroup(id: Long? = null, consumer: ((GroupDto) -> Unit)? = null) {

@@ -1,9 +1,9 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.2.31'
+    ext.kotlin_version = '1.2.40'
     ext.retrofit_version = '2.3.0'
-    ext.play_services_version = '12.0.1'
+    ext.play_services_version = '15.0.0'
     ext.rx_version = '2.0.2'
     repositories {
         mavenLocal()

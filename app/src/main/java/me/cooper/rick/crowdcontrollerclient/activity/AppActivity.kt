@@ -168,6 +168,12 @@ abstract class AppActivity : AppCompatActivity(),
                 .apply { extras.forEach { putExtra(it.first, it.second) } })
     }
 
+    protected fun startActivityAfterReset(activityClass: KClass<out AppActivity>,
+                                          username: String) {
+        startActivity(Intent(this, activityClass.java)
+                .apply { putExtra(LoginActivity.USERNAME_KEY, username) })
+    }
+
     protected fun showDismissiblePopup(title: String, message: String, consumer: (() -> Unit)? = null) {
         if (alertDialogs[title] == null) {
             val dialog = buildBasePopup(title, message)

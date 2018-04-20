@@ -3,6 +3,7 @@ package me.cooper.rick.crowdcontrollerclient.api.client
 import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.PasswordResetDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import retrofit2.Call
@@ -44,6 +45,10 @@ interface UserClient {
 
     @POST("$BASE_PATH/request_password_reset")
     fun requestPasswordReset(@Body registrationDto: RegistrationDto): Observable<Boolean>
+
+    @PATCH("$BASE_PATH/{userId}/password")
+    fun updatePassword(@Path("userId") userId: Long,
+                       @Body passwordResetDto: PasswordResetDto): Observable<UserDto>
 
     companion object {
         const val BASE_PATH = "/users"

@@ -28,6 +28,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
 import kotlinx.android.synthetic.main.content_add_friend.view.*
 import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.content_update_password.view.*
 import kotlinx.android.synthetic.main.nav_header_main.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupDto
@@ -35,6 +36,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.group.GroupMemberDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
+import me.cooper.rick.crowdcontrollerclient.activity.LoginActivity.Companion.MIN_PASSWORD_LENGTH
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addFriend
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.addGroupMembers
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.createGroup
@@ -52,6 +54,7 @@ import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.removeGroupMe
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.respondToInvite
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.selectFriends
 import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updateFriendship
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.updatePassword
 import me.cooper.rick.crowdcontrollerclient.api.service.GeofenceTransitionsIntentService
 import me.cooper.rick.crowdcontrollerclient.api.service.UpdateService
 import me.cooper.rick.crowdcontrollerclient.api.service.receiver.ResponseReceiver
@@ -178,6 +181,7 @@ class MainActivity : AppActivity(),
 
     override fun onResume() {
         super.onResume()
+        errorConsumer = { handleApiException(it) }
         getFriends()
     }
 
@@ -210,15 +214,21 @@ class MainActivity : AppActivity(),
             R.id.nav_group_settings -> addFragmentOnTop(GroupSettingsFragment())
             R.id.nav_group_close -> removeGroup({ setNoGroup() })
             R.id.nav_settings -> addFragmentOnTop(SettingsFragment())
-            R.id.nav_sign_out -> startTask {
-                editAppDetails { clear() }
-                updateService?.cancelLocationUpdates()
-                startActivity(LoginActivity::class)
-            }
+            R.id.nav_reset_password -> updatePasswordDialog()
+            R.id.nav_sign_out -> logOut()
         }
 
         drawer_layout.closeDrawer(GravityCompat.START)
         return true
+    }
+
+    private fun logOut(username: String? = null) {
+        startTask {
+            editAppDetails { clear() }
+            updateService?.cancelLocationUpdates()
+            if (username != null) startActivityAfterReset(LoginActivity::class, username)
+            else startActivity(LoginActivity::class)
+        }
     }
 
     /* BACK STACK LISTENER */
@@ -472,6 +482,39 @@ class MainActivity : AppActivity(),
                 .commit()
 
         showProgress(false, content_main, progress)
+    }
+
+    private fun updatePasswordDialog() {
+        addDialog(AlertDialog.Builder(this)
+                .setTitle(R.string.hdr_reset_password)
+                .setView(layoutInflater.inflate(R.layout.content_update_password, content_main,
+                        false).apply {
+                    btn_confirm_update_password.setOnClickListener {
+                        val newPassword = actv_new_password.text.toString()
+                        val confirmPassword = actv_new_password_confirm.text.toString()
+                        when {
+                            newPassword.length < MIN_PASSWORD_LENGTH -> {
+                                txt_password_invalid.text = getString(R.string.txt_update_password_invalid)
+                            }
+                            newPassword != confirmPassword -> {
+                                txt_password_invalid.text = getString(R.string.txt_update_password_not_matching)
+                            }
+                            else -> {
+                                dismissDialogs()
+                                startTask {
+                                    updatePassword(
+                                            actv_old_password.text.toString(),
+                                            newPassword,
+                                            { logOut(it.username) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    btn_cancel_update_password.setOnClickListener { dismissDialogs() }
+                })
+                .show()
+        )
     }
 
     private fun showAddFriendDialog() {
