@@ -9,6 +9,7 @@ import kotlinx.android.synthetic.main.fragment_registration.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.R.id.*
+import java.util.regex.Pattern
 
 class RegistrationFragment : AbstractAppFragment() {
 
@@ -50,23 +51,22 @@ class RegistrationFragment : AbstractAppFragment() {
         val usernameStr = username.text.toString()
         val passwordStr = password.text.toString()
         val passwordConfirmStr = passwordConfirm.text.toString()
-        val mobileNumberStr = mobileNumber.text.toString()
+        val emailStr = email.text.toString()
         return when {
             usernameStr.isBlank() -> FormValidation.EMPTY_USERNAME
             passwordStr.isBlank() -> FormValidation.EMPTY_PASSWORD
             passwordStr.length < 5 -> FormValidation.PASSWORD_TOO_SHORT
             passwordStr != passwordConfirmStr -> FormValidation.NON_MATCHING_PASSWORDS
-            !isValidMobile(mobileNumberStr) -> FormValidation.MOBILE_INVALID
+            !isValidEmail(emailStr) -> FormValidation.EMAIL_INVALID
             else -> FormValidation.VALID
         }
     }
 
-    private fun isValidMobile(mobileNumberStr: String) = mobileNumberStr.matches("07\\d{9}".toRegex())
+    private fun isValidEmail(email: String) = EmailValidator.validate(email)
 
     override fun onAttach(context: Context?) {
         super.onAttach(context)
-        listener = (context as? OnRegistrationListener) ?:
-            throw RuntimeException(context!!.toString() + " must implement OnRegistrationListener")
+        listener = (context as? OnRegistrationListener) ?: throw RuntimeException(context!!.toString() + " must implement OnRegistrationListener")
     }
 
     override fun onDetach() {
@@ -91,7 +91,7 @@ class RegistrationFragment : AbstractAppFragment() {
     enum class FormValidation(val error: String, val instruction: String, val uiId: Int) {
         EMPTY_USERNAME("Username Empty!", "Please enter a username", username),
         EMPTY_PASSWORD("Password Empty!", "Please enter a password", password),
-        MOBILE_INVALID("Invalid Mobile Number!", "You must provide a mobile number of 11 digits starting with 07", mobileNumber),
+        EMAIL_INVALID("Invalid Email!", "You must provide a valid email", email),
         PASSWORD_TOO_SHORT("Password too Short!", "The password must be over 4 characters long", password),
         NON_MATCHING_PASSWORDS("Passwords do not match", "Your password and confirmation do not match, please try again", passwordConfirm),
         VALID("No Issues", "None required", -1)
@@ -99,6 +99,19 @@ class RegistrationFragment : AbstractAppFragment() {
 
     companion object {
         private const val TITLE = "Registration"
+    }
+
+    // https://www.mkyong.com/regular-expressions/how-to-validate-email-address-with-regular-expression/
+    object EmailValidator {
+        private val EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"
+
+        private val pattern = Pattern.compile(EMAIL_PATTERN)
+
+        fun validate(hex: String): Boolean {
+            val matcher = pattern.matcher(hex)
+            return matcher.matches()
+        }
+
     }
 
 }

@@ -6,8 +6,8 @@
     <string name="prompt_username">Username</string>
     <string name="prompt_password">Password</string>
     <string name="prompt_password_confirm">Confirm Password</string>
-    <string name="prompt_email">Email (optional)</string>
-    <string name="prompt_mobile">Mobile Number</string>
+    <string name="prompt_email">Email</string>
+    <string name="prompt_mobile">Mobile Number (optional)</string>
 
     <string name="action_sign_in">Sign in or register</string>
     <string name="action_register">Register</string>
@@ -29,7 +29,7 @@
 
     <string name="action_add_to_group">Add to Group</string>
     <string name="action_group_promote_admin">Promote To Group Admin</string>
-    <string name="action_reset_password">Forgot Password</string>
+    <string name="action_forgot_password">Forgot Password</string>
 
     <string name="txt_register">Not signed up?</string>
     <string name="title_activity_main">Main Activity</string>
@@ -64,9 +64,13 @@
     <string name="title_activity_test">TestActivity</string>
     <string name="title_activity_auth">AuthActivity</string>
     <string name="header_register">Register</string>
+    <string name="hdr_reset_password">Reset Password</string>
     <string name="header_add_friend">Add Friend</string>
     <string name="action_add_friend">Add</string>
     <string name="prompt_user_detail">Username / email / mobile number</string>
+    <string name="prompt_reset_password_email">email</string>
+    <string name="txt_reset_password">Please enter your email to request a password reset</string>
+    <string name="txt_reset_password_invalid_email">Email Invalid</string>
     <string name="action_remove">Remove</string>
     <string name="header_bad_credentials">Bad Credentials</string>
     <string name="txt_bad_credentials">Username or password is incorrect. Please try again.</string>
@@ -135,4 +139,6 @@
     <string name="geofence_transition_entered">Entered </string>
     <string name="geofence_transition_exited">Exited</string>
     <string name="unknown_geofence_transition">Unknown transition</string>
+    <string name="hdr_pass_request_sent">Password Reset Request Sent</string>
+    <string name="txt_pass_request_sent">Please check your inbox</string>
 </resources>

@@ -5,6 +5,7 @@ import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.LocationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
+import retrofit2.Call
 import retrofit2.http.*
 
 
@@ -40,6 +41,9 @@ interface UserClient {
     @DELETE("$FRIENDS_BASE_PATH/{friendId}")
     fun removeFriend(@Path("userId") userId: Long,
                      @Path("friendId") friendId: Long): Observable<List<FriendDto>>
+
+    @POST("$BASE_PATH/request_password_reset")
+    fun requestPasswordReset(@Body registrationDto: RegistrationDto): Observable<Boolean>
 
     companion object {
         const val BASE_PATH = "/users"

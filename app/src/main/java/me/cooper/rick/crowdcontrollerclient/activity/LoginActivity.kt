@@ -13,17 +13,20 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.support.design.widget.Snackbar
+import android.support.v7.app.AlertDialog
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import kotlinx.android.synthetic.main.activity_login.*
+import kotlinx.android.synthetic.main.content_reset_password.view.*
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerapi.dto.user.Token
 import me.cooper.rick.crowdcontrollerapi.dto.user.UserDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.api.client.LoginClient
+import me.cooper.rick.crowdcontrollerclient.api.service.ApiService.requestPasswordReset
 import me.cooper.rick.crowdcontrollerclient.api.util.BAD_PASSWORD
 import me.cooper.rick.crowdcontrollerclient.api.util.buildConnectionExceptionResponse
 import me.cooper.rick.crowdcontrollerclient.constant.VibratePattern
@@ -131,6 +134,29 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                     .add(R.id.content, RegistrationFragment())
                     .addToBackStack("reg")
                     .commit()
+        }
+        reset_password.setOnClickListener {
+            addDialog(AlertDialog.Builder(this)
+                    .setTitle(R.string.hdr_reset_password)
+                    .setView(layoutInflater.inflate(R.layout.content_reset_password, content,
+                            false).apply {
+                        btn_confirm_reset_password.setOnClickListener {
+                            val valid = RegistrationFragment.EmailValidator.validate(actv_email.text.toString())
+                            if (valid) {
+                                requestPasswordReset(actv_email.text.toString())
+                                dismissDialogs()
+                                showDismissiblePopup(
+                                        getString(R.string.hdr_pass_request_sent),
+                                        getString(R.string.txt_pass_request_sent)
+                                )
+                            } else {
+                                txt_email_invalid.text = getString(R.string.txt_reset_password_invalid_email)
+                            }
+                        }
+                        btn_cancel_reset_password.setOnClickListener { dismissDialogs() }
+                    })
+                    .show()
+            )
         }
     }
 

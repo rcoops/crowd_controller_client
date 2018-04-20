@@ -5,8 +5,10 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.maps.model.LatLng
+import io.reactivex.Observable
 import me.cooper.rick.crowdcontrollerapi.dto.group.*
 import me.cooper.rick.crowdcontrollerapi.dto.user.FriendDto
+import me.cooper.rick.crowdcontrollerapi.dto.user.RegistrationDto
 import me.cooper.rick.crowdcontrollerclient.R
 import me.cooper.rick.crowdcontrollerclient.activity.AppActivity
 import me.cooper.rick.crowdcontrollerclient.activity.MainActivity
@@ -32,7 +34,7 @@ object ApiService {
 
     private val refreshGroup: ((GroupDto?) -> Unit) = { refreshGroupDetails(it) }
     private val refreshFriends: ((List<FriendDto>) -> Unit) = { updateFriends(it) }
-    var errorConsumer: ((Throwable) -> Unit)? = null
+    var errorConsumer: (Throwable) -> Unit = {}
 
     var currentActivity: WeakReference<AppActivity?> = WeakReference(null)
 
@@ -59,20 +61,20 @@ object ApiService {
     }
 
     fun getFriends() {
-        userClient().findFriends(getUserId()).call(refreshFriends, errorConsumer!!)
+        userClient().findFriends(getUserId()).call(refreshFriends)
     }
 
     fun addFriend(username: String) {
         userClient().addFriend(getUserId(), FriendDto(username = username))
-                .call(refreshFriends, errorConsumer!!)
+                .call(refreshFriends)
     }
 
     fun removeFriend(dto: FriendDto) {
-        userClient().removeFriend(getUserId(), dto.id).call(refreshFriends, errorConsumer!!)
+        userClient().removeFriend(getUserId(), dto.id).call(refreshFriends)
     }
 
     fun updateFriendship(dto: FriendDto) {
-        userClient().updateFriendship(getUserId(), dto.id, dto).call(refreshFriends, errorConsumer!!)
+        userClient().updateFriendship(getUserId(), dto.id, dto).call(refreshFriends)
     }
 
     fun getGroup(id: Long? = null, consumer: ((GroupDto) -> Unit)? = null) {
@@ -80,42 +82,46 @@ object ApiService {
         if (id != null ) {
             groupClient
                     .find(id)
-                    .call(consumer ?: refreshGroup, errorConsumer!!)
+                    .call(consumer ?: refreshGroup)
         } else {
             group?.let {
                 groupClient
                     .find(it.id)
-                    .call(consumer ?: refreshGroup, errorConsumer!!)
+                    .call(consumer ?: refreshGroup)
             }
         }
+    }
+
+    fun requestPasswordReset(email: String) {
+        userClient().requestPasswordReset(RegistrationDto(email = email)).call()
     }
 
     fun createGroup(friends: List<FriendDto>, consumer: (GroupDto) -> Unit) {
         groupClient()
                 .create(CreateGroupDto(getUserId(), mapToGroupMembers(friends)))
-                .call(consumer, errorConsumer!!)
+                .call(consumer)
     }
 
     fun respondToInvite(groupId: Long, consumer: (GroupDto?) -> Unit, isAccept: Boolean) {
         groupClient()
                 .respondToInvite(groupId, getUserId(), isAccept)
-                .call(consumer, errorConsumer!!)
+                .call(consumer)
     }
 
     fun removeGroup(consumer: () -> Unit) {
-        group?.let { groupClient().remove(it.id).call(consumer, errorConsumer!!) }
+        group?.let { groupClient().remove(it.id).call(consumer, errorConsumer) }
     }
 
     fun removeGroupMember(userId: Long, errorConsumer: ((Throwable) -> Unit)? = null) {
         group?.let {
             groupClient()
                     .removeMember(it.id, userId)
-                    .call(refreshGroup, errorConsumer ?: this.errorConsumer!!)
+                    .call(refreshGroup, errorConsumer ?: this.errorConsumer)
         }
     }
 
     private fun updateGroup(dto: GroupDto) {
-        group?.let { groupClient().update(it.id, dto).call(refreshGroup, errorConsumer!!) }
+        group?.let { groupClient().update(it.id, dto).call(refreshGroup) }
     }
 
     fun promoteToAdmin(dto: GroupMemberDto) {
@@ -146,7 +152,7 @@ object ApiService {
 
     fun updateGroupSettings(groupSettingsDto: GroupSettingsDto) {
         group?.let {
-            groupClient().updateSettings(it.id, groupSettingsDto).call({}, errorConsumer!!)
+            groupClient().updateSettings(it.id, groupSettingsDto).call()
         }
     }
 
@@ -184,6 +190,10 @@ object ApiService {
 
     private fun mapToGroupMembers(friends: List<FriendDto>): List<GroupMemberDto> {
         return friends.map { GroupMemberDto.fromFriendDto(it) }
+    }
+
+    fun <T> Observable<T>.call(successConsumer: (T) -> Unit = {}) {
+        call(successConsumer, errorConsumer)
     }
 
 }
