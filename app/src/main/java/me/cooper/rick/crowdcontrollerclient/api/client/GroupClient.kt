@@ -9,11 +9,8 @@ import retrofit2.http.*
 
 interface GroupClient {
 
-    @GET(BASE_PATH)
-    fun findAll(): Observable<List<GroupDto>>
-
     @GET("$BASE_PATH/{groupId}")
-    fun find(@Path("groupId") groupId: Long): Observable<GroupDto>
+    fun group(@Path("groupId") groupId: Long): Observable<GroupDto>
 
     @POST(BASE_PATH)
     fun create(@Body groupDto: CreateGroupDto): Observable<GroupDto>

@@ -198,8 +198,7 @@ class MainActivity : AppActivity(),
         playClick()
         when (item.itemId) {
             R.id.nav_add_friend -> showAddFriendDialog()
-            R.id.nav_create_group -> showFriendSelectorDialog(getUnGroupedFriendNames(),
-                    { friends -> createGroup(friends, { createGroup(it) }) })
+            R.id.nav_create_group -> confirmCreateGroup()
             R.id.nav_group -> startTask {
                 getGroup(null, {
                     refreshGroupDetails(it)
@@ -540,6 +539,18 @@ class MainActivity : AppActivity(),
                 .setPositiveButton(android.R.string.ok, { _, _ ->
                     startTask { consumer(selectedIds) }
                 })
+                .show())
+    }
+
+    private fun confirmCreateGroup() {
+        addDialog(AlertDialog.Builder(this)
+                .setTitle(R.string.hdr_create_grp_warning)
+                .setMessage(R.string.txt_create_grp_warning)
+                .setPositiveButton(android.R.string.ok, { _, _ ->
+                    showFriendSelectorDialog(getUnGroupedFriendNames(),
+                            { friends -> createGroup(friends, { createGroup(it) }) })
+                })
+                .setNegativeButton(android.R.string.cancel, { _, _ -> })
                 .show())
     }
 

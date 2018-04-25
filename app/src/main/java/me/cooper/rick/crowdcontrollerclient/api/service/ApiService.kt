@@ -90,12 +90,12 @@ object ApiService {
         val groupClient = groupClient()
         if (id != null ) {
             groupClient
-                    .find(id)
+                    .group(id)
                     .call(consumer ?: refreshGroup)
         } else {
             group?.let {
                 groupClient
-                    .find(it.id)
+                    .group(it.id)
                     .call(consumer ?: refreshGroup)
             }
         }

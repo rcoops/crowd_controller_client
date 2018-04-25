@@ -114,7 +114,7 @@
     <string name="hdr_fragment_registration">Registration</string>
     <string name="txt_pending_grp_invite">Pending group invite from %1$s</string>
     <string name="hdr_respond_grp_invite">Invited to Group</string>
-    <string name="txt_respond_grp_invite">You have been invited to a group by %1$s, Do you accept?\nAccepting signals your agreement to share and store your location for the duration of the group.</string>
+    <string name="txt_respond_grp_invite">You have been invited to a group by %1$s, Do you accept?\nAccepting signals your agreement to share and store your location for the duration of the group. In addition some anonymous locational information may be collected by third parties and used for statistical purposes.</string>
     <string name="action_accept_grp_invite">Accept</string>
     <string name="action_refuse_grp_invite">Refuse</string>
 
@@ -149,4 +149,6 @@
     <string name="txt_pass_request_sent">Please check your inbox</string>
     <string name="hdr_pass_update_confirm">Password Updated</string>
     <string name="txt_pass_update_confirm">Your password has been updated, please log back in with the your password.</string>
+    <string name="txt_create_grp_warning">Creating a group signals your agreement to share and store your location for its duration. In addition some anonymous locational information may be collected by third parties and used for statistical purposes.</string>
+    <string name="hdr_create_grp_warning">Warning!</string>
 </resources>
