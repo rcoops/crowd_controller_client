@@ -123,7 +123,7 @@
     <string name="pref_hdr_vib">Vibrate Settings</string>
     <string name="pref_txt_vib">Toggle Vibration</string>
     <string name="pref_hdr_grp">Group Settings</string>
-    <string name="pref_txt_grp_clustering_toggle">Toggle Clustering</string>
+    <string name="pref_txt_grp_clustering_toggle">Toggle Average Group Location</string>
     <string name="pref_hdr_grp_clustering">Cluster Settings</string>
     <string name="pref_txt_grp_clustering_min_percentage">Min % of Group for Cluster</string>
     <string name="pref_txt_grp_clustering_min_distance">Min Cluster Radius (metres)</string>
