@@ -26,6 +26,8 @@ import android.support.v7.preference.PreferenceManager
 import android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences
 import android.util.Log
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.AutoCompleteTextView
 import android.widget.ProgressBar
 import me.cooper.rick.crowdcontrollerapi.dto.error.APIErrorDto
 import me.cooper.rick.crowdcontrollerapi.dto.group.GroupSettingsDto
@@ -288,7 +290,11 @@ abstract class AppActivity : AppCompatActivity(),
     }
 
     protected fun dismissDialogs() {
-        alertDialogs.values.forEach { if (it.isShowing) it.dismiss() }
+        alertDialogs.values.forEach {
+            if (it.isShowing) {
+                it.dismiss()
+            }
+        }
         alertDialogs.clear()
     }
 

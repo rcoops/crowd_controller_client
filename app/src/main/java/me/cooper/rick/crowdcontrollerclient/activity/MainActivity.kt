@@ -16,6 +16,9 @@ import android.support.v7.app.AlertDialog
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.AutoCompleteTextView
+import android.widget.Button
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.Geofence
@@ -519,15 +522,26 @@ class MainActivity : AppActivity(),
     }
 
     private fun showAddFriendDialog() {
+        fun hideKeyboard(edit: AutoCompleteTextView) {
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.hideSoftInputFromWindow(edit.windowToken, 0)
+        }
+        val view = layoutInflater.inflate(R.layout.content_add_friend, content_main,
+                false).apply {
+            btn_cancel_add_friend.setOnClickListener {
+                hideKeyboard(actv_user_detail)
+                dismissDialogs()
+                dismissDialog(getString(R.string.header_add_friend))
+            }
+            btn_add_friend.setOnClickListener {
+                val userDetail = actv_user_detail.text.toString()
+                hideKeyboard(actv_user_detail)
+                startTask {  addFriend(userDetail) }
+            }
+        }
         addDialog(AlertDialog.Builder(this)
                 .setTitle(R.string.header_add_friend)
-                .setView(layoutInflater.inflate(R.layout.content_add_friend, content_main,
-                        false).apply {
-                    btn_add_friend.setOnClickListener {
-                        startTask { addFriend(actv_user_detail.text.toString()) }
-                    }
-                    btn_cancel_add_friend.setOnClickListener { dismissDialogs(); dismissDialog(getString(R.string.header_add_friend)) }
-                })
+                .setView(view)
                 .show(),
                 getString(R.string.header_add_friend)
         )

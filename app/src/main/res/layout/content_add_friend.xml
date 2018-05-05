@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/prompt_user_detail"
-        android:imeOptions="actionDone"
         android:inputType="text"
         android:singleLine="true"
         android:textSize="@dimen/txt_user_detail" />
