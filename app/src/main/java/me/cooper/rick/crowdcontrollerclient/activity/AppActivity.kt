@@ -45,8 +45,6 @@ abstract class AppActivity : AppCompatActivity(),
         SharedPreferences.OnSharedPreferenceChangeListener,
         AbstractAppFragment.FragmentListenerInterface {
 
-    private val dialogs = mutableListOf<AlertDialog>()
-
     protected var userClient: UserClient? = null
     protected var groupClient: GroupClient? = null
 
@@ -290,12 +288,20 @@ abstract class AppActivity : AppCompatActivity(),
     }
 
     protected fun dismissDialogs() {
-        dialogs.forEach { if (it.isShowing) it.dismiss() }
-        dialogs.clear()
+        alertDialogs.values.forEach { if (it.isShowing) it.dismiss() }
+        alertDialogs.clear()
     }
 
-    protected fun addDialog(dialog: AlertDialog): AlertDialog {
-        dialogs += dialog
+    protected fun dismissDialog(title: String) {
+        val potentialDialog = alertDialogs[title]
+        potentialDialog?.let {
+            if (it.isShowing) it.dismiss()
+            alertDialogs.remove(title)
+        }
+    }
+
+    protected fun addDialog(dialog: AlertDialog, title: String): AlertDialog {
+        alertDialogs[title] = dialog
         return dialog
     }
 

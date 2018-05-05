@@ -67,6 +67,7 @@
     <string name="header_register">Register</string>
     <string name="hdr_reset_password">Reset Password</string>
     <string name="header_add_friend">Add Friend</string>
+    <string name="hdr_select_friends">Select Friends</string>
     <string name="action_add_friend">Add</string>
     <string name="prompt_user_detail">Username / email / mobile number</string>
     <string name="prompt_reset_password_email">Email</string>

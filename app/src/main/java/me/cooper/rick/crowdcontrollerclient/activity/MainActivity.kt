@@ -429,6 +429,7 @@ class MainActivity : AppActivity(),
 
     fun dismissAfterTask() {
         dismissProgressBar()
+        dismissDialogs()
     }
 
     /* PRIVATE STUFF */
@@ -512,7 +513,8 @@ class MainActivity : AppActivity(),
                     }
                     btn_cancel_update_password.setOnClickListener { dismissDialogs() }
                 })
-                .show()
+                .show(),
+                getString(R.string.hdr_reset_password)
         )
     }
 
@@ -524,22 +526,26 @@ class MainActivity : AppActivity(),
                     btn_add_friend.setOnClickListener {
                         startTask { addFriend(actv_user_detail.text.toString()) }
                     }
-                    btn_cancel_add_friend.setOnClickListener { dismissDialogs() }
+                    btn_cancel_add_friend.setOnClickListener { dismissDialogs(); dismissDialog(getString(R.string.header_add_friend)) }
                 })
-                .show())
+                .show(),
+                getString(R.string.header_add_friend)
+        )
     }
 
     private fun showFriendSelectorDialog(unGroupedNames: Array<String>,
                                          consumer: (List<FriendDto>) -> Unit) {
         val selectedIds = mutableListOf<FriendDto>()
         addDialog(AlertDialog.Builder(this)
-                .setTitle(title)
+                .setTitle(getString(R.string.hdr_select_friends))
                 .setMultiChoiceItems(unGroupedNames, null,
                         selectFriends(unGroupedNames, selectedIds))
                 .setPositiveButton(android.R.string.ok, { _, _ ->
                     startTask { consumer(selectedIds) }
                 })
-                .show())
+                .show(),
+                getString(R.string.hdr_select_friends)
+        )
     }
 
     private fun confirmCreateGroup() {
@@ -551,7 +557,9 @@ class MainActivity : AppActivity(),
                             { friends -> createGroup(friends, { createGroup(it) }) })
                 })
                 .setNegativeButton(android.R.string.cancel, { _, _ -> })
-                .show())
+                .show(),
+                getString(R.string.hdr_create_grp_warning)
+        )
     }
 
     private fun showGroupedPopup(friend: FriendDto) {
@@ -573,7 +581,9 @@ class MainActivity : AppActivity(),
                 .setPositiveButton(getString(positiveButtonTextId), okConsumer)
                 .setNegativeButton(getString(negativeButtonTextId), cancelConsumer)
                 .setOnDismissListener(onDismissListener)
-                .show())
+                .show(),
+                getString(headerId)
+        )
     }
 
     private fun createGroup(it: GroupDto) {

@@ -167,7 +167,8 @@ class LoginActivity : AppActivity(), LoaderCallbacks<Cursor>,
                     }
                     btn_cancel_reset_password.setOnClickListener { dismissDialogs() }
                 })
-                .show()
+                .show(),
+                getString(R.string.hdr_reset_password)
         )
     }
 
